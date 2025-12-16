@@ -33,30 +33,30 @@ a few libraries used. Otherwise:
 
 # Compile the code
 
-SNAKY contains a table too heavy for GitHub that need first to be merged back using the compiler function
+*SNAKY contains a table too heavy for GitHub that need first to be merged back using the compiler function*
 
 [TERMINAL] cd ../SNAKY/Python \
 [TERMINAL] python snaky_compiler.py
 
 # Tutorial
 
-first enter into your local Snaky directory
+*first enter into your local Snaky directory*
 
 [TERMINAL] cd ../SNAKY/Python
 
-Launch an iPython shell
+*Launch an iPython shell*
 
 [TERMINAL] ipython
 
-Create SNAKY directory tree with a STARNAME and INSTRUMENT (SPECTRO_DRS name) 
+*Create SNAKY directory tree with a STARNAME and INSTRUMENT (SPECTRO_DRS name) *
 
 [IPYTHON] run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 0 -e 0
 
-Put the spectra in the specified directory (follow Snaky instruction) and then process the spectra 
+*Put the spectra in the specified directory (follow Snaky instruction) and then process the spectra *
 
 [IPYTHON] run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 1 -e 12
 
-Once satisfied by the output, erase the optional subproducts to reduce size directory 
+*Once satisfied by the output, erase the optional subproducts to reduce size directory *
 
 [IPYTHON] run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 13 -e 13
 
