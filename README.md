@@ -9,6 +9,10 @@ If you have any problem, please contact me at:
 
 michael.cretignier@physics.ox.ac.uk
 
+<p align="center">
+  <img src="logo.png" alt="Project logo" width="200">
+</p>
+
 # Installation
 
 You can try with your own main Python environment since there are only
