@@ -3,15 +3,15 @@
 The code is missing some important table that prevent it from running, the code is planned to be released in a few weeks.
 Thank for your patience.
 
+<p align="center">
+  <img src="logo.png" alt="Project logo" width="400">
+</p>
+
 # Contact Me
 
 If you have any problem, please contact me at:
 
 michael.cretignier@physics.ox.ac.uk
-
-<p align="center">
-  <img src="logo.png" alt="Project logo" width="400">
-</p>
 
 # Installation
 
