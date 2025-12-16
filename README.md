@@ -1,4 +1,5 @@
-# SNAKY Release Date (Soon...!)
+# SNAKY (a Spectrocopic Novel Analysis Kit of Yarara)
+# Release Date (Soon...!)
 
 The code is missing some important tables that prevent it from running, the code is planned to be released in a few weeks.
 Thank for your patience.
