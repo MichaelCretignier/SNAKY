@@ -73,6 +73,22 @@ def find_turbulence(teff, logg):
 
     return vmic,vmac
 
+def find_stellar_mass_radius_MS(Teff, logg):
+    samples_T = np.random.randn(1000)*75+Teff
+    samples_g = np.random.randn(1000)*0.07+logg
+
+    samples_m = (samples_T/5772)**(4/3)*(10**(samples_g-4.437))**(-1/3)
+    mass = np.median(samples_m)
+    mass_std = mad(samples_m)
+
+    samples_m = samples_m[samples_m>0]
+
+    samples_R = 0.5*(4.437+np.log10(samples_m)-samples_g) #Smette 2005
+    radius = np.median(10**samples_R)
+    radius_std = mad(10**samples_R)
+
+    return mass, mass_std, radius, radius_std
+
 def find_stellar_mass_radius(Teff, sp_type='G2V'):
     """Habets 1981 calibration curve"""
     lim=0

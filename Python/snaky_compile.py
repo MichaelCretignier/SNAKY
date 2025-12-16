@@ -3,8 +3,7 @@ import numpy as np
 import os
 
 cwd = os.getcwd()
-root = '/'.join(cwd.split('/')[:-1])
-
+root = '/'.join(cwd.split('/'))
 
 files_to_compile = np.sort(glob.glob(root+'/Material_snaky/compile_split_*.npy'))
 process = []
@@ -35,5 +34,5 @@ for p in np.unique(process[:,1]):
 
     print(' [INFO] The splited subparts will be erased...')
     for f in files:
-        os.system('rm '+f)
         print(' [INFO] %s was deleted'%(f))
+        os.system('rm '+f)

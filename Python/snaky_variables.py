@@ -51,6 +51,16 @@ au_m = 149597871*1000
 coeff_water = 0.06420728869571635 #reference depth for water telluric (cenB)
 coeff_oxygen = 0.19207933933570465 #reference depth for oxygen telluric (cenB)
 
+instrument_res_kms = { 
+    'CORALIE14':4.71,    #64000
+    'SOPHIE':4.18,       #72000 (40000 for the HE mode)
+    'HARPS03':3.38,      #89000
+    'HARPS15':3.47,      #87000
+    'HARPN':3.13,        #96000
+    'ESPRESSO18':2.79,   #108000
+    'ESPRESSO19':2.79,   #108000
+    }
+
 instrument_lat_deg = {
     'HARPN':28.7540,
     'HARPS3':28.7540,

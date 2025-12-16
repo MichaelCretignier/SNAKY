@@ -775,7 +775,7 @@ class tableXY(object):
                     ccf_profile.fit_GND(guess=[-amp,center,width,maxi,2],color='g',beta_fixed=0,Plot=Plot,norm=norm)
                     self.ccf_params = ccf_profile.params
                     self.params_beta = ccf_profile.params['beta'].value
-                    print(' [INFO] Using GND profile for the fit')
+                    print('\n [INFO] Using GND profile for the fit')
                 except:
                     ccf_profile.fit_gaussian(guess=[-amp,center,width,maxi],Plot=Plot,norm=norm)
                     self.ccf_params = ccf_profile.params
