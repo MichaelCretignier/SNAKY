@@ -11,7 +11,7 @@ SNAKY is a small code producing as main outputs:
 3) The MHK activity index time-series
 4) The stellar vsini (in validation...)
 
-From high resolution spectra in the visible.
+from high resolution spectra in the visible.\
 SNAKY is NOT an RV pipeline aiming at EPRV precision like YARARA.
 
 # Release Date (Soon...!)
