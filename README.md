@@ -1,4 +1,4 @@
-# CONTACT
+# Contact Me
 
 If you have any problem, please contact me at:
 
@@ -18,7 +18,7 @@ pip install -r requirements_3.13.5.txt
 # Python environment (Venv install)
 
 python3 -m venv snaky \
-source tcs/bin/activate \
+source snaky/bin/activate \
 pip install --upgrade pip \
 pip install -r requirements_3.13.5.txt
 
@@ -35,16 +35,17 @@ python snaky_compiler.py
 
 cd ../Snaky/Python
 
-**Launch an iPython shell**
+**Launch an iPython shell\**
 ipython
 
-Create SNAKY directory tree with a STARNAME and INSTRUMENT (SPECTRO_DRS name) \
-**run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 0 -e 0**
+**Create SNAKY directory tree with a STARNAME and INSTRUMENT (SPECTRO_DRS name) \**
 
-Put the spectra in the specified directory (follow Snaky instruction) and then process the spectra
+run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 0 -e 0\
+
+**Put the spectra in the specified directory (follow Snaky instruction) and then process the spectra \**
 run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 1 -e 12
 
-Once satisfied by the output, erase the optional subproducts to reduce size directory
+**Once satisfied by the output, erase the optional subproducts to reduce size directory \**
 run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 13 -e 13
 
 # A NEW INSTRUMENT MISSING?
