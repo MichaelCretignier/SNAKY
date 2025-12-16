@@ -1,3 +1,7 @@
+# Release Date (Soon...!)
+
+The code is missing some important table that prevent it from running, the code is planned to be released in a few weeks
+
 # Contact Me
 
 If you have any problem, please contact me at:
