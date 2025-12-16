@@ -50,15 +50,15 @@ a few libraries used. Otherwise:
 
 [TERMINAL] ipython
 
-*Create SNAKY directory tree with a STARNAME and INSTRUMENT (SPECTRO_DRS name) *
+*Create SNAKY directory tree with a STARNAME and INSTRUMENT (SPECTRO_DRS name)*
 
 [IPYTHON] run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 0 -e 0
 
-*Put the spectra in the specified directory (follow Snaky instruction) and then process the spectra *
+*Put the spectra in the specified directory (follow Snaky instruction) and then process the spectra*
 
 [IPYTHON] run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 1 -e 12
 
-*Once satisfied by the output, erase the optional subproducts to reduce size directory *
+*Once satisfied by the output, erase the optional subproducts to reduce size directory*
 
 [IPYTHON] run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 13 -e 13
 
