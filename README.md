@@ -1,6 +1,6 @@
 # SNAKY Release Date (Soon...!)
 
-The code is missing some important table that prevent it from running, the code is planned to be released in a few weeks.
+The code is missing some important tables that prevent it from running, the code is planned to be released in a few weeks.
 Thank for your patience.
 
 <p align="center">
