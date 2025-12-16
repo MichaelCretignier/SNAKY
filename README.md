@@ -72,6 +72,12 @@ HARPN \
 SOPHIE \
 NEID 
 
-to add a new instrument you only need 5 information from its header (jdb, berv, snr, alpha, dec)
+to add a new instrument you only need 5 information from its header: \
+1) jdb   [mandatory] \
+2) berv  [optional] \
+3) snr   [optional] \
+4) alpha [mandatory (manual input)] \
+4) dec   [mandatory (manual input)] \
+
 then create your own function read_espresso() in snaky_main.py
-modify the extract_header function too 
+and modify the extract_header function too. 
