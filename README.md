@@ -35,29 +35,29 @@ pip install -r requirements_3.13.5.txt
 
 SNAKY contains a table too heavy for GitHub that need first to be merged back using the compiler function
 
-<span style="color: green;">cd ../SNAKY/Python \</span>
-
-cd ../SNAKY/Python \
-python snaky_compiler.py
+[CODE] cd ../SNAKY/Python \
+[CODE] python snaky_compiler.py
 
 # Tutorial
 
 **first enter into your local Snaky directory \**
 
-cd ../SNAKY/Python
+[CODE] cd ../SNAKY/Python
 
-**Launch an iPython shell\**
-ipython
+Launch an iPython shell\
+[CODE] ipython
 
-**Create SNAKY directory tree with a STARNAME and INSTRUMENT (SPECTRO_DRS name) \**
+Create SNAKY directory tree with a STARNAME and INSTRUMENT (SPECTRO_DRS name) \
 
-run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 0 -e 0
+[CODE] run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 0 -e 0
 
-**Put the spectra in the specified directory (follow Snaky instruction) and then process the spectra \**
-run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 1 -e 12
+Put the spectra in the specified directory (follow Snaky instruction) and then process the spectra \
 
-**Once satisfied by the output, erase the optional subproducts to reduce size directory \**
-run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 13 -e 13
+[CODE] run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 1 -e 12
+
+Once satisfied by the output, erase the optional subproducts to reduce size directory \
+
+[CODE] run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 13 -e 13
 
 # A new instrument Missing ?
 
@@ -67,7 +67,7 @@ ESPRESSO \
 HARPS \
 HARPN \
 SOPHIE \
-NEID \
+NEID 
 
 to add a new instrument you only need 5 information from its header (jdb, berv, snr, alpha, dec)
 then create your own function read_espresso() in snaky_main.py
