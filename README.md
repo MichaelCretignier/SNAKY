@@ -7,7 +7,7 @@ Install a Python environment:
 
 conda create -n snaky python=3.13.5 \
 conda activate snaky \
-pip install -r requirements.txt
+pip install -r requirements_3.13.5.txt
 
 
 [INSTALL by VENV]
