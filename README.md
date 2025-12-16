@@ -9,7 +9,7 @@ SNAKY is a small code producing as main outputs:
 1) The master spectrum in stellar rest-frame
 2) The stellar atmospheric parameters
 3) The MHK activity index time-series
-4) The stellar vsini
+4) The stellar vsini (in validation...)
 
 # Release Date (Soon...!)
 
