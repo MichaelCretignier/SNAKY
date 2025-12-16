@@ -1,6 +1,7 @@
 # Release Date (Soon...!)
 
-The code is missing some important table that prevent it from running, the code is planned to be released in a few weeks
+The code is missing some important table that prevent it from running, the code is planned to be released in a few weeks.
+Thank for your patience.
 
 # Contact Me
 
@@ -44,7 +45,7 @@ ipython
 
 **Create SNAKY directory tree with a STARNAME and INSTRUMENT (SPECTRO_DRS name) \**
 
-run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 0 -e 0\
+run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 0 -e 0
 
 **Put the spectra in the specified directory (follow Snaky instruction) and then process the spectra \**
 run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 1 -e 12
@@ -52,7 +53,15 @@ run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 1 -e 12
 **Once satisfied by the output, erase the optional subproducts to reduce size directory \**
 run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 13 -e 13
 
-# A NEW INSTRUMENT MISSING?
+# A new instrument Missing ?
+
+SNAKY can process spectra from the following spectrographs:
+
+ESPRESSO \
+HARPS \
+HARPN \
+SOPHIE \
+NEID \
 
 to add a new instrument you only need 5 information from its header (jdb, berv, snr, alpha, dec)
 then create your own function read_espresso() in snaky_main.py
