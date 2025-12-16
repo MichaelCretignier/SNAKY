@@ -35,14 +35,16 @@ pip install -r requirements_3.13.5.txt
 
 SNAKY contains a table too heavy for GitHub that need first to be merged back using the compiler function
 
-cd ../Snaky/Python \
+<span style="color: green;">cd ../SNAKY/Python \</span>
+
+cd ../SNAKY/Python \
 python snaky_compiler.py
 
 # Tutorial
 
 **first enter into your local Snaky directory \**
 
-cd ../Snaky/Python
+cd ../SNAKY/Python
 
 **Launch an iPython shell\**
 ipython
