@@ -464,8 +464,17 @@ def reduce(
 
     if force_magcycle:
         finch_output = mym.yarara_finch(dir_root, rm_source=['DACE'], offset_instrument='no!', ext='')
-        sinfo = myf.update_info_lvl2(sinfo,'Pmag','SNAKY', finch_output[0])
+        sinfo = myf.update_info_lvl2(sinfo,'Pmag','SNAKY', finch_output[1])
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+        pickle.dump({
+            'Starname':star,
+            'Pmag':finch_output[1],
+            'Kmag_mean':finch_output[2],
+            'Kmag_amp':finch_output[3],
+            'Kmag_pred':finch_output[4],
+            'Phase_pred':finch_output[5],
+            'Phase_side':finch_output[6]}, 
+            open(dir_root.replace(ins+'/','ALLINS_MERGED/Pmag_FINCH_info.p'),'wb'))
 
     time_end = time.time()
     duration = np.round((time_end-time_start)/60,2)

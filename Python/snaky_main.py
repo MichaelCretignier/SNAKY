@@ -614,7 +614,10 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
     if ylim[1]<10:
         plt.ylim(None,10)
 
-    FINCH_Pmag_GP = np.round(vec.out_gp_pmag,1)     
+    FINCH_Pmag_GP = np.round(vec.out_gp_pmag,1)   
+    FINCH_Mmag_GP = np.round(vec.out_gp_meanmag,1)   
+    FINCH_Kmag_GP = np.round(vec.out_gp_ampmag,1)   
+
     plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_magnetic_cycle'+ext+'_GP.png')
 
     fig_gp.set_figwidth(10)
@@ -637,9 +640,12 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
     exportation3 = myc.tableXY(myf.conv_time(vec.out_gp_model[0])[0],vec.out_gp_model[1],vec.out_gp_model[2])
     exportation3.export(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_%s_GP_model.csv'%(proxy_name),format='csv',columns=['jdb','proxy','proxy_std','qc'])
 
-    output = [FINCH_Pmag,FINCH_Pmag_GP]+vec.out_gp_predict
-    print(output)
-
+    output = [
+        FINCH_Pmag,
+        FINCH_Pmag_GP,
+        FINCH_Mmag_GP,
+        FINCH_Kmag_GP]+vec.out_gp_predict
+    
     return output
 
 
