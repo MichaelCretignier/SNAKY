@@ -369,7 +369,6 @@ def reduce(
 
     summary = mym.import_summary(dir_root)
     sinfo = mym.import_star_info(dir_root)
-    rv_sys = sinfo['Rv_sys']['SNAKY']
 
     if force_vsini:
         teff = sinfo['Teff']['SNAKY']
@@ -390,6 +389,8 @@ def reduce(
         pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
 
     if force_activity:
+        sinfo = mym.import_star_info(dir_root)
+        rv_sys = sinfo['Rv_sys']['SNAKY']
         kept = np.array(1-summary['flag1'])*np.array(1-summary['flag2'])
         files = np.array(summary.loc[kept==1,'filename'])
         ccf_output = mym.import_ccf(dir_root,'G2')
@@ -407,6 +408,8 @@ def reduce(
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
 
     if force_mhk:
+        sinfo = mym.import_star_info(dir_root)
+        rv_sys = sinfo['Rv_sys']['SNAKY']
         teff = sinfo['Teff']['SNAKY']
         material = mym.import_material(dir_root)
         ccf_output = mym.import_ccf(dir_root,'G2')   
