@@ -24,9 +24,11 @@ import my_classes as myyc
 
 try:
     import Finch as Finch
-    installation = 'partial'
-except:
     installation = 'complete'
+    print('[IMPORT] FINCH module is found')
+except:
+    installation = 'partial'
+    print(Fore.YELLOW+'[IMPORT] FINCH module is missing'+Fore.RESET)
 
 """
 
@@ -34,10 +36,10 @@ SNAKY — Spectroscopic Novel Analysis Kit of Yarara
 
 """
 
-version_snaky = 0.4
+__version__ = '0.5'
 
 print(Fore.GREEN+"""\n[INFO SNAKY]
-[INFO USER] SNAKY version = """+str(version_snaky)+""" 
+[INFO USER] SNAKY version = """+__version__ +""" 
 [INFO USER] READ ME CAREFULLY 
 [INFO USER] Vsini is still in validation and can't be used except for solar analogs ([5600 - 5800])
 [INFO USER] Continuum normalisation made by RASSINE explained in Cretignier et al. 2020b
@@ -476,31 +478,37 @@ def plot_mhk(dir_root, hide_outliers=True, daily_binned=True, debug=False):
     plt.ylim(ylim)
     plt.yticks(y_ticks,np.round(mhk_rhk(y_ticks),2))
     plt.ylabel(r'$\log$ $R_{HK}$ [dex]',fontsize=14)
-    plt.savefig(dir_root+'IMAGES/MHK.pdf')
-    plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'MHK.pdf')
+    plt.savefig(dir_root+'IMAGES/MHK.png')
+    plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'MHK.png')
 
 
-def yarara_finch(dir_root, proxy_name='MHK',default_proxy='sindex',ext='',trend_degree=0, harm=0, offset_instrument='yes', automatic_fit=True, data_driven_std=True,load_archive=True,x_unit='years',predict='today',baseline_factor=1, print_reference=True, rm_source=[]):
+def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offset_instrument='no!', automatic_fit=False, x_unit='years',predict='today', print_reference=True, rm_source=['DACE']):
 
     myf.print_box('\n---- RECIPE : FINCH MAGNETIC CYCLE PERIOD ----\n')
 
+    starname = dir_root.split('Snaky/')[-1].split('/')[0]
+    ins = dir_root.split('/')[-2]
+    star_info = import_star_info(dir_root)
+
     x=[] ; y=[] ; yerr=[] ; instrument = [] ; reference = [] ; flag = []
 
-    table = pd.read_csv(dir_root+'WORKSPACE/Analyse_summary.csv',index_col=0)
-    yerr.append(np.array(table[proxy_name.lower()+'_std']))
-    y.append(np.array(table[proxy_name.lower()]))
-    x.append(np.array(table['jdb']))
-    instrument.append(np.array(table['ins']))   
-    reference.append(np.array(table['source']))   
-    flag.append(np.array(table['flag']))   
+    files = glob.glob(dir_root.replace(ins,'*')+'WORKSPACE/Analyse_Finch_table.csv')
+    for file in files:
+        table = pd.read_csv(file,index_col=0)
+        yerr.append(np.array(table[proxy_name.lower()+'_std']))
+        y.append(np.array(table[proxy_name.lower()]))
+        x.append(np.array(table['jdb']))
+        instrument.append(np.array(table['ins']))   
+        reference.append(np.array(table['source']))   
+        flag.append(np.array(table['flag']))   
 
     folder = dir_root.split('/Snaky')[0]
-    files = glob.glob(folder+'/Python/database/ACTIVITY/Activity_MHK_*.csv')
+    files = glob.glob(folder+'/Python/Material_snaky/Activity_MHK_*.csv')
     for file in files:
         print('[INFO] Table %s loaded'%(file))             
         proxy_name_is = file.split('Activity_MHK_')[1].split('_')[0]
         table = pd.read_csv(file,index_col=0)
-        table = table.loc[table['star']==self.starname]
+        table = table.loc[table['star']==starname]
         if len(table):
             yerr.append(table[proxy_name_is+'_std'].values)
             y.append(table[proxy_name_is].values)
@@ -510,14 +518,13 @@ def yarara_finch(dir_root, proxy_name='MHK',default_proxy='sindex',ext='',trend_
             flag.append(table['flag'].values)   
 
     db_finch = Finch.get_star(
-        self.starname.split('_')[0],
+        starname.split('_')[0],
         finch_offset = True,
-        rm_source = rm_source,
-        ) # HIRES
+        rm_source = rm_source)
     
     if db_finch is not None:
         if proxy_name.split('_')[0]=='MHK':
-            db_finch.convert_smw_mhk(int(self.star_info['Teff']['YARARA']))
+            db_finch.convert_smw_mhk(int(star_info['Teff']['SNAKY']))
             
         x.append(db_finch.x)
         y.append(db_finch.y)
@@ -536,21 +543,21 @@ def yarara_finch(dir_root, proxy_name='MHK',default_proxy='sindex',ext='',trend_
     flag = np.hstack(flag)
     ext = '_database_'+proxy_name
 
-    instrument = np.array([i.split('_')[0] for i in instrument])
+    instru = np.array([i.split('_')[0] for i in instrument])
 
     raw_vec = myc.tableXY(proxy.x, proxy.y, proxy.yerr)
 
     vec = Finch.tableXY(proxy.x, proxy.y, proxy.yerr, proxy_name = proxy_name) 
-    vec.set_instrument(instrument)
+    vec.set_instrument(instru)
     vec.set_reference(reference)
     vec.set_ins_uncertainties(null_yerr=True)
     vec.set_flag(flag)
 
     vec.set_star(
-        starname= self.starname, 
-        teff=self.star_info['Teff']['YARARA'],
-        logg=self.star_info['Log_g']['YARARA'],
-        feh=self.star_info['FeH']['YARARA'],
+        starname = starname, 
+        teff = star_info['Teff']['SNAKY'],
+        logg = star_info['Log_g']['SNAKY'],
+        feh = star_info['FeH']['SNAKY'],
         )
     if not print_reference:
         vec.print_reference = False
@@ -558,18 +565,19 @@ def yarara_finch(dir_root, proxy_name='MHK',default_proxy='sindex',ext='',trend_
     #self.debug = vec,trend_degree,harm,automatic_fit,automatic_fit,offset_instrument,predict,x_unit
 
     if ((np.max(vec.x)-np.min(vec.x))/365.25)>4: #at least 4 years baseline to fit
-        self.debug = vec
 
         vec.fit_period_cycle(
             trend_degree = trend_degree, 
             harm=harm,
             automatic_fit = automatic_fit, 
             data_driven_std = True, 
-            offset_instrument=offset_instrument, 
-            predict=predict,
-            x_unit=x_unit)
+            offset_instrument = offset_instrument, 
+            predict = 'today',
+            x_unit = x_unit)
         
-        plt.savefig(dir_root+'IMAGES/Finch_magnetic_cycle'+ext+'.png')
+        plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_magnetic_cycle'+ext+'.png')
+        if not vec.out_convergence_flag:
+            vec.out_pmag = 0.00
 
         for i in np.unique(vec.out_model_offset.instrument):
             value_offset = np.median(vec.out_model_offset.y[vec.out_model_offset.instrument==i])
@@ -579,22 +587,22 @@ def yarara_finch(dir_root, proxy_name='MHK',default_proxy='sindex',ext='',trend_
         dust = vec.prepare_data(debug=False, data_driven_std=True)
         vec.out_convergence_flag = False
         vec.out_output_table = {'P_computed':np.array([0.00,0.00,0.00])}
+        vec.out_pmag = 0.00
 
     exportation1 = myc.tableXY(vec.x,vec.y,vec.yerr)
     exportation1.mask_qc = ~vec.mask_flag
-    exportation1.export(dir_root.replace(instrument,'ALLINS_MERGED')+'WORKSPACE/Finch_%s.csv'%(proxy_name),format='csv',columns=['jdb','proxy','proxy_std','qc'],species=vec.instrument)
+    exportation1.export(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_%s.csv'%(proxy_name),format='csv',columns=['jdb','proxy','proxy_std','qc'],species=vec.instrument)
 
     exportation2 = myc.tableXY(vec.bin.x,vec.bin.y,vec.bin.yerr)
     exportation2.mask_qc = ~vec.bin.mask_flag
-    exportation2.export(dir_root.replace(instrument,'ALLINS_MERGED')+'WORKSPACE/Finch_%s_binned.csv'%(proxy_name),format='csv',columns=['jdb','proxy','proxy_std','qc'],species=vec.bin.instrument)
-
+    exportation2.export(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_%s_binned.csv'%(proxy_name),format='csv',columns=['jdb','proxy','proxy_std','qc'],species=vec.bin.instrument)
 
     FINCH_Pmag = np.round(vec.out_pmag,1)     
     
     predict= 2026.0
-    fig_gp = vec.fit_gp(baseline_factor=baseline_factor, runalgo=bool(vec.out_convergence_flag), predict=predict)
+    fig_gp = vec.fit_gp(baseline_factor=1, runalgo=bool(vec.out_convergence_flag), predict=predict, print_legend=False)
 
-    solar_cycle = pd.read_csv(root+'/Python/Material/Solar_Mg2.csv',index_col=0)
+    solar_cycle = pd.read_csv(root+'/Python/Material_snaky/Solar_Mg2.csv',index_col=0)
     sun_mag = myc.tableXY(solar_cycle['deciyear'],solar_cycle['plage_fill'],0*solar_cycle['deciyear'])
     sun_mag.smooth(box_pts=100,shape='savgol')
     plt.plot(sun_mag.x,sun_mag.y,color='gold',lw=1,alpha=0.7)
@@ -607,14 +615,15 @@ def yarara_finch(dir_root, proxy_name='MHK',default_proxy='sindex',ext='',trend_
         plt.ylim(None,10)
 
     FINCH_Pmag_GP = np.round(vec.out_gp_pmag,1)     
-    plt.savefig(dir_root+'IMAGES/Finch_magnetic_cycle'+ext+'_GP.png')
+    plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_magnetic_cycle'+ext+'_GP.png')
 
     fig_gp.set_figwidth(10)
     plt.title('Teff = %.0f K   |    Logg = %.2f dex   |    Fe/H = %.2f dex   |    Pmag = %.2f years   |    < M > = %.1f %% (A = %.1f %%)    '%(vec.star_teff, vec.star_logg, vec.star_feh, vec.out_gp_pmag, vec.out_gp_meanmag, vec.out_gp_ampmag))
     plt.xlim(1965,2040)
     plt.ylim(-15,90)
+    plt.legend()
     plt.axhline(y=0,color='k',ls='-',alpha=0.7,lw=1)
-    plt.savefig(dir_root+'IMAGES/Finch_magnetic_cycle'+ext+'_GP_fixed_axis.png')
+    plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_magnetic_cycle'+ext+'_GP_fixed_axis.png')
 
     if not vec.out_convergence_flag:
         vec.bin.fit_line()
@@ -626,9 +635,12 @@ def yarara_finch(dir_root, proxy_name='MHK',default_proxy='sindex',ext='',trend_
         vec.out_gp_model[1] = model
     
     exportation3 = myc.tableXY(myf.conv_time(vec.out_gp_model[0])[0],vec.out_gp_model[1],vec.out_gp_model[2])
-    exportation3.export(self.dir_root.replace(self.instrument,'ALLINS_MERGED')+'WORKSPACE/Finch_%s_GP_model.csv'%(proxy_name),format='csv',columns=['jdb','proxy','proxy_std','qc'])
+    exportation3.export(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_%s_GP_model.csv'%(proxy_name),format='csv',columns=['jdb','proxy','proxy_std','qc'])
 
-    return vec
+    output = [FINCH_Pmag,FINCH_Pmag_GP]+vec.out_gp_predict
+    print(output)
+
+    return output
 
 
 def import_spectrum(file,sub_dico='matching_diff'):
@@ -1871,13 +1883,13 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
     dM = 0.5*(M_sup-M_inf)
     R = np.exp(0.5*np.log(10)*(4.437+np.log(M)-logg)) #Smette 2005
     dR = 0.08*np.exp(0.5*np.log(10)*(4.437+np.log(M)-logg))
-    M, dM, R, dR, samples_ms, samples_rs = myf.find_stellar_mass_radius_MS(teff, logg) #new function
+    M, dM, R, dR, samples_ms, samples_rs = myf.find_stellar_mass_radius_MS(teff, logg, samples=99999) #new function
     M = np.round(M,2)
     R = np.round(R,2)
 
     BV = -3.684*np.log10(teff) + 14.551 #http://www.isthe.com/chongo/tech/astro/HR-temp-mass-table-byhrclass.html
     BV = BV - 0.04 # solar correction ZP for Sun = 0.65
-    BV_std = np.std(-3.684*np.log10(np.random.randn(10000)*75+teff) + 14.551)
+    BV_std = np.std(-3.684*np.log10(np.random.randn(99999)*75+teff) + 14.551)
 
     vmicro, vmacro = myf.find_turbulence(teff, logg)
     BV = np.round(BV,3)
@@ -1893,9 +1905,9 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
     print(' [INFO] Vmic = %.1f km/s '%(vmicro))
     print(' [INFO] Vmac = %.1f km/s '%(vmacro))
 
-    samples_teff = np.random.randn(10000)*70+teff
-    samples_feh = np.random.randn(10000)*0.07+feh
-    samples_logg = np.random.randn(10000)*0.07+logg
+    samples_teff = np.random.randn(99999)*70+teff
+    samples_feh = np.random.randn(99999)*0.07+feh
+    samples_logg = np.random.randn(99999)*0.07+logg
 
     samples = pd.DataFrame(np.array([samples_ms, samples_rs, samples_teff, samples_logg, samples_feh]).T,columns=['ms','rs','teff','logg','feh'])
     samples.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv')
@@ -2021,7 +2033,7 @@ def yarara_vcat(dir_root, teff, logg, instrument, ins_res=np.nan, sub_dico='matc
         print(' [INFO] Precision uncertainties = %.0f m/s'%(myf.mad(fwhmG_HARPN)*1000))
         std_F = np.sqrt(myf.mad(fwhmG_HARPN)**2 + std_accuracy**2) 
         plt.figure('vsini2')
-        G.interpolate(new_grid=np.sort(np.random.randn(10000)*std_F+mean_F),method='linear',replace=False)
+        G.interpolate(new_grid=np.sort(np.random.randn(99999)*std_F+mean_F),method='linear',replace=False)
         V = G.y_interp
 
         sample = V
@@ -2054,7 +2066,7 @@ def yarara_vcat(dir_root, teff, logg, instrument, ins_res=np.nan, sub_dico='matc
 
     plt.savefig(dir_root+'IMAGES/Vsini_CCF_sts.pdf')
 
-    samples = np.random.choice(samples,10000)
+    samples = np.random.choice(samples,99999)
     samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv',index_col=0)
     samples_table['vsini'] = samples
     samples_table.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv')
@@ -2078,7 +2090,7 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
     sample_vsini = np.array(samples_table['vsini'])
 
     if Rs is not None:
-        sample_Rs = np.random.randn(10000)*0.01+Rs #1% radius uncertainty
+        sample_Rs = np.random.randn(99999)*0.01+Rs #1% radius uncertainty
 
     sample_prot90 = psun*sample_Rs/(sample_vsini/vsun) 
 
@@ -2127,17 +2139,21 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
     plt.tick_params(top=True,bottom=True,direction='inout',which='both')
     plt.xlabel(r'v $\sin$ i [km/s]')
 
-    sample_sini = np.sqrt(1-np.random.rand(10000)**2) # np.sin of np.arccos
-    sample_prot = np.ravel(sample_prot90*sample_sini[:,np.newaxis])
-    sample_prot = np.random.choice(sample_prot,10000,replace=False)
+    sample_sini = np.sqrt(1-np.random.rand(99999)**2) # np.sin of np.arccos
+    sample_prot = np.ravel(sample_prot90*sample_sini)
 
     if Prot is not None:
-        sample_prot = np.random.randn(10000)*(0.10*Prot)+Prot #10% prot uncertainty
+        sample_prot = np.random.randn(99999)*(0.10*Prot)+Prot #10% prot uncertainty
 
     plt.subplot(1,4,3)
     plt.title(r'$P_{90} = %.1f^{+%.1f}_{-%.1f}$ days'%(p90m[0],p90m[1],p90m[2]))
 
-    pby,pbx = np.histogram(sample_prot90,bins=10**(np.linspace(0,2,100)),density=True)
+    pby,pbx = np.histogram(sample_prot,bins=np.linspace(0,100,100),density=True)
+    pbx = 0.5*(pbx[1:]+pbx[0:-1])
+    plt.fill_between(pbx,pby,alpha=0.2,color='k')
+    plt.plot(pbx,pby,color='k')
+
+    pby,pbx = np.histogram(sample_prot90,bins=np.linspace(0,100,100),density=True)
     pbx = 0.5*(pbx[1:]+pbx[0:-1])
     plt.fill_between(pbx,pby,alpha=0.2)
     plt.plot(pbx,pby)
@@ -2153,7 +2169,7 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
     plt.tick_params(top=True,bottom=True,direction='inout')
     plt.xlabel(r'$P_{rot}$ [days]')
 
-    sample_sininc = np.ravel((sample_vsini/2.00)*(sample_prot/27.5)/sample_Rs[:,np.newaxis])
+    sample_sininc = np.ravel((sample_vsini/vsun)*(sample_prot/psun)/sample_Rs)
     
     I = np.arcsin(np.nanpercentile(sample_sininc,50))*180/np.pi
     Ii =  np.arcsin(np.nanpercentile(sample_sininc,16))*180/np.pi
@@ -2526,7 +2542,7 @@ def mhk_rhk(mhk):
     rhk = np.array(np.log10((mhk-mhk_c1)/mhk_c2))    
     return rhk
 
-def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy, sbplot=3, sub_dico='matching_diff'):
+def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy, sub_dico='matching_diff'):
     
     myf.print_box('\n---- RECIPE : NEW MHK EXTRACTION ----\n')
 
@@ -2548,9 +2564,9 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
         print('\n [INFO] Analysis of %s(%s)'%(name,l[-1]))
 
         fig = plt.figure(name,figsize=(14,8))
-        gs = fig.add_gridspec(sbplot, nb_line)
+        gs = fig.add_gridspec(3, nb_line)
         ax = []
-        for i in range(sbplot): 
+        for i in range(3): 
             ax.append(fig.add_subplot(gs[i,n]))
 
         temp_correction = myc.tableXY(np.array(material['wave']),np.array(material['correction_factor']))
@@ -2636,10 +2652,6 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
         line_std/=calib.lin_slope_w
 
         mat.plot(x=wave_vel,cmap='seismic',color=proxy,new=False,alpha=0.07,fontsize=14)
-        if sbplot==4:
-            plt.plot(wave_vel,quiet.y_interp,color='k',ls='-',label='Quiet template',lw=3,zorder=10000)
-            plt.scatter(wave_vel[index_vec],quiet.y_interp[index_vec],color='g',ec='white',zorder=20001,s=3)
-
         v1 = 3e5*(2.25)/center
 
         axlim = plt.gca()
@@ -2655,9 +2667,6 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
         def wave_to_kms(x):
             return 3e5*(x-center)/center
 
-        if sbplot==4:
-            plt.axes(ax[1])
-            mat.plot(x=wave_vel,cmap='seismic',color=proxy,new=False,alpha=0.07,fontsize=14)            
         wcore_left = db.x[np.where(db.y==db.y)[0][0]]
         wcore_right = db.x[np.where(db.y==db.y)[0][-1]]
 
@@ -2687,7 +2696,7 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
         ax2 = ax1.secondary_xaxis('top', functions=(kms_to_wave, wave_to_kms))
         ax2.set_xlabel(r"Wavelength [$\AA$]")
 
-        plt.axes(ax[sbplot-1])
+        plt.axes(ax[2])
         mat2 = myc.table(mat.table-db.y)
         wings_uncertainties = (line_wave<wcore_left)|(line_wave>wcore_right)
         offset = np.nanmedian(mat2.table[:,wings_uncertainties],axis=1)
@@ -2742,7 +2751,6 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
         res2 = res1 - np.nanmedian(res1,axis=0)
         std_res = myf.mad(np.ravel(res1))
         std_res2 = myf.mad(np.ravel(res2))
-
 
         plt.figure('model%s'%(l[-1]),figsize=(18,5))
         plt.subplot(1,4,2)
@@ -2805,7 +2813,7 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
         plt.axvline(x=center,ls='-',color='k',lw=1,alpha=0.1)
         plt.title(r'M-index = %.2f$\pm$%.2f (min - max = %.2f - %.2f)'%(q2,q_std,q1,q3))
 
-        plt.axes(ax[sbplot-2])
+        plt.axes(ax[1])
         mat2.table = mat2.table/conversion_filling
         mat2.plot(x=wave_vel,cmap='seismic',color=proxy,new=False,alpha=0.07,fontsize=14) #line_wave -> wave_vel
         plt.axvline(x=wcore_left_v,ls=':',color='k')
@@ -2858,7 +2866,7 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
     MHK_mean = np.nansum(index/index_std**2)/np.nansum(1/index_std**2)
     MHK_mean_std = np.sqrt(1/np.nansum(1/index_std**2))
 
-    samples = MHK_mean_std*np.random.randn(10000) + MHK_mean
+    samples = MHK_mean_std*np.random.randn(99999) + MHK_mean
     samples_rhk = mhk_rhk(samples)
 
     RHK_mean = np.nanmean(samples_rhk)

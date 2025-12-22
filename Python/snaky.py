@@ -102,6 +102,7 @@ def reduce(
         force_activity = False,
         force_mhk = False,
         force_spectroscopy = False,
+        force_magcycle = False,
         force_cleaning = False,
         ):
 
@@ -189,6 +190,39 @@ def reduce(
         summary = pd.DataFrame(np.array([files, inss, jdb, berv, flag]).T,columns=['filename','ins','jdb','berv','flag'])
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
 
+        star_info = {
+            'Name':star,
+            'Ra':{'fixed':0.0},
+            'Dec':{'fixed':0.0},
+            'Teff':{'fixed':5775},
+            'FeH':{'fixed':0.0},
+            'FWHM':{'fixed':6.0},
+            'Rv_sys':{'fixed':0.0},
+            'Contrast':{'fixed':0.4},
+            'CCF_beta':{'fixed':2.0},
+            'SB2':{'fixed':0.0},
+            'EW':{'fixed':0.0},
+            'Mstar':{'fixed':1.0},
+            'Rstar':{'fixed':1.0},
+            'Teff':{'fixed':5775},
+            'Log_g':{'fixed':4.44},
+            'FeH':{'fixed':0.0},
+            'BV':{'fixed':0.66},
+            'Vmicro':{'fixed':1.0},
+            'Vmacro':{'fixed':1.0},
+            'stellar_template':{'fixed':'MARCS_T5750_g4.5'},
+            'Vsini':{'fixed':2.0},
+            'RHK':{'fixed':-5.00},
+            'MHK':{'fixed':0.0},
+            'Prot':{'fixed':25.0},
+            'Pmag':{'fixed':11.0},
+            }
+
+        sinfo = myf.touch_pickle(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star))
+        for kw in star_info:
+            sinfo[kw] = star_info[kw]
+        pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+
     summary = mym.import_summary(dir_root)
     files = np.array(summary['filename'])
     if 'flag1' not in summary.keys():
@@ -229,39 +263,27 @@ def reduce(
 
         anomalous = np.array(summary['anomalous'])
         spec  = mym.import_spectrum(files[np.argmin(anomalous)],sub_dico=sub_dico)
-        sinfo = mym.yarara_check_rv_sys_wrapper(dir_root,spec,rv_sys_approx)
+        sinfo2 = mym.yarara_check_rv_sys_wrapper(dir_root,spec,rv_sys_approx)
 
         dace_summary = pd.read_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv',index_col=0)
         ra_deg = np.nanmedian(dace_summary['RA'])
         dec_deg = np.nanmedian(dace_summary['DEC'])
-
-        fwhm, rv_sys, contrast, beta_gnd, sb_flag, ccf = sinfo
-        star_info = {
-            'Name':star,
-            'Ra':{'fixed':ra_deg},
-            'Dec':{'fixed':dec_deg},
-            'Teff':{'fixed':teff},
-            'FeH':{'fixed':feh},
-            'FWHM':{'fixed':fwhm},
-            'Rv_sys':{'fixed':0.0,'SNAKY':rv_sys},
-            'Contrast':{'fixed':contrast},
-            'CCF_beta':{'fixed':2.0,'SNAKY':beta_gnd},
-            'SB2':{'fixed':0.0,'SNAKY':sb_flag},
-            'EW':{'fixed':0.0},
-            }
         
-        sinfo = myf.touch_pickle(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star))
-        for kw in star_info:
-            sinfo[kw] = star_info[kw]
+        fwhm, rv_sys, contrast, beta_gnd, sb_flag, ccf = sinfo2
+        sinfo = mym.import_star_info(dir_root)
+        sinfo = myf.update_info_lvl2(sinfo,'Rv_sys','SNAKY',rv_sys)
+        sinfo = myf.update_info_lvl2(sinfo,'CCF_beta','SNAKY',beta_gnd)
+        sinfo = myf.update_info_lvl2(sinfo,'SB2','SNAKY',sb_flag)
+        sinfo = myf.update_info_lvl2(sinfo,'Ra','SNAKY',ra_deg)
+        sinfo = myf.update_info_lvl2(sinfo,'Dec','SNAKY',dec_deg)
+        sinfo = myf.update_info_lvl2(sinfo,'Teff','fixed',teff)
+        sinfo = myf.update_info_lvl2(sinfo,'CCF_beta','SNAKY',beta_gnd)
+        sinfo = myf.update_info_lvl2(sinfo,'FeH','fixed',feh)
+        sinfo = myf.update_info_lvl2(sinfo,'FWHM','fixed',fwhm)
+        sinfo = myf.update_info_lvl2(sinfo,'Contrast','SNAKY',contrast)
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
     sinfo = mym.import_star_info(dir_root)
-    teff = sinfo['Teff']['fixed']
-    feh = sinfo['FeH']['fixed']
-    fwhm = sinfo['FWHM']['fixed']
-    rv_sys = sinfo['Rv_sys']['SNAKY']
-    beta_gnd = sinfo['CCF_beta']['SNAKY']
-
     if force_ccf:
         kept = np.array(1-summary['flag1'])
         if sum(kept)!=0:
@@ -315,15 +337,15 @@ def reduce(
         suffixe = 'ATLAS_T%.0f_g%.1f'%(np.round(teff,-2),np.round(logg,1))
         print(' [INFO] Atmospheric model set to : %s'%(suffixe))
 
-        sinfo['Mstar'] = {'fixed':1.0,'SNAKY':M}
-        sinfo['Rstar'] = {'fixed':1.0,'SNAKY':R}
-        sinfo['Teff'] = {'fixed':5775,'SNAKY':teff}
-        sinfo['FeH'] = {'fixed':0.0,'SNAKY':feh}
-        sinfo['Log_g'] = {'fixed':4.44,'SNAKY':logg}
-        sinfo['BV'] = {'fixed':0.66,'SNAKY':BV}
-        sinfo['Vmicro'] = {'fixed':1.0,'SNAKY':vmicro}
-        sinfo['Vmacro'] = {'fixed':1.0,'SNAKY':vmacro}
-        sinfo['stellar_template'] = {'fixed':'MARCS_T5750_g4.5','SNAKY':suffixe} 
+        sinfo = myf.update_info_lvl2(sinfo,'Mstar','SNAKY',M)
+        sinfo = myf.update_info_lvl2(sinfo,'Rstar','SNAKY',R)
+        sinfo = myf.update_info_lvl2(sinfo,'Teff','SNAKY',teff)
+        sinfo = myf.update_info_lvl2(sinfo,'FeH','SNAKY',feh)
+        sinfo = myf.update_info_lvl2(sinfo,'Log_g','SNAKY',logg)
+        sinfo = myf.update_info_lvl2(sinfo,'BV','SNAKY',BV)
+        sinfo = myf.update_info_lvl2(sinfo,'Vmicro','SNAKY',vmicro)
+        sinfo = myf.update_info_lvl2(sinfo,'Vmacro','SNAKY',vmacro)
+        sinfo = myf.update_info_lvl2(sinfo,'stellar_template','SNAKY',suffixe)
 
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
@@ -356,7 +378,7 @@ def reduce(
         ins_res = sinfo['FWHM']['O2']
         vsini = mym.yarara_vcat(dir_root, teff, logg, ins, ins_res=ins_res, sub_dico=sub_dico) 
         mym.yarara_vsini(dir_root, Prot=None, Rs=None)
-        sinfo['Vsini'] = {'fixed':2.0,'SNAKY':np.round(np.nanmean(vsini),2)}
+        sinfo = myf.update_info_lvl2(sinfo,'Vsini','SNAKY',np.round(np.nanmean(vsini),2))
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
     material = mym.import_material(dir_root)
@@ -390,7 +412,7 @@ def reduce(
         ccf_output = mym.import_ccf(dir_root,'G2')   
         summary = mym.import_summary(dir_root)
         proxy = np.array(summary.loc[np.in1d(summary['filename'],ccf_output['filename']),'CaII'])
-        dico, rhk, mhk = mym.yarara_activity_mhk(dir_root, ccf_output['filename'], rv_sys, ccf_output['rv'].y, teff, material, proxy, sbplot=3)
+        dico, rhk, mhk = mym.yarara_activity_mhk(dir_root, ccf_output['filename'], rv_sys, ccf_output['rv'].y, teff, material, proxy)
         
         for kw in ['RHK','RHK_std','MHK','MHK_std']:
             if kw in summary.keys():
@@ -398,8 +420,9 @@ def reduce(
         summary = pd.merge(summary,dico[['filename','RHK','RHK_std','MHK','MHK_std']],on='filename',how='left')
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
 
-        sinfo['RHK'] = {'fixed':-5.00,'SNAKY':np.round(rhk,3)}
-        sinfo['MHK'] = {'fixed':5.0,'SNAKY':np.round(mhk,1)}
+        sinfo = myf.update_info_lvl2(sinfo,'RHK','SNAKY',np.round(rhk,3))
+        sinfo = myf.update_info_lvl2(sinfo,'MHK','SNAKY',np.round(mhk,1))
+
         prot = myf.conv_rhk_prot(sinfo['RHK']['SNAKY'], sinfo['BV']['SNAKY'])
         prot_vsini = np.round(sinfo['Rstar']['SNAKY']*25/(sinfo['Vsini']['SNAKY']/2),1)
         prot1 = np.round(prot[2],1)
@@ -407,12 +430,12 @@ def reduce(
         prot1 = np.max([prot1,1])
         prot2 = np.max([prot2,1])
         prot_vsini = np.min([prot_vsini,100])
-        sinfo['Prot'] = {'fixed':25.0,'Mamaj+08':prot1,'Noyes+84':prot2,'VSINI':prot_vsini}
-
+        sinfo = myf.update_info_lvl2(sinfo,'Prot','Mamaj+08', prot1)
+        sinfo = myf.update_info_lvl2(sinfo,'Prot','Noyes+84', prot2)
+        sinfo = myf.update_info_lvl2(sinfo,'Prot','VSINI', prot_vsini)
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
         mym.plot_mhk(dir_root)
-
         mym.create_finch_db(dir_root=dir_root)
 
     if force_spectroscopy:
@@ -439,6 +462,11 @@ def reduce(
                 spectroscopy[kw] = extracted
         pickle.dump(spectroscopy,open(dir_root+'WORKSPACE/Analyse_spectroscopy.p','wb'))
 
+    if force_magcycle:
+        finch_output = mym.yarara_finch(dir_root, rm_source=['DACE'], offset_instrument='no!', ext='')
+        sinfo = myf.update_info_lvl2(sinfo,'Pmag','SNAKY', finch_output[0])
+        pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+
     time_end = time.time()
     duration = np.round((time_end-time_start)/60,2)
     tag_duration = str(int(duration//1))+'m'+str(int((duration%1)*60))+'s'
@@ -460,7 +488,8 @@ force_abs_continuum = bool(np.sum(steps==9))
 force_activity = bool(np.sum(steps==10))
 force_mhk = bool(np.sum(steps==11))
 force_spectroscopy = bool(np.sum(steps==12))
-force_cleaning = bool(np.sum(steps==13))
+force_magcycle = bool(np.sum(steps==13))
+force_cleaning = bool(np.sum(steps==14))
 
 if (len(steps)==1)&(np.sum(steps==0)):
     star, ins = mym.create_snaky_dir(star,ins)
@@ -490,6 +519,7 @@ else:
                 force_activity = force_activity,
                 force_mhk = force_mhk,  
                 force_spectroscopy = force_spectroscopy,
+                force_magcycle = force_magcycle,      
                 force_cleaning = force_cleaning,
                 )
             plt.close('all')
@@ -514,7 +544,8 @@ else:
             force_activity = force_activity,             #10
             force_mhk = force_mhk,                       #11
             force_spectroscopy = force_spectroscopy,     #12
-            force_cleaning = force_cleaning,             #13
+            force_magcycle = force_magcycle,             #13
+            force_cleaning = force_cleaning,             #14
             )
     
 if False:

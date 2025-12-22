@@ -74,9 +74,9 @@ def find_turbulence(teff, logg):
 
     return vmic,vmac
 
-def find_stellar_mass_radius_MS(Teff, logg):
-    samples_T = np.random.randn(10000)*75+Teff
-    samples_g = np.random.randn(10000)*0.07+logg
+def find_stellar_mass_radius_MS(Teff, logg, samples=99999):
+    samples_T = np.random.randn(samples)*75+Teff
+    samples_g = np.random.randn(samples)*0.07+logg
 
     samples_m = (samples_T/5772)**(4/3)*(10**(samples_g-4.437))**(-1/3)
     mass = np.median(samples_m)
@@ -113,6 +113,13 @@ def find_stellar_mass_radius(Teff, sp_type='G2V'):
     log_g = 2+np.log10(6.67e-11*(m*1.98e30)/(r*696342000)**2)
     return m[0], r[0], log_g[0]
 
+
+def update_info_lvl2(file,kw1,kw2,value):
+    if kw1 not in file.keys():
+        file[kw1] = {}
+    
+    file[kw1][kw2] = value
+    return file
 
 def get_info_lvl2(file,kw1,kw2):
     try:
