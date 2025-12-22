@@ -20,13 +20,21 @@ import astropy.units as u
 from sklearn.neighbors import KNeighborsRegressor #saved in the pickle calibration file
 from colorama import Fore
 
+import my_classes as myyc
+
+try:
+    import Finch as Finch
+    installation = 'partial'
+except:
+    installation = 'complete'
+
 """
 
 SNAKY — Spectroscopic Novel Analysis Kit of Yarara
 
 """
 
-version_snaky = 0.3
+version_snaky = 0.4
 
 print(Fore.GREEN+"""\n[INFO SNAKY]
 [INFO USER] SNAKY version = """+str(version_snaky)+""" 
@@ -44,7 +52,7 @@ root = '/'.join(cwd.split('/')[:-1])
 #INTERMEDIATE FUNCTIONS
 
 def get_berv(ra_deg, dec_deg, obstime_utc, instrument):
-    ins = instrument.split('_')[0]
+    ins = instrument.split('_')[0][0:6].split('-')[0]
     obs_lat = myv.instrument_lat_deg[ins.upper()]
     obs_lon = myv.instrument_lon_deg[ins.upper()]
     obs_alt = myv.instrument_altm[ins.upper()]
@@ -60,6 +68,10 @@ def snaky_help():
     print(Fore.GREEN +'\n [SNAKY ADVICE] Here is some help!'+Fore.RESET)
 
 def create_snaky_dir(star,ins):
+    
+    if not os.path.exists(root+'/Snaky/'+star+'/data/s1d/ALLINS_MERGED'):
+        os.makedirs(root+'/Snaky/'+star+'/data/s1d/ALLINS_MERGED', exist_ok=True)
+
     if os.path.exists(root+'/Snaky/'+star+'/data/s1d/'+ins+'/WORKSPACE'):
         print(' [INFO] SNAKY directory found!\n')
         return star, ins
@@ -71,7 +83,8 @@ def create_snaky_dir(star,ins):
 
         if len(ins.split('_'))!=2:
             print(Fore.YELLOW + '\n [WARNING] The specified instrument (%s) is wrong'%(ins)+Fore.RESET)
-            print(Fore.YELLOW + ' [WARNING] The format should follow: SPECTRO_DRS (ESPRESSO_3.3.1, HARPS_3.5)'+Fore.RESET)
+            print(Fore.YELLOW + ' [WARNING] The format should follow: SPECTRO_DRS (ESPRES'
+            '_3.3.1, HARPS_3.5)'+Fore.RESET)
         if len(ins.split('_'))==1:
             ins = ins+'_1.0'
             print(Fore.YELLOW + ' [WARNING] The instrument DRS version was set to 1.0 (%s)'%(ins)+Fore.RESET)
@@ -85,21 +98,115 @@ def create_snaky_dir(star,ins):
         return star, ins
 
 def clean_light_dir(dir_root):
-    os.system('rm '+dir_root+'/CCF_MASK/CCF*.fits')
+    os.system('rm '+dir_root+'CCF_MASK/CCF*.fits')
     material = import_material(dir_root)
     del material['activity_proxies']
     del material['stellar_template']
-    pickle.dump(material,open(dir_root+'/WORKSPACE/Analyse_material.p','wb'))
+    pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
+
+def fix_dir_root(instrument='SOPHIE-HE_0.5'):
+    a = glob.glob(root+'/Snaky/*/data/s1d/*/WORKSPACE/Analyse_summary.csv')
+    for file in a:
+        star = file.split('/data')[0].split('/')[-1]
+        ins = file.split('/WORKSPACE')[0].split('/')[-1]
+        summary = pd.read_csv(file,index_col=0)
+        dace_file = file.replace('WORKSPACE/Analyse_summary.csv','DACE_TABLE/Dace_extracted_table.csv')
+        dace = pd.read_csv(dace_file,index_col=0)
+        mask = (np.array(summary['ins'])==instrument)
+
+        if (sum(mask)!=0)&(ins!=instrument):
+            print(Fore.YELLOW+' [WARNING] Some spectra with the wrong instrument found for %s'%(star)+Fore.RESET)
+            create_snaky_dir(star,instrument)
+            
+            all_files = []
+            for f in np.array(summary.loc[mask,'filename']):
+                b = pd.read_pickle(f)
+                arc = b['parameters']['arcfiles']
+                for ar in arc:
+                    os.system('mv '+ar+' '+ar.replace('/'+ins+'/','/'+instrument+'/'))
+                    all_files.append(ar)
+                arc2 = [n.replace('/'+ins+'/','/'+instrument+'/') for n in arc]
+                b['parameters']['arcfiles'] = arc2
+                pickle.dump(b,open(f.replace('/'+ins+'/','/'+instrument+'/'),'wb'))
+
+            mask_dace = np.in1d(dace['fileroot'],np.array(all_files))
+
+            new_summary = summary.loc[mask].reset_index(drop=True)
+            new_summary.to_csv(file.replace('/'+ins+'/','/'+instrument+'/'))
+            new_dace = dace.loc[mask_dace].reset_index(drop=True)
+            new_dace['ins'] = instrument
+            new_dace['fileroot'] = np.array([n.replace('/'+ins+'/','/'+instrument+'/') for n in new_dace['fileroot']])
+            new_dace.to_csv(dace_file.replace('/'+ins+'/','/'+instrument+'/'))
+
+            old_summary = summary.loc[~mask].reset_index(drop=True)
+            old_summary.to_csv(file)
+            old_dace = dace.loc[~mask_dace].reset_index(drop=True)
+            old_dace.to_csv(dace_file)
+
+            rassine_files = glob.glob(file.replace('Analyse_summary.csv','RASSINE*.p'))
+            for k in np.setdiff1d(rassine_files,np.array(old_summary['filename'])):
+                os.system('rm '+k)
+            
+            if np.sum(~mask_dace)==0:
+                print(star)
+                os.system('rm -rf '+file.split('/WORKSPACE')[0])
+
+
+def create_finch_db(dir_root=None):
+
+    if dir_root is None:
+        files = np.sort(glob.glob(root+'/Snaky/*/data/s1d/*/WORKSPACE/Analyse_summary.csv'))
+    else:
+        files = [dir_root+'WORKSPACE/Analyse_summary.csv']
+
+    infos = []
+    for f2 in tqdm(files):
+        summary = pd.read_csv(f2,index_col=0)
+        if 'MHK' in summary.keys():
+            f = glob.glob(f2.replace('WORKSPACE','STAR_INFO/Stellar_info*&&').split('&&')[0])[0]
+            info = pd.read_pickle(f)
+            star = f.split('/data')[0].split('/')[-1]
+            instrument = f.split('/STAR_INFO')[0].split('/')[-1]
+            spectro = instrument.split('_')[0]
+            drs = instrument.split('_')[1]
+            pipeline = f.split('/'+star)[0].split('/')[-1]
+            processing = 'YV0' #TBD add the info if matching_diff or matching_mad
+            code = star+'_'+spectro+'_'+drs+'_'+pipeline
+            
+            teff = np.round(myf.get_info_lvl2(info,'Teff',pipeline.upper()),0)
+            logg = np.round(myf.get_info_lvl2(info,'Log_g',pipeline.upper()),2)
+            feh = np.round(myf.get_info_lvl2(info,'FeH',pipeline.upper()),2)
+            rv_sys = np.round(myf.get_info_lvl2(info,'Rv_sys',pipeline.upper()),2)
+
+            summary['star'] = star
+            summary['ins'] = instrument
+            summary['source'] = pipeline.upper()
+            summary['finch_offset'] = 0.0
+            summary['smw'] = 0.0
+            summary['teff'] = teff
+            summary['logg'] = logg
+            summary['feh'] = feh
+            summary['rv_sys'] = rv_sys
+            summary['flag'] = summary['flag2']
+            summary = summary.rename(columns={'RHK':'rhk','RHK_std':'rhk_std','MHK':'mhk','MHK_std':'mhk_std'})
+            summary['mhk_cleaned'] = 0.0 ; summary['mhk_cleaned_std'] = 0.0
+            summary = summary[['star','jdb','mhk','mhk_std','mhk_cleaned','mhk_cleaned_std','rhk','rhk_std','ins','source','flag','finch_offset','smw','teff','logg','feh','rv_sys']]
+            summary['mhk'] = np.round(summary['mhk'],3)
+            summary['mhk_std'] = np.round(summary['mhk_std'],3)
+            summary['rhk'] = np.round(summary['rhk'],4)
+            summary['rhk_std'] = np.round(summary['rhk_std'],4)
+            summary.to_csv(f2.replace('summary.csv','Finch_table.csv'))
 
 def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
     os.makedirs(root+'/Snaky/database', exist_ok=True)
     
-    old_table = [] ; old_ccf = [] ; old_spec = []
+    old_table = [] ; old_ccf = [] ; old_spec = [] ; old_finch = []
     if os.path.exists(root+'/Snaky/database/'+filename+'_summary_infos.csv'):
         old_table = pd.read_csv(root+'/Snaky/database/'+filename+'_summary_infos.csv',index_col=0)
         old_ccf = np.load(root+'/Snaky/database/'+filename+'_ccf.npy')
         old_spec = np.load(root+'/Snaky/database/'+filename+'_spec.npy')
-
+        #old_finch = pd.read_csv(root+'/Snaky/database/'+filename+'_Finch_table.csv',index_col=0)
+    
     files = []
     if stars is None:
         #files = np.sort(glob.glob(root+'/'+branch+'/*/data/s1d/*/WORKSPACE/Analyse_spectroscopy.p'))
@@ -115,7 +222,7 @@ def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
     files = files[qc==2]
 
     infos = []
-    for f in files:
+    for f in tqdm(files):
         info = pd.read_pickle(f)
         star = f.split('/data')[0].split('/')[-1]
         instrument = f.split('/STAR_INFO')[0].split('/')[-1]
@@ -130,41 +237,43 @@ def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
         feh = np.round(myf.get_info_lvl2(info,'FeH',pipeline.upper()),2)
         rhk = np.round(myf.get_info_lvl2(info,'RHK',pipeline.upper()),2)
         mhk = np.round(myf.get_info_lvl2(info,'MHK',pipeline.upper()),1)
+        rv_sys = np.round(myf.get_info_lvl2(info,'Rv_sys',pipeline.upper()),2)
 
         fwhm_ins = np.round(myf.get_info_lvl2(info,'FWHM','O2'),2)
-        fwhm_ccf = np.round(myf.get_info_lvl2(info,'FWHM','GARFIELD'),2)
+        fwhm_ccf1 = np.round(myf.get_info_lvl2(info,'FWHM','G2'),2)
+        fwhm_ccf2 = np.round(myf.get_info_lvl2(info,'FWHM','GARFIELD'),2)
+        fwhm_ccf3 = np.round(myf.get_info_lvl2(info,'FWHM','KITTY'),2)
         vsini = np.round(myf.get_info_lvl2(info,'Vsini',pipeline.upper()),2)
 
-        infos.append([code,star,spectro,drs,pipeline,processing,teff,logg,feh,mhk,rhk,fwhm_ins,fwhm_ccf,vsini])
-    infos = pd.DataFrame(infos,columns=['code','star','ins','drs','pipeline','yvx','teff','logg','feh','mhk','rhk','fwhm_ins','fwhm_ccf','vsini'])
+        infos.append([code,star,spectro,drs,pipeline,processing,teff,logg,feh,mhk,rhk,fwhm_ins,fwhm_ccf1,fwhm_ccf2,fwhm_ccf3,vsini])
+
+    infos = pd.DataFrame(infos,columns=['code','star','ins','drs','pipeline','yvx','teff','logg','feh','mhk','rhk','fwhm_ins','fwhm_g2','fwhm_garfield','fwhm_kitty','vsini'])
 
     spectro_exist = []
-    for f in files:
+    for f in tqdm(files):
         f2 = f.replace('STAR_INFO','WORKSPACE/Analyse_spectro*&&').split('&&')[0]
-        spec = pd.read_pickle(glob.glob(f2)[0])
-        if len(spec):
-            if 'flux_corrected' in spec.keys():
-                spectro_exist.append(1)
-            else:
-                spectro_exist.append(0)
-        else:
-            spectro_exist.append(0)
-    spectro_exists = np.array(spectro_exist)
+        f2 = glob.glob(f2)
+        spectro_exist.append(0)
+
+        if len(f2):
+            spec = pd.read_pickle(f2[0])
+            if len(spec):
+                if 'flux_corrected' in spec.keys():
+                    spectro_exist[-1] = 1
+
+    spectro_exist = np.array(spectro_exist)
     infos['IF_SPEC'] = spectro_exist
 
     ccf_exist = []
-    for f in files:
+    for f in tqdm(files):
         f2 = f.replace('STAR_INFO','WORKSPACE/Analyse_ccf_saved*&&').split('&&')[0]
         ccf = glob.glob(f2)
+        ccf_exist.append(0)
         if len(ccf):
             ccf = pd.read_pickle(ccf[0])
             if 'CCF_G2' in ccf.keys():
-                ccf_exist.append(1)
-            else:
-                ccf_exist.append(0)
-        else:
-            ccf_exist.append(0)
-    ccf_exists = np.array(ccf_exist)
+                ccf_exist[-1] = 1
+    ccf_exist = np.array(ccf_exist)
     infos['IF_CCF'] = ccf_exist
 
     vgrid = np.arange(0,150000,538)
@@ -223,6 +332,8 @@ def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
     else:
         print(' [INFO] %.0f new datasets added'%(len(infos)))
 
+    print(' [INFO] Nb unique stars = %.0f'%(len(np.unique(infos['star']))))
+
     infos = infos.sort_values(by='code')
     all_spec = all_spec[infos.index]
     all_ccf = all_ccf[infos.index]
@@ -234,8 +345,9 @@ def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
     np.save(root+'/Snaky/database/'+filename+'_ccf.npy',all_ccf)
     np.save(root+'/Snaky/database/'+filename+'_spec.npy',all_spec)
 
-def plot_starinfo(dir_root,xvar='Teff_SNAKY',yvar='FWHM_G2'):
-    all_files = glob.glob(dir_root+'/STAR_INFO/Ste*.p')
+
+def plot_starinfo(branch='Snaky', ins='*', xvar='Teff_SNAKY', yvar='FWHM_G2', cvar=None, svar=None):
+    all_files = np.sort(glob.glob(root+'/'+branch+'/*/data/s1d/'+ins+'/STAR_INFO/Stellar_info*.p'))
     output = []
     for f in all_files:
         tab = pd.read_pickle(f)
@@ -249,7 +361,7 @@ def plot_starinfo(dir_root,xvar='Teff_SNAKY',yvar='FWHM_G2'):
     plt.scatter(output['x'],output['y'])
     
 def plot_fwhm(dir_root, ccf_mask='mask_telluric_o2', xvar='jdb', alpha=0.4, color='k', branch='Snaky'):
-    all_files = glob.glob(dir_root+'/WORKSPACE/Analyse_ccf.p')
+    all_files = glob.glob(dir_root+'WORKSPACE/Analyse_ccf.p')
     var = []
     for f in all_files:
         print(f)
@@ -316,22 +428,41 @@ def plot_master(dir_root, srf=False, color='k', alpha=1.0, offset=0, print_info=
     plt.ylabel('Flux normalised',fontsize=14)
     return dir_root
 
-def plot_mhk(dir_root, debug=False):
+def plot_mhk(dir_root, hide_outliers=True, daily_binned=True, debug=False):
     directory = '/'.join(dir_root.split('/')[0:-2])
+    ins = dir_root.split('/')[-2]
     summaries = glob.glob(directory+'/*/WORKSPACE/Analyse_summary.csv')
     plt.figure(figsize=(15,6))
+    count=-1
     for s in summaries:
+        count+=1
         instrument = s.split('/WORKSPACE')[0].split('/')[-1]
         if debug:
             star_info = glob.glob(s.split('/WORKSPACE')[0]+'/STAR_INFO/Stellar*')[0]
             teff = np.round(pd.read_pickle(star_info)['Teff']['SNAKY'],-1)
             instrument = instrument+'(%.0f)'%(teff)
-        tab = pd.read_csv(s)
-        if 'jdb' in tab.keys():
-            plt.errorbar(tab['jdb'],tab['MHK'],yerr=tab['MHK_std'],label=instrument,marker='o',ls='',capsize=0)
+        tab = pd.read_csv(s,index_col=0)
+        if ('jdb' in tab.keys())&('MHK' in tab.keys()):
+            proxy = myc.tableXY(np.array(tab['jdb']),np.array(tab['MHK']),np.array(tab['MHK_std']))
+            if daily_binned:
+                proxy.night_stack(replace=True)
+            if hide_outliers:
+                valid = proxy.yerr<20
+            else:
+                valid = proxy.yerr>0
+            plt.errorbar(proxy.x[valid],proxy.y[valid],yerr=proxy.yerr[valid],label=instrument,marker=['o','s','^'][int(count//10)],ls='',capsize=0,color='C%.0f'%(count),mec='k')
+            plt.scatter(proxy.x[~valid],proxy.y[~valid],marker='x',color='C%.0f'%(count))
+
     plt.legend()
     plt.ylabel('M-index [%]',fontsize=14)
     plt.xlabel('Jdb - 2,400,000 [days]',fontsize=14)
+
+    solar_cycle = pd.read_csv(root+'/Python/Material_snaky/Solar_Mg2.csv',index_col=0)
+    sun_mag = myc.tableXY(solar_cycle['jdb'],solar_cycle['plage_fill'],0*solar_cycle['jdb'])
+    sun_mag.smooth(box_pts=100,shape='savgol')
+    plt.plot(sun_mag.x,sun_mag.y,color='gold',lw=1,alpha=0.7)
+    plt.fill_between(sun_mag.x,0,sun_mag.y,color='gold',alpha=0.25)
+
     ax = plt.gca()
     x_ticks = ax.get_xticks()[1:-1]
     xlim = ax.get_xlim()
@@ -346,6 +477,159 @@ def plot_mhk(dir_root, debug=False):
     plt.yticks(y_ticks,np.round(mhk_rhk(y_ticks),2))
     plt.ylabel(r'$\log$ $R_{HK}$ [dex]',fontsize=14)
     plt.savefig(dir_root+'IMAGES/MHK.pdf')
+    plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'MHK.pdf')
+
+
+def yarara_finch(dir_root, proxy_name='MHK',default_proxy='sindex',ext='',trend_degree=0, harm=0, offset_instrument='yes', automatic_fit=True, data_driven_std=True,load_archive=True,x_unit='years',predict='today',baseline_factor=1, print_reference=True, rm_source=[]):
+
+    myf.print_box('\n---- RECIPE : FINCH MAGNETIC CYCLE PERIOD ----\n')
+
+    x=[] ; y=[] ; yerr=[] ; instrument = [] ; reference = [] ; flag = []
+
+    table = pd.read_csv(dir_root+'WORKSPACE/Analyse_summary.csv',index_col=0)
+    yerr.append(np.array(table[proxy_name.lower()+'_std']))
+    y.append(np.array(table[proxy_name.lower()]))
+    x.append(np.array(table['jdb']))
+    instrument.append(np.array(table['ins']))   
+    reference.append(np.array(table['source']))   
+    flag.append(np.array(table['flag']))   
+
+    folder = dir_root.split('/Snaky')[0]
+    files = glob.glob(folder+'/Python/database/ACTIVITY/Activity_MHK_*.csv')
+    for file in files:
+        print('[INFO] Table %s loaded'%(file))             
+        proxy_name_is = file.split('Activity_MHK_')[1].split('_')[0]
+        table = pd.read_csv(file,index_col=0)
+        table = table.loc[table['star']==self.starname]
+        if len(table):
+            yerr.append(table[proxy_name_is+'_std'].values)
+            y.append(table[proxy_name_is].values)
+            x.append(table['jdb'].values)
+            instrument.append(table['ins'].values)   
+            reference.append(table['source'].values)   
+            flag.append(table['flag'].values)   
+
+    db_finch = Finch.get_star(
+        self.starname.split('_')[0],
+        finch_offset = True,
+        rm_source = rm_source,
+        ) # HIRES
+    
+    if db_finch is not None:
+        if proxy_name.split('_')[0]=='MHK':
+            db_finch.convert_smw_mhk(int(self.star_info['Teff']['YARARA']))
+            
+        x.append(db_finch.x)
+        y.append(db_finch.y)
+        yerr.append(db_finch.yerr)
+        instrument.append(db_finch.instrument)
+        reference.append(db_finch.reference)
+        flag.append(db_finch.mask_flag)
+
+    print("\n")
+    jdb = np.hstack(x).astype('float')
+    sindex = np.hstack(y).astype('float')
+    sindex_std = np.hstack(yerr).astype('float')
+    proxy = myc.tableXY(jdb,sindex,sindex_std)
+    instrument = np.hstack(instrument)
+    reference = np.hstack(reference)
+    flag = np.hstack(flag)
+    ext = '_database_'+proxy_name
+
+    instrument = np.array([i.split('_')[0] for i in instrument])
+
+    raw_vec = myc.tableXY(proxy.x, proxy.y, proxy.yerr)
+
+    vec = Finch.tableXY(proxy.x, proxy.y, proxy.yerr, proxy_name = proxy_name) 
+    vec.set_instrument(instrument)
+    vec.set_reference(reference)
+    vec.set_ins_uncertainties(null_yerr=True)
+    vec.set_flag(flag)
+
+    vec.set_star(
+        starname= self.starname, 
+        teff=self.star_info['Teff']['YARARA'],
+        logg=self.star_info['Log_g']['YARARA'],
+        feh=self.star_info['FeH']['YARARA'],
+        )
+    if not print_reference:
+        vec.print_reference = False
+
+    #self.debug = vec,trend_degree,harm,automatic_fit,automatic_fit,offset_instrument,predict,x_unit
+
+    if ((np.max(vec.x)-np.min(vec.x))/365.25)>4: #at least 4 years baseline to fit
+        self.debug = vec
+
+        vec.fit_period_cycle(
+            trend_degree = trend_degree, 
+            harm=harm,
+            automatic_fit = automatic_fit, 
+            data_driven_std = True, 
+            offset_instrument=offset_instrument, 
+            predict=predict,
+            x_unit=x_unit)
+        
+        plt.savefig(dir_root+'IMAGES/Finch_magnetic_cycle'+ext+'.png')
+
+        for i in np.unique(vec.out_model_offset.instrument):
+            value_offset = np.median(vec.out_model_offset.y[vec.out_model_offset.instrument==i])
+            vec.y[vec.instrument==i] -= value_offset
+            vec.bin.y[vec.bin.instrument==i] -= value_offset
+    else:
+        dust = vec.prepare_data(debug=False, data_driven_std=True)
+        vec.out_convergence_flag = False
+        vec.out_output_table = {'P_computed':np.array([0.00,0.00,0.00])}
+
+    exportation1 = myc.tableXY(vec.x,vec.y,vec.yerr)
+    exportation1.mask_qc = ~vec.mask_flag
+    exportation1.export(dir_root.replace(instrument,'ALLINS_MERGED')+'WORKSPACE/Finch_%s.csv'%(proxy_name),format='csv',columns=['jdb','proxy','proxy_std','qc'],species=vec.instrument)
+
+    exportation2 = myc.tableXY(vec.bin.x,vec.bin.y,vec.bin.yerr)
+    exportation2.mask_qc = ~vec.bin.mask_flag
+    exportation2.export(dir_root.replace(instrument,'ALLINS_MERGED')+'WORKSPACE/Finch_%s_binned.csv'%(proxy_name),format='csv',columns=['jdb','proxy','proxy_std','qc'],species=vec.bin.instrument)
+
+
+    FINCH_Pmag = np.round(vec.out_pmag,1)     
+    
+    predict= 2026.0
+    fig_gp = vec.fit_gp(baseline_factor=baseline_factor, runalgo=bool(vec.out_convergence_flag), predict=predict)
+
+    solar_cycle = pd.read_csv(root+'/Python/Material/Solar_Mg2.csv',index_col=0)
+    sun_mag = myc.tableXY(solar_cycle['deciyear'],solar_cycle['plage_fill'],0*solar_cycle['deciyear'])
+    sun_mag.smooth(box_pts=100,shape='savgol')
+    plt.plot(sun_mag.x,sun_mag.y,color='gold',lw=1,alpha=0.7)
+    plt.fill_between(sun_mag.x,0,sun_mag.y,color='gold',alpha=0.25)
+    ax = plt.gca()
+    ylim = ax.get_ylim()
+    if ylim[0]>0:
+        plt.ylim(0,None)
+    if ylim[1]<10:
+        plt.ylim(None,10)
+
+    FINCH_Pmag_GP = np.round(vec.out_gp_pmag,1)     
+    plt.savefig(dir_root+'IMAGES/Finch_magnetic_cycle'+ext+'_GP.png')
+
+    fig_gp.set_figwidth(10)
+    plt.title('Teff = %.0f K   |    Logg = %.2f dex   |    Fe/H = %.2f dex   |    Pmag = %.2f years   |    < M > = %.1f %% (A = %.1f %%)    '%(vec.star_teff, vec.star_logg, vec.star_feh, vec.out_gp_pmag, vec.out_gp_meanmag, vec.out_gp_ampmag))
+    plt.xlim(1965,2040)
+    plt.ylim(-15,90)
+    plt.axhline(y=0,color='k',ls='-',alpha=0.7,lw=1)
+    plt.savefig(dir_root+'IMAGES/Finch_magnetic_cycle'+ext+'_GP_fixed_axis.png')
+
+    if not vec.out_convergence_flag:
+        vec.bin.fit_line()
+        trend = myc.tableXY(myf.conv_time(vec.bin.x)[1]-2000,vec.bin.y,vec.bin.yerr)
+        trend.fit_line(recenter=False)
+        model = (vec.out_gp_model[0]-2000)*trend.lin_slope_w + trend.lin_intercept_w
+        model[vec.out_gp_model[0]<=(np.min(trend.x)+2000)] = vec.out_gp_model[1][vec.out_gp_model[0]<=(np.min(trend.x)+2000)]
+        model[vec.out_gp_model[0]>=(np.max(trend.x)+2000)] = vec.out_gp_model[1][vec.out_gp_model[0]>=(np.max(trend.x)+2000)]
+        vec.out_gp_model[1] = model
+    
+    exportation3 = myc.tableXY(myf.conv_time(vec.out_gp_model[0])[0],vec.out_gp_model[1],vec.out_gp_model[2])
+    exportation3.export(self.dir_root.replace(self.instrument,'ALLINS_MERGED')+'WORKSPACE/Finch_%s_GP_model.csv'%(proxy_name),format='csv',columns=['jdb','proxy','proxy_std','qc'])
+
+    return vec
+
 
 def import_spectrum(file,sub_dico='matching_diff'):
     file = pd.read_pickle(file)
@@ -371,6 +655,7 @@ def master_spectrum(files, rv_shift, rv_sys, plot=False, sub_dico='matching_diff
     return master
 
 def import_sts(files, rv_shift=None, err=False, sub_dico='matching_diff'):
+    "rv_shift in m/s"
     wmin = []
     wmax = []
     for f in files:
@@ -405,6 +690,7 @@ def read_neid(file,force=False,debug=False):
     outname = file.replace('RAW','WORKSPACE').replace('.fits','.p').replace('WORKSPACE/','WORKSPACE/RASSINE_Stacked_spectrum_B0.00_')
     if (not os.path.exists(outname))|(force):
         t = fits.open(file)
+        berv = t[0].header['SSBRV100']
         wave = t[7].data #check 8 or 9 too
         flux = t[1].data #check 8 or 9 too
         flux_err = np.sqrt(t[4].data) #check 8 or 9 too
@@ -416,6 +702,7 @@ def read_neid(file,force=False,debug=False):
             w = wave[i] ; f = flux[i] ; f2 = flux_err[i]
             if (np.max(w)>np.min(grid))&(np.min(w)<np.max(grid)):
                 s = myc.tableXY(myf.conv_void_air(w),f,f2)
+                s.x = myf.doppler_r(s.x,berv*1000)[0]
                 s2 = s.copy()
                 for k in range(3):
                     s2.find_max()
@@ -529,7 +816,7 @@ def dec_to_deg(dec):
     else:
         return np.nan
 
-def get_vmacro(teff,logg, source='Doyle+14'):
+def get_vmacro(teff,logg, source='Cretignier+26'):
     """This is the gaussian width (not FWHM) for a Gaussian macroturbulence approximation"""
     if source=='Doyle+14': #only valid between teff = [5200-6400], logg = [4.0-4.6]
         Teff = np.arange(5250,6400,200)
@@ -541,8 +828,19 @@ def get_vmacro(teff,logg, source='Doyle+14'):
         calib = myc.tableXY(Teff,Vmacro)
         calib.interpolate(new_grid=np.array([teff]),method='linear')
         value = np.round(calib.y[0],3)
-    else:
+        value = (value,value,value)
+    elif source=='Bruntt+10':
         value = np.round(myf.find_turbulence(teff,logg)[1],3)
+        value = (value,value,value)
+    elif source=='Cretignier+26':
+        calib_g2 = myc.tableXY(np.array(myv.calib_vmacro)[:,0],np.array(myv.calib_vmacro)[:,1],np.array(myv.calib_vmacro)[:,0]*0)
+        calib_garfield = myc.tableXY(np.array(myv.calib_vmacro)[:,0],np.array(myv.calib_vmacro)[:,2],np.array(myv.calib_vmacro)[:,0]*0)
+        calib_kitty = myc.tableXY(np.array(myv.calib_vmacro)[:,0],np.array(myv.calib_vmacro)[:,3],np.array(myv.calib_vmacro)[:,0]*0)
+        calib_g2.interpolate(new_grid=np.array([teff]),method='linear')
+        calib_garfield.interpolate(new_grid=np.array([teff]),method='linear')
+        calib_kitty.interpolate(new_grid=np.array([teff]),method='linear')
+        value = (np.round(calib_g2.y[0],4),np.round(calib_garfield.y[0],4),np.round(calib_kitty.y[0],4))
+    value = {'G2':value[0],'Garfield':value[1],'Kitty':value[2]}
     return value
 
 def extract_header(files,instru,debug=False,ra=None,dec=None):
@@ -823,7 +1121,7 @@ def replace_none(y,yerr):
 
 def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, 
                 mask_col='weight_rv', analytical_model='auto', sub_dico='matching_diff',
-                weighted=True, debug=False, normalisation='left', 
+                weighted=True, debug=False, normalisation='left', return_ccf=False,
                 del_outside_max = False, ccf_oversampling=1, check_non_transform=True, continuum_method='flux',
                 rv_range=None, rv_borders=None, bis_range=None, delta_window=5, rv_shift=None,
                 wave_min=4000, wave_max=10000, hole_left=0, hole_right=0, squared=True):
@@ -920,7 +1218,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None,
     print(' [INFO] Percentage of the spectrum used : %.1f [%%] (%.0f)'%(100*sum(used_region)/len(grid),len(grid)))
     time.sleep(1)
 
-    if not os.path.exists(dir_root+'/CCF_MASK/CCF_'+mask_name.split('.')[0]+'.fits'):
+    if not os.path.exists(dir_root+'CCF_MASK/CCF_'+mask_name.split('.')[0]+'.fits'):
         print('\n [INFO] CCF mask reduced for the first time, wait for the static mask producing... \n')
         time.sleep(1)
         mask_wave = np.log10(mask[:,0])
@@ -1254,10 +1552,10 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None,
 
     ccf_infos = {'table':ccf_infos,'model_parametric':model_parametric,'weighting':1.0+float(squared),'creation_date':datetime.datetime.now().isoformat()}
     
-    file_summary_ccf = myf.touch_pickle(dir_root+'/WORKSPACE/Analyse_ccf.p')
+    file_summary_ccf = myf.touch_pickle(dir_root+'WORKSPACE/Analyse_ccf.p')
     file_summary_ccf['CCF_'+mask_name.split('.')[0]] = ccf_infos
 
-    myf.pickle_dump(file_summary_ccf,open(dir_root+'/WORKSPACE/Analyse_ccf.p','wb'))
+    myf.pickle_dump(file_summary_ccf,open(dir_root+'WORKSPACE/Analyse_ccf.p','wb'))
 
     ccf_norm = (ccf_power.T/np.percentile(ccf_power,75,axis=0)[:,np.newaxis]).T
     ccf_shifted = ccf_norm.copy()
@@ -1271,10 +1569,10 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None,
     master_ccf = np.nanmean(ccf_shifted,axis=1)
     ccf_res = ccf_norm - master_ccf[:,np.newaxis]
 
-    export = myf.touch_pickle(dir_root+'/WORKSPACE/Analyse_ccf_saved.p')
+    export = myf.touch_pickle(dir_root+'WORKSPACE/Analyse_ccf_saved.p')
     export['CCF_'+ccf_name] = {}
     export['CCF_'+ccf_name][sub_dico] = {'ccf_vrad':vrad,'ccf_flux':ccf_norm,'ccf_shifted':ccf_shifted,'ccf_master':master_ccf,'filename':files}
-    myf.pickle_dump(export,open(dir_root+'/WORKSPACE/Analyse_ccf_saved.p','wb'))
+    myf.pickle_dump(export,open(dir_root+'WORKSPACE/Analyse_ccf_saved.p','wb'))
 
     warning = 0
     if ccf_name=='mask_telluric_o2':
@@ -1326,10 +1624,13 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None,
         'fwhm':ccf_fwhm,
         'vspan':ccf_vspan}
 
-    return output
+    if return_ccf:
+        return output, vrad, ccf_shifted
+    else:
+        return output
 
 def import_summary(dir_root):
-    material = pd.read_csv(dir_root+'/WORKSPACE/Analyse_summary.csv',index_col=0)
+    material = pd.read_csv(dir_root+'WORKSPACE/Analyse_summary.csv',index_col=0)
     return material
 
 def get_jdb(files,dir_root):
@@ -1344,11 +1645,11 @@ def get_jdb(files,dir_root):
     return jdb
 
 def import_material(dir_root):
-    material = pd.read_pickle(dir_root+'/WORKSPACE/Analyse_material.p')
+    material = pd.read_pickle(dir_root+'WORKSPACE/Analyse_material.p')
     return material
 
 def import_spectroscopy(dir_root):
-    spectroscopy = pd.read_pickle(dir_root+'/WORKSPACE/Analyse_spectroscopy.p')
+    spectroscopy = pd.read_pickle(dir_root+'WORKSPACE/Analyse_spectroscopy.p')
     return spectroscopy
 
 def import_master(dir_root):
@@ -1356,18 +1657,50 @@ def import_master(dir_root):
     master = myc.tableXY(material['wave'],material['reference_spectrum'],0*material['wave'])
     return master
 
+def import_stellar_template(teff,feh=0.0,logg=4.5,model='ATLAS',rv_sys=0.0):
+    if model=='ATLAS':
+        table = np.load(root+'/Python/Material_snaky/template_star_ATLAS_3800_7000.npy')
+        table_columns = pd.read_csv(root+'/Python/Material_snaky/template_star_ATLAS_3800_7000.csv',index_col=0).columns[1:]
+        code = [[i,i.split('T')[1].split('_')[0],i.split('g')[1].split('_')[0],i.split('H')[-1].split('_')[0]] for i in table_columns]
+        code = np.array(code)
+        code[:,-1] = 0.0
+        wave = np.unique(np.round(np.arange(3800,7000,0.01),2))
+    else:
+        table = np.load(root+'/Python/Material_snaky/template_star_SNAKY_3900_6800.npy')
+        table_columns = pd.read_csv(root+'/Python/Material_snaky/template_star_SNAKY_3900_6800.csv',index_col=0).columns[1:]
+        code = [[i,i.split('T')[1].split('_')[0],i.split('g')[-1].split('_')[0],i.split('H')[-1].split('_')[0]] for i in table_columns]
+        code = np.array(code)
+        code[:,2] = 4.5
+        wave = np.unique(np.round(np.arange(3900,6800,0.01),2))
+    
+    value = myf.find_nearest(code[:,1].astype('float'),teff)[1]
+    code = code[code[:,1].astype('float')==value]
+    value = myf.find_nearest(code[:,2].astype('float'),logg)[1]
+    code = code[code[:,2].astype('float')==value]
+    value = myf.find_nearest(code[:,3].astype('float'),feh)[1]
+    code = code[code[:,3].astype('float')==value]
+    final_model = code[0][0]
+
+    loc = np.where(table_columns==final_model)[0][0]
+    template = (table[:,loc]/10000).astype('float')
+    template = myc.tableXY(wave,template,0*wave)
+
+    template.rv_shift(rv=rv_sys)
+
+    return template
+
 def import_star_info(dir_root):
     star = dir_root.split('/data')[0].split('/')[-1]
-    sinfo = pd.read_pickle(dir_root+'/STAR_INFO/Stellar_info_%s.p'%(star))
+    sinfo = pd.read_pickle(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star))
     return sinfo
 
 def import_ccf_profile(dir_root,mask_name):
-    ccf_profile = pd.read_pickle(dir_root+'/WORKSPACE/Analyse_ccf_saved.p')['CCF_%s'%(mask_name)]
+    ccf_profile = pd.read_pickle(dir_root+'WORKSPACE/Analyse_ccf_saved.p')['CCF_%s'%(mask_name)]
     return ccf_profile
 
 def import_ccf(dir_root,mask_name):
 
-    ccf_infos = pd.read_pickle(dir_root+'/WORKSPACE/Analyse_ccf.p')['CCF_%s'%(mask_name)]['table']
+    ccf_infos = pd.read_pickle(dir_root+'WORKSPACE/Analyse_ccf.p')['CCF_%s'%(mask_name)]['table']
     rvs = ccf_infos['rv']
     rvs_std = ccf_infos['rv_std']
 
@@ -1504,7 +1837,8 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
         lines = ['Ha','NaD','MgI','Hb','FeIU','FeIS','FeIIS','TiI','VI','MnI','NdII','TiII','CaH','Z']
         xgb_file = '/Python/Material_snaky/xgb_model_yarara_atmos.p'
     ew = np.array([star_info['Contrast'][kw] for kw in lines])
-    
+    rv_sys = star_info['Rv_sys']['SNAKY']
+
     print(' [INFO] EW:',np.round(np.hstack(ew.T),2))
 
     R_ratio = resolution/110000 # CORALIE and ESPRESSO similar on HD10700
@@ -1537,13 +1871,13 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
     dM = 0.5*(M_sup-M_inf)
     R = np.exp(0.5*np.log(10)*(4.437+np.log(M)-logg)) #Smette 2005
     dR = 0.08*np.exp(0.5*np.log(10)*(4.437+np.log(M)-logg))
-    M, dM, R, dR = myf.find_stellar_mass_radius_MS(teff, logg) #new function
+    M, dM, R, dR, samples_ms, samples_rs = myf.find_stellar_mass_radius_MS(teff, logg) #new function
     M = np.round(M,2)
     R = np.round(R,2)
 
     BV = -3.684*np.log10(teff) + 14.551 #http://www.isthe.com/chongo/tech/astro/HR-temp-mass-table-byhrclass.html
     BV = BV - 0.04 # solar correction ZP for Sun = 0.65
-    BV_std = np.std(-3.684*np.log10(np.random.randn(1000)*75+teff) + 14.551)
+    BV_std = np.std(-3.684*np.log10(np.random.randn(10000)*75+teff) + 14.551)
 
     vmicro, vmacro = myf.find_turbulence(teff, logg)
     BV = np.round(BV,3)
@@ -1558,6 +1892,13 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
     print(' [INFO] BV = %.2f +/- 0.02'%(BV))
     print(' [INFO] Vmic = %.1f km/s '%(vmicro))
     print(' [INFO] Vmac = %.1f km/s '%(vmacro))
+
+    samples_teff = np.random.randn(10000)*70+teff
+    samples_feh = np.random.randn(10000)*0.07+feh
+    samples_logg = np.random.randn(10000)*0.07+logg
+
+    samples = pd.DataFrame(np.array([samples_ms, samples_rs, samples_teff, samples_logg, samples_feh]).T,columns=['ms','rs','teff','logg','feh'])
+    samples.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv')
 
     if teff<4000:
         teff=4000
@@ -1577,12 +1918,13 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
         fwhm = xlim/3
         plt.axes([0,0,1,0.1])
         plt.axis('off')
-        plt.text(0.5,0.5,'FWHM = %.2f kms\n'%(fwhm)+r'$T_{eff}$'+' = %.0f +/- 70 K  |  logg = %.2f +/- 0.07 dex  |  [Fe/H] = %.2f +/- 0.07 dex\n Ms = %.2f +/- %.2f |  Rs = %.2f +/- %.2f'%(teff,logg,feh, M, dM, R, dR),ha='center',va='center',fontsize=15)
+        plt.text(0.5,0.5,'FWHM = %.2f km/s | RV_sys = %.1f km/s\n'%(fwhm,rv_sys)+r'$T_{eff}$'+' = %.0f +/- 70 K  |  logg = %.2f +/- 0.07 dex  |  [Fe/H] = %.2f +/- 0.07 dex\n Ms = %.2f +/- %.2f |  Rs = %.2f +/- %.2f'%(teff,logg,feh, M, dM, R, dR),ha='center',va='center',fontsize=15)
         plt.savefig(dir_root+'IMAGES/Atmos_all.pdf')
+
     return teff,feh,logg,M,R,BV,vmicro,vmacro
 
 
-def yarara_vcat(dir_root, teff, logg, instrument, ins_res=np.nan, sub_dico='matching_diff'):
+def yarara_vcat(dir_root, teff, logg, instrument, ins_res=np.nan, sub_dico='matching_diff', Prot=None):
 
     ins = instrument.split('_')[0]
     myf.print_box('\n---- RECIPE : VSINI EXTRACTION ----\n')
@@ -1601,10 +1943,12 @@ def yarara_vcat(dir_root, teff, logg, instrument, ins_res=np.nan, sub_dico='matc
         calib_curve[kw] = G
     calib_curve['G2'] = calib_curve['GARFIELD']
 
-    vmacro = get_vmacro(teff,logg,source='Doyle+14') #Doyle or Bruntt
-    delta_vmacro = get_vmacro(5775,4.44,source='Doyle+14') - vmacro
-    print(' [INFO] Doyle+14 vmacro (Teff = %.0f K) = %.1f kms (Delta Sun = %.1f km/s)'%(teff,vmacro,delta_vmacro))
-    delta_vmacro = 0 #not used for now
+    samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv',index_col=0)
+
+    vmacro = get_vmacro(teff,logg,source='Cretignier+26') #Doyle, Bruntt, or Cretignier
+    vmacro_sun = get_vmacro(5775,4.44,source='Cretignier+26')
+    for kw in vmacro.keys():
+        print(' [INFO] Cretignier+26 vmacro for %s (Teff = %.0f K) = %.1f kms (Sun = %.1f km/s)'%(kw,teff,vmacro[kw],vmacro_sun[kw]))
 
     vsini_cdf = {}
     samples = []
@@ -1623,10 +1967,14 @@ def yarara_vcat(dir_root, teff, logg, instrument, ins_res=np.nan, sub_dico='matc
         
         vrad = ccf[sub_dico]['ccf_vrad']
         vmax = np.max(vrad)
-        saveG = 1-ccf[sub_dico]['ccf_flux'].T
+        try:
+            saveG = 1-ccf[sub_dico]['ccf_shifted'].T
+        except:
+            saveG = 1-ccf[sub_dico]['ccf_flux'].T
         saveG = saveG - np.min(saveG,axis=1)[:,np.newaxis]
         saveG = saveG/np.max(saveG,axis=1)[:,np.newaxis]
         fwhmG = []
+        plt.figure()
         for s in saveG:
             c = myc.tableXY(vrad,s,0*s)
             c.clip(min=[-vmax*0.4,None],max=[vmax*0.4,None])
@@ -1637,22 +1985,21 @@ def yarara_vcat(dir_root, teff, logg, instrument, ins_res=np.nan, sub_dico='matc
             fwhmG.append(fwhm)
         fwhmG = np.array(fwhmG)
         kw = mask.upper()
-
         ins_calib = ins
-        if ins_calib=='SOPHIE':
-            ins_calib = 'CORALIE14'
-        if ins_calib=='NEID':
-            ins_calib = 'HARPN'
+        #if ins_calib=='SOPHIE':
+        #    ins_calib = 'CORALIE14'
+        #if ins_calib=='NEID':
+        #    ins_calib = 'HARPN'
 
-        calib_ins = pd.read_csv(root+'/Python/Material_snaky/Table_calib_%s.csv'%(kw),index_col=0)
+        calib_ins = pd.read_csv(root+'/Python/Material_snaky/Table_calib_vsini_%s.csv'%(kw),index_col=0)
         calib_ins = myc.tableXY(calib_ins[ins_calib],calib_ins['HARPN'],0*calib_ins[ins_calib]) #reference HARPN
+        calib_ins.order()
         calib_ins.interpolate(new_grid=fwhmG,replace=False,method='linear')
         fwhmG_HARPN = calib_ins.y_interp
 
-        if delta_vmacro>0:
-            fwhmG_HARPN = np.sqrt(fwhmG_HARPN**2+delta_vmacro**2)
-        else:
-            fwhmG_HARPN = np.sqrt(fwhmG_HARPN**2-delta_vmacro**2)
+        #print(fwhmG_HARPN)
+        #fwhmG_HARPN = np.sqrt(fwhmG_HARPN**2 - vmacro[mask]**2 + vmacro_sun[mask]**2)
+        #print(fwhmG_HARPN)
 
         G = calib_curve[kw]
         G.interpolate(new_grid=fwhmG_HARPN,method='linear',replace=False)
@@ -1671,8 +2018,8 @@ def yarara_vcat(dir_root, teff, logg, instrument, ins_res=np.nan, sub_dico='matc
         mean_F = np.nanmedian(fwhmG_HARPN)
         std_accuracy = (1-np.exp(-abs(teff-5780)/200))*0.1+0.1 # 200 m/s of bias in general, 250 m/s for the Sun
         print(' [INFO] Accuracy uncertainties = %.0f m/s'%(std_accuracy*1000))
-        print(' [INFO] Precision uncertainties = %.0f m/s'%(np.nanstd(fwhmG_HARPN)*1000))
-        std_F = np.sqrt(np.nanstd(fwhmG_HARPN)**2 + std_accuracy**2) 
+        print(' [INFO] Precision uncertainties = %.0f m/s'%(myf.mad(fwhmG_HARPN)*1000))
+        std_F = np.sqrt(myf.mad(fwhmG_HARPN)**2 + std_accuracy**2) 
         plt.figure('vsini2')
         G.interpolate(new_grid=np.sort(np.random.randn(10000)*std_F+mean_F),method='linear',replace=False)
         V = G.y_interp
@@ -1707,6 +2054,10 @@ def yarara_vcat(dir_root, teff, logg, instrument, ins_res=np.nan, sub_dico='matc
 
     plt.savefig(dir_root+'IMAGES/Vsini_CCF_sts.pdf')
 
+    samples = np.random.choice(samples,10000)
+    samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv',index_col=0)
+    samples_table['vsini'] = samples
+    samples_table.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv')
 
     plt.figure('dust')
     infos = plt.hist(samples,bins=100,density=True,histtype='step',cumulative=True)
@@ -1715,6 +2066,119 @@ def yarara_vcat(dir_root, teff, logg, instrument, ins_res=np.nan, sub_dico='matc
     vsini_cdf['ALL'] = infos
 
     return samples
+
+def yarara_vsini(dir_root, Prot=None, Rs=None):
+
+    vsun = 1.87 ; psun = 27
+
+    vmax_veq = 2*pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stell*')[0])['FWHM']['G2']
+    samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv',index_col=0)
+
+    sample_Rs = np.array(samples_table['rs'])
+    sample_vsini = np.array(samples_table['vsini'])
+
+    if Rs is not None:
+        sample_Rs = np.random.randn(10000)*0.01+Rs #1% radius uncertainty
+
+    sample_prot90 = psun*sample_Rs/(sample_vsini/vsun) 
+
+    p90m = [
+        np.nanpercentile(sample_prot90,50),
+        np.nanpercentile(sample_prot90,84)-np.nanpercentile(sample_prot90,50),
+        np.nanpercentile(sample_prot90,50)-np.nanpercentile(sample_prot90,16)]
+
+    print(' [INFO] Prot (if i=90) estimated = %.2f [%.2f - %.2f] days '%(p90m[0],p90m[0]-p90m[1],p90m[0]+p90m[2]))
+
+    rm = [
+        np.nanpercentile(sample_Rs,50),
+        np.nanpercentile(sample_Rs,84)-np.nanpercentile(sample_Rs,50),
+        np.nanpercentile(sample_Rs,50)-np.nanpercentile(sample_Rs,16)]
+
+    vm = [
+        np.nanpercentile(sample_vsini,50),
+        np.nanpercentile(sample_vsini,84)-np.nanpercentile(sample_vsini,50),
+        np.nanpercentile(sample_vsini,50)-np.nanpercentile(sample_vsini,16)]
+
+    print(' [INFO] vsini = %.2f [%.2f - %.2f] km/s'%(vm[0],vm[0]-vm[1],vm[0]+vm[2]))
+
+    plt.figure('inclination',figsize=(18,5))
+    plt.subplot(1,4,1)
+    plt.title(r'Rs = %.2f$^{+%.2f}_{-%.2f}$ Rs'%(rm[0],rm[1],rm[2]))
+    pby,pbx = np.histogram(sample_Rs,bins=np.arange(0,2,0.025),density=True)
+    pbx = 0.5*(pbx[1:]+pbx[0:-1])
+    plt.fill_between(pbx,pby,alpha=0.2)
+    plt.plot(pbx,pby)
+    plt.xlim(0,2)
+    plt.ylim(0,None)
+    plt.xlabel(r'Radius [Rs]')
+
+    plt.subplot(1,4,2)
+    plt.title(r'v $\sin$ i = %.2f$^{+%.2f}_{-%.2f}$ km/s'%(vm[0],vm[1],vm[2]))
+    pby,pbx = np.histogram(sample_vsini,bins=np.arange(0,vmax_veq,vmax_veq/200),density=True)
+    pbx = 0.5*(pbx[1:]+pbx[0:-1])
+    plt.fill_between(pbx,pby,alpha=0.2)
+    plt.plot(pbx,pby)
+    plt.axvline(x=vm[0],ls=':',color='k')
+    if vm[0]>4:
+        plt.xlim(vm[0]*0.5,vm[0]*1.5)
+    else:
+        plt.xlim(0,7)
+    plt.ylim(0,None)
+    plt.tick_params(top=True,bottom=True,direction='inout',which='both')
+    plt.xlabel(r'v $\sin$ i [km/s]')
+
+    sample_sini = np.sqrt(1-np.random.rand(10000)**2) # np.sin of np.arccos
+    sample_prot = np.ravel(sample_prot90*sample_sini[:,np.newaxis])
+    sample_prot = np.random.choice(sample_prot,10000,replace=False)
+
+    if Prot is not None:
+        sample_prot = np.random.randn(10000)*(0.10*Prot)+Prot #10% prot uncertainty
+
+    plt.subplot(1,4,3)
+    plt.title(r'$P_{90} = %.1f^{+%.1f}_{-%.1f}$ days'%(p90m[0],p90m[1],p90m[2]))
+
+    pby,pbx = np.histogram(sample_prot90,bins=10**(np.linspace(0,2,100)),density=True)
+    pbx = 0.5*(pbx[1:]+pbx[0:-1])
+    plt.fill_between(pbx,pby,alpha=0.2)
+    plt.plot(pbx,pby)
+    plt.axvline(x=p90m[0],ls=':',color='k')
+    if Prot is not None:
+        plt.axvline(x=Prot,color='k',ls='-')
+
+    if Prot is not None:
+        plt.axvline(x=Prot,color='k',ls='-')
+    plt.xlim(1,100)
+    plt.ylim(0,None)
+    plt.xscale('log')
+    plt.tick_params(top=True,bottom=True,direction='inout')
+    plt.xlabel(r'$P_{rot}$ [days]')
+
+    sample_sininc = np.ravel((sample_vsini/2.00)*(sample_prot/27.5)/sample_Rs[:,np.newaxis])
+    
+    I = np.arcsin(np.nanpercentile(sample_sininc,50))*180/np.pi
+    Ii =  np.arcsin(np.nanpercentile(sample_sininc,16))*180/np.pi
+    Is = np.arcsin(np.nanpercentile(sample_sininc,84))*180/np.pi
+
+    I = [I,90][int(I!=I)]
+    Ii = [Ii,90][int(Ii!=Ii)]
+    Is = [Is,90][int(Is!=Is)]
+
+    print(' [INFO] Inclination estimated = %.0f [%.0f - %.0f] degree'%(I,Ii,Is))
+
+    plt.subplot(1,4,4)
+    plt.title(r'$i = %.0f^{+%.0f}_{-%.0f}$ [°]'%(I,Is-I,I-Ii))
+
+    iby,ibx = np.histogram(sample_sininc,bins=np.arange(0,1,0.01),density=True)
+    ibx = 0.5*(ibx[1:]+ibx[0:-1])
+    plt.fill_between(ibx,iby,alpha=0.2)
+    plt.plot(ibx,iby,label='[%.0f - %.0f - %.0f]'%(Ii,I,Is))
+    plt.axvline(x=np.sin(I*np.pi/180),color='k',ls=':')
+    plt.tick_params(top=True,bottom=True,direction='inout',which='both')
+    plt.xlim(0,1)
+    plt.ylim(0,None)
+    plt.xlabel(r'$\sin i$ []')
+    plt.subplots_adjust(left=0.05,right=0.97)
+    plt.savefig(dir_root+'IMAGES/Vsini_inclination.pdf')
 
 def yarara_activity_index(files, rv_sys, shift_rv, material=None, sub_dico='matching_diff'):
 
@@ -1853,9 +2317,14 @@ def yarara_activity_index(files, rv_sys, shift_rv, material=None, sub_dico='matc
     return tab, CT, mask_activity
 
 
-def yarara_correct_continuum_absorption(dir_root, master, model, rv_sys):
+def yarara_correct_continuum_absorption(dir_root, master, star_info):
     
     myf.print_box('\n---- RECIPE : CORRECT ABSORPTION CONTINUUM ----\n')
+
+    ins = dir_root.split('/')[-2].split('_')[0]
+    rv_sys = star_info['Rv_sys']['SNAKY']
+    feh = star_info['FeH']['SNAKY']
+    model = star_info['stellar_template']['SNAKY']
 
     reject_zones = [[5875,5910]]
     force_zones = [[3916.5,3918.5],[3923,3926],[3927.5,3929.5],[3931,3933],[3932.1,3932.6],[3935.4,3935.8],[3936,3937],[3937.5,3939],[3940,3943],
@@ -1876,18 +2345,9 @@ def yarara_correct_continuum_absorption(dir_root, master, model, rv_sys):
         
     print(' Model selected : %s (%s)'%(model,parameter))
 
-    model = 'ATLAS_3800_7000'
-    table_atlas = np.load(root+'/Python/Material_snaky/template_star_'+model+'.npy')
-    table_atlas_columns = pd.read_csv(root+'/Python/Material_snaky/template_star_'+model+'.csv',index_col=0).columns[1:]
-    loc = np.where(table_atlas_columns==parameter)[0][0]
-    table_atlas = np.ravel(table_atlas[:,loc])
-    table_atlas_wave = np.unique(np.round(np.arange(3800,7000,0.01),2))
-    template = myc.tableXY(myf.doppler_r(np.array(table_atlas_wave),rv_sys*1000)[0],table_atlas.astype('float')/1e4,0*table_atlas_wave)
-
-    #table_atlas = pd.read_pickle(root+'/Python/Material_snaky/template_star_'+model+'.p') 
-    #table_atlas = table_atlas.loc[(table_atlas['wave']>=grid[0])&(table_atlas['wave']<=grid[-1])]
-    #table_atlas = table_atlas.reset_index(drop=True)
-    #template = myc.tableXY(myf.doppler_r(np.array(table_atlas['wave']),rv_sys*1000)[0],np.array(table_atlas[parameter]),0*table_atlas['wave'])
+    teff = float(parameter.split('T')[-1].split('_')[0])
+    logg = float(parameter.split('g')[-1].split('_')[0])    
+    template = import_stellar_template(teff,feh=0.0,logg=logg,model='ATLAS',rv_sys=rv_sys)
 
     template.interpolate(new_grid=grid,replace=True,method='cubic',interpolate_x=False)
     template.y[template.y>1] = 1
@@ -1963,6 +2423,21 @@ def yarara_correct_continuum_absorption(dir_root, master, model, rv_sys):
     local.smooth(box_pts=1000,shape='savgol',replace=True)
     correction = local.y_smoothed        
 
+    if ins=='NEID':
+        
+        template_empi = import_stellar_template(teff,logg=logg,feh=feh,model='SNAKY',rv_sys=rv_sys)
+        template_empi.interpolate(master.x,method='linear',fill_value=np.nan)
+
+        s1 = master.y*correction
+        s2 = template_empi.y        
+
+        ratio = s2/s1
+        ratio[ratio==0] = 1
+        extra_correction = myf.smooth(ratio,100)
+        extra_correction[extra_correction!=extra_correction] = 1
+
+        correction = correction*extra_correction
+
     plt.plot(grid,correction,color='orange')
     plt.subplot(2,1,2,sharex=ax,sharey=ax)
     plt.title('After correction',fontsize=16)
@@ -1991,31 +2466,57 @@ def yarara_correct_continuum_absorption(dir_root, master, model, rv_sys):
 def yarara_instrumental_resolution(dir_root, files, shift_rv, berv, sub_dico='matching_diff'):
     myf.print_box('\n---- RECIPE : EXTRACTION INSTRUMENTAL RESOLUTION ----\n')
 
-    grid, flux, err_flux = import_sts(files, rv_shift=shift_rv, err=False, sub_dico=sub_dico)
-    flux_ref = np.nanmedian(flux,axis=0)
-    flux = flux/flux_ref
-    for i in tqdm(np.arange(len(files))):
-        f = myc.tableXY(myf.doppler_r(grid,berv[i]*1000)[1],flux[i],0*grid)
-        f.interpolate(new_grid=grid,method='linear')
-        flux[i] = f.y
-    
+    grid, flux, err_flux = import_sts(files, rv_shift=shift_rv, err=False, sub_dico=sub_dico)    
     berv_mad = myf.mad(berv)
 
     if berv_mad>3:
         print('\n [INFO] BERV MAD = %.1f km/s'%(berv_mad))
-        ccf_output = yarara_ccf(dir_root, files, 0, 6, 2.0, 'mask_telluric_o2', spectra=(grid,flux,err_flux), debug=False, wave_max=6800)
-        fwhm_ins = ccf_output['fwhm'].y
-        FWHM_ins = np.nanmedian(fwhm_ins)
-        print('\n [INFO] Instrumental resolution measured by O2 lines = %.1f km/s \n'%(FWHM_ins))
-        calib = myc.tableXY([1, 2, 3, 4, 5, 6, 7, 8, 9],[299792,149896,99931,74948,59958,49965,42828,37474,33310])
-        calib.interpolate(new_grid=np.array([FWHM_ins]),method='cubic')
-        print(' [INFO] Estimate intrumental resolution = %.0f'%(np.round(calib.y[0],-3)))
-    else:
-        print('\n [INFO] BERV SPAN too small (%.1f)'%(berv_mad))
-        fwhm_ins = np.ones(len(files))*np.nan
-        FWHM_ins = np.nan
+        flux_ref = np.nanmedian(flux,axis=0)
 
-    return FWHM_ins
+        berv_range = np.append(np.arange(0,30,1),50)
+        berv_range = np.hstack([-berv_range[::-1],berv_range[1:]])
+        chunck = np.linspace(0,len(grid),50).astype('int')
+        for c1,c2 in zip(chunck[:-1],chunck[1:]):
+            master = []
+            for b1,b2 in zip(berv_range[:-1],berv_range[1:]):
+                mask = (berv>=b1)&(berv<b2)
+                if sum(mask):
+                    master.append(np.nanmedian(flux[mask,c1:c2],axis=0))
+                else:
+                    master.append(np.nan*flux_ref[c1:c2])
+            master = np.array(master)
+            flux_ref[c1:c2] = np.nanmedian(master,axis=0)
+    else:
+        print(Fore.YELLOW+'\n [WARNING] BERV SPAN too small (%.1f), use of a reference spectrum'%(berv_mad)+Fore.RESET)
+        
+        sinfo = import_star_info(dir_root)
+        teff = sinfo['Teff']['SNAKY']
+        logg = sinfo['Log_g']['SNAKY']
+        feh = sinfo['FeH']['SNAKY']
+        rv_sys = sinfo['Rv_sys']['SNAKY']
+
+        template = import_stellar_template(teff,logg=logg,feh=feh,model='SNAKY',rv_sys=rv_sys)
+        template.interpolate(new_grid=grid,method='linear')        
+        flux_ref = template.y
+
+    flux_ref[flux_ref<=0] = 1
+    flux_ref[flux_ref>1] = 1
+
+    flux = flux/(flux_ref+1e-8)
+    for i in tqdm(np.arange(len(files))):
+        f = myc.tableXY(myf.doppler_r(grid,berv[i]*1000)[1],flux[i],0*grid)
+        f.interpolate(new_grid=grid,method='linear')
+        flux[i] = f.y
+
+    ccf_output = yarara_ccf(dir_root, files, 0, 6, 2.0, 'mask_telluric_o2', spectra=(grid,flux,err_flux), debug=False, wave_max=6800)
+    fwhm_ins = ccf_output['fwhm'].y
+    FWHM_ins = np.nanmedian(fwhm_ins)
+    print('\n [INFO] Instrumental resolution measured by O2 lines = %.1f km/s \n'%(FWHM_ins))
+    calib = myc.tableXY([1, 2, 3, 4, 5, 6, 7, 8, 9],[299792,149896,99931,74948,59958,49965,42828,37474,33310])
+    calib.interpolate(new_grid=np.array([FWHM_ins]),method='cubic')
+    print(' [INFO] Estimate intrumental resolution = %.0f'%(np.round(calib.y[0],-3)))
+
+    return fwhm_ins
 
 mhk_c1 = -4.04840205e+01        #calibration with RHK DRS
 mhk_c2 = 3927259.0994665725
@@ -2357,7 +2858,7 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
     MHK_mean = np.nansum(index/index_std**2)/np.nansum(1/index_std**2)
     MHK_mean_std = np.sqrt(1/np.nansum(1/index_std**2))
 
-    samples = MHK_mean_std*np.random.randn(1000) + MHK_mean
+    samples = MHK_mean_std*np.random.randn(10000) + MHK_mean
     samples_rhk = mhk_rhk(samples)
 
     RHK_mean = np.nanmean(samples_rhk)

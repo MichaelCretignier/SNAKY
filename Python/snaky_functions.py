@@ -15,6 +15,7 @@ import pandas as pd
 import scipy.stats as stats
 from astropy import units as u
 from astropy.coordinates import EarthLocation
+import astropy.time as Time
 
 from scipy import ndimage, signal
 from scipy.interpolate import interp1d
@@ -74,8 +75,8 @@ def find_turbulence(teff, logg):
     return vmic,vmac
 
 def find_stellar_mass_radius_MS(Teff, logg):
-    samples_T = np.random.randn(1000)*75+Teff
-    samples_g = np.random.randn(1000)*0.07+logg
+    samples_T = np.random.randn(10000)*75+Teff
+    samples_g = np.random.randn(10000)*0.07+logg
 
     samples_m = (samples_T/5772)**(4/3)*(10**(samples_g-4.437))**(-1/3)
     mass = np.median(samples_m)
@@ -87,7 +88,7 @@ def find_stellar_mass_radius_MS(Teff, logg):
     radius = np.median(10**samples_R)
     radius_std = mad(10**samples_R)
 
-    return mass, mass_std, radius, radius_std
+    return mass, mass_std, radius, radius_std, samples_m, 10**samples_R
 
 def find_stellar_mass_radius(Teff, sp_type='G2V'):
     """Habets 1981 calibration curve"""
@@ -711,9 +712,29 @@ def doppler_r(lamb,v):
 
 def only_axis(color=None,lw=2,ax=None,side='all',ls='-'):
     plt.tick_params(left=False,bottom=False,labelleft=False,labelbottom=False)  
-    if color is not None:
-        plot_color_box(color=color, lw=lw, ax=ax, side=side,ls=ls)
 
+def conv_time(time):    
+    time = np.array(time)
+    if (type(time[0])==np.float64)|(type(time[0])==np.int64):
+        fmt='mjd'
+        if time[0]<2030:
+            fmt='decimalyear'
+        elif np.mean(time)<20000:
+            time+=50000
+        if fmt=='mjd':
+            t0 = time
+            t1 = np.array([Time.Time(i, format=fmt).decimalyear for i in time])
+            t2 = np.array([Time.Time(i, format=fmt).isot for i in time])
+        else:
+            t0 = np.array([Time.Time(i, format=fmt).mjd for i in time])
+            t1 = time
+            t2 = np.array([Time.Time(i, format=fmt).isot for i in time])            
+    elif type(time[0])==np.str_:
+        fmt='isot'
+        t0 = np.array([Time.Time(i, format=fmt).jd-2400000 for i in time]) 
+        t1 = np.array([Time.Time(i, format=fmt).decimalyear for i in time])
+        t2 = time  
+    return t0,t1,t2
     
 def observatory(instrument='HARPS'):
     if instrument=='HARPS':

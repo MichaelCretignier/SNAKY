@@ -396,6 +396,15 @@ class tableXY(object):
                     self.interpolated.inv()
                     self.inv()
 
+    def order(self, order=None):
+        if order is None:
+            order = self.x.argsort()
+        self.order_liste = order
+        self.x = self.x[order]
+        self.y = self.y[order]
+        self.xerr = self.xerr[order]
+        self.yerr = self.yerr[order]
+
     def supress_mask(self,mask):
         self.x = self.x[mask]
         self.y = self.y[mask]
@@ -424,6 +433,61 @@ class tableXY(object):
         else:
             self.y[np.isnan(self.y)] = value
             self.x[np.isnan(self.x)] = value
+
+    def night_stack(self,db=0,bin_length=1,replace=False):
+        
+        jdb = self.x
+        vrad = self.y
+        vrad_std = self.yerr.copy()
+
+        if not np.sum(vrad_std): #to avoid null vector
+            vrad_std+=1    
+
+        vrad_std[vrad_std==0] = np.nanmax(vrad_std[vrad_std!=0]*10)    
+        
+        weights = 1/(vrad_std)**2
+        weights[weights!=weights] = np.nanmin(weights)
+
+        if bin_length:
+            groups = ((jdb-db)//bin_length).astype('int')
+            groups -= groups[0]
+            group = np.unique(groups)
+        else:
+            group = np.arange(len(jdb))
+            groups = np.arange(len(jdb))
+            
+        mean_jdb = []
+        mean_vrad = []
+        mean_svrad = []
+        
+        for j in group:
+            g = np.where(groups==j)[0]
+            mean_jdb.append(np.sum(jdb[g]*weights[g])/np.sum(weights[g]))
+            mean_svrad.append(1/np.sqrt(np.sum(weights[g])))
+            mean_vrad.append(np.sum(vrad[g]*weights[g])/np.sum(weights[g]))
+            
+        mean_jdb = np.array(mean_jdb)
+        mean_vrad = np.array(mean_vrad)
+        mean_svrad = np.array(mean_svrad)
+        
+        if replace:
+            self.x, self.y, self.xerr,self.yerr = mean_jdb, mean_vrad ,0*mean_svrad, mean_svrad
+        else:
+            self.stacked = tableXY(mean_jdb,mean_vrad,mean_svrad)
+
+
+    def export(self, name, format='pickle',columns=['x','y','yerr','qc'],species=None):
+        """export in pickle format """
+
+        if species is None:
+            species = np.zeros(len(self.x))
+
+        if format=='pickle':
+            myf.pickle_dump(pd.DataFrame(np.array([self.x, self.y, self.yerr, self.mask_qc, species]).T, columns=columns+['species']), open(name, 'wb'))
+        if format=='csv':
+            pd.DataFrame(np.array([self.x, self.y, self.yerr, self.mask_qc, species]).T, columns=columns+['species']).to_csv(name)
+        if format=='txt':
+            np.genfromtxt(np.array(self.x, self.y, self.yerr, self.mask_qc, species),name)
 
     def plot(self, Show=False, color='k', label='', ls='', lw=2, offset=0, mask=None, capsize=0, fmt='o', markersize=6, zorder=1, species=None, alpha=1, modulo=None, modulo_norm=False, cmap=None, new=False, phase_mod=0, shift_mod=0, periodic=False, frac=1, yerr=True, xerr=True, sp=None, highlight_seasons=False, cmin=None, cmax=None, transit_table=None):
         

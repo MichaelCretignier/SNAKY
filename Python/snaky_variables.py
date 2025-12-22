@@ -51,15 +51,34 @@ au_m = 149597871*1000
 coeff_water = 0.06420728869571635 #reference depth for water telluric (cenB)
 coeff_oxygen = 0.19207933933570465 #reference depth for oxygen telluric (cenB)
 
+calib_vmacro = [ #teff garfield kitty
+    [4000, 5.3, 3.8, 3.3],
+    [4250, 5.3, 3.8, 3.3],
+    [4500, 5.3, 3.8, 3.3],
+    [4750, 5.3, 3.8, 3.3],
+    [5000, 5.3, 3.8, 3.3],
+    [5250, 5.3, 3.8, 3.3],
+    [5500, 5.6, 4.1, 3.6],
+    [5750, 5.8, 4.3, 3.8],
+    [6000, 6.25, 5.0, 4.5],
+    [6250, 7.7, 6.2, 5.8],
+    [6500, 9.0, 7.2, 6.6],
+    [6750, 9.0, 7.2, 6.6]]
+
 instrument_res_kms = { 
-    'CORALIE14':4.71,    #64000
-    'SOPHIE':4.18,       #72000 (40000 for the HE mode)
-    'HARPS03':3.38,      #89000
-    'HARPS15':3.47,      #87000
-    'HARPN':3.13,        #96000
-    'ESPRESSO18':2.79,   #108000
-    'ESPRESSO19':2.79,   #108000
-    }
+    'CORALIE98': 5.34,   # R ≈ 56 000
+    'CORALIE07': 5.07,   # R ≈ 59 000
+    'CORALIE14': 5.01,   # R ≈ 60 000
+    'SOPHIE-HE': 7.89,   # R ≈ 38 000 (HE)
+    'SOPHIE': 4.18,      # R ≈ 72 000 (HR)
+    'HARPS15': 3.47,     # R ≈ 87 000
+    'HARPS03': 3.38,     # R ≈ 89 000
+    'NEID': 3.15,        # R ≈ 96 000
+    'HARPN': 3.13,       # R ≈ 96 000
+    'ESPRESSO': 2.79,    # R ≈ 108 000
+    'ESPRESSO18': 2.79,  # R ≈ 108 000
+    'ESPRESSO19': 2.79,  # R ≈ 108 000
+}
 
 instrument_lat_deg = {
     'HARPN':28.7540,

@@ -140,7 +140,7 @@ def reduce(
 
     #read fits files an create spectra normalised
     files = np.sort(glob.glob(dir_root+'RAW/*.fits'))
-    if ins.split('_')[0]=='SOPHIE':
+    if ins[0:6]=='SOPHIE':
         for f in files:
             mym.read_sophie(f,force=force_pre)
     elif (ins=='HARPS_3.5')|(ins=='HARPS03_3.5')|(ins=='HARPS15_3.5'):
@@ -155,14 +155,21 @@ def reduce(
 
     #extract time information from headers
     if (not os.path.exists(dir_root+'DACE_TABLE/Dace_extracted_table.csv'))|force_summary:
-        summary = mym.extract_header(files, ins, debug=debug, dec=dec, ra=ra)
-        summary['fileroot'] = files
-        summary.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
+        if not len(files):
+            print(Fore.YELLOW+' [EMERGENCY STOP] No spectra found in the RAW directory %s'%(dir_root)+Fore.RESET)
+            print('\n')
+            force_pre, force_summary, force_rvsys, force_ccf, force_master, force_atmos, force_resolution, force_vsini,force_abs_continuum, force_activity ,force_mhk,force_spectroscopy ,force_cleaning = [False]*13           
+        else:
+            summary = mym.extract_header(files, ins, debug=debug, dec=dec, ra=ra)
+            summary['fileroot'] = files
+            summary['ins'] = ins
+            summary.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
 
     files = np.sort(glob.glob(dir_root+'WORKSPACE/RASSINE*.p'))
     if (not os.path.exists(dir_root+'WORKSPACE/Analyse_summary.csv'))|force_summary:
         dace_summary = pd.read_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv',index_col=0)
         berv = np.array(dace_summary['berv_computed'])
+        inss = np.array(dace_summary['ins'])
         jdb = []
         for f in files:
             arcfiles = pd.read_pickle(f)['parameters']['arcfiles']
@@ -175,11 +182,11 @@ def reduce(
         if len(jdb)!=len(files):
             jdb = np.arange(len(files))
 
-        flag = np.ones(len(files)).astype('int')
+        flag = np.zeros(len(files)).astype('int')
         if debug:
             mym.snaky_help()
-            print(files,'\n',jdb,'\n',berv,'\n',flag)
-        summary = pd.DataFrame(np.array([files, jdb, berv, flag]).T,columns=['filename','jdb','berv','flag'])
+            print(files,'\n',inss,'\n',jdb,'\n',berv,'\n',flag)
+        summary = pd.DataFrame(np.array([files, inss, jdb, berv, flag]).T,columns=['filename','ins','jdb','berv','flag'])
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
 
     summary = mym.import_summary(dir_root)
@@ -194,12 +201,13 @@ def reduce(
         print(' [INFO] Number of good spectra = %.0f'%(sum(kept)))
         print(' [INFO] Number of anomalous spectra = %.0f'%(len(kept)-sum(kept)))
         if sum(kept)==0:
-            print(' [WARNING] No spectra, criterion = ',anomalous)
+            print(Fore.YELLOW+' [WARNING] No good spectra (Emergency stop)'+Fore.RESET)
+            print(' [INFO] criterion = ',anomalous)
             print('\n')
-            kept = np.array([True])
+            force_pre, force_summary, force_rvsys, force_ccf, force_master, force_atmos, force_resolution, force_vsini,force_abs_continuum, force_activity ,force_mhk,force_spectroscopy ,force_cleaning = [False]*13           
 
-        summary['flag1'] = 1
-        summary.loc[summary.index[~kept],'flag1'] = 0
+        summary['flag1'] = 0
+        summary.loc[summary.index[~kept],'flag1'] = 1
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
     
     summary = mym.import_summary(dir_root)
@@ -213,7 +221,7 @@ def reduce(
             rv_sys.append(rv_sys1)
         rv_sys = np.array(rv_sys)
         rv_sys_std = np.nanstd(rv_sys)
-        rv_sys_approx = np.round(np.nanmean(rv_sys),2)
+        rv_sys_approx = np.round(np.nanmedian(rv_sys),2)
         print('\n [INFO] Final aproximated RV_sys = %.1f +/- %.1f kms'%(rv_sys_approx,rv_sys_std))
 
         if debug:
@@ -226,7 +234,6 @@ def reduce(
         dace_summary = pd.read_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv',index_col=0)
         ra_deg = np.nanmedian(dace_summary['RA'])
         dec_deg = np.nanmedian(dace_summary['DEC'])
-
 
         fwhm, rv_sys, contrast, beta_gnd, sb_flag, ccf = sinfo
         star_info = {
@@ -243,10 +250,10 @@ def reduce(
             'EW':{'fixed':0.0},
             }
         
-        sinfo = myf.touch_pickle(dir_root+'/STAR_INFO/Stellar_info_%s.p'%(star))
+        sinfo = myf.touch_pickle(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star))
         for kw in star_info:
             sinfo[kw] = star_info[kw]
-        pickle.dump(sinfo,open(dir_root+'/STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+        pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
     sinfo = mym.import_star_info(dir_root)
     teff = sinfo['Teff']['fixed']
@@ -256,9 +263,9 @@ def reduce(
     beta_gnd = sinfo['CCF_beta']['SNAKY']
 
     if force_ccf:
-        kept = np.array(summary['flag1'])
+        kept = np.array(1-summary['flag1'])
         if sum(kept)!=0:
-            sub = summary.loc[summary['flag1']==1]
+            sub = summary.loc[summary['flag1']==0]
             files = np.array(sub['filename'])
             ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'G2', debug=debug)
             ct = ccf_output['contrast'].y
@@ -268,13 +275,13 @@ def reduce(
             print(' [INFO] Number of bad spectra (after CCF check) = %.0f'%(len(kept)-sum(kept)+len(kept2)-sum(kept2)))
             if np.sum(kept2)==0:
                 kept2 = np.ones(len(ct)).astype('bool')
-            summary['flag2'] = 1
-            summary.loc[sub.index[~kept2],'flag2'] = 0
+            summary['flag2'] = 0
+            summary.loc[sub.index[~kept2],'flag2'] = 1
             summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
 
     summary = mym.import_summary(dir_root)
     if force_ccf:
-        kept = np.array(summary['flag1'])*np.array(summary['flag2'])
+        kept = np.array(1-summary['flag1'])*np.array(1-summary['flag2'])
         if sum(kept)!=0:
             files = np.array(summary.loc[kept==1,'filename'])
             ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'G2', debug=debug, sub_dico=sub_dico)
@@ -283,24 +290,15 @@ def reduce(
             sinfo['FWHM']['KITTY'] = np.round(np.nanmedian(ccf_output1['fwhm'].y),2)
             ccf_output2 = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Garfield', ccf_oversampling=3, debug=debug, sub_dico=sub_dico)
             sinfo['FWHM']['GARFIELD'] = np.round(np.nanmedian(ccf_output2['fwhm'].y),2)
-            pickle.dump(sinfo,open(dir_root+'/STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+            pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
     if force_master:
         ccf_output = mym.import_ccf(dir_root,'G2')
         master = mym.master_spectrum(ccf_output['filename'],ccf_output['rv'].y,0)
         material = {'wave':master.x,'reference_spectrum':master.y}
-        pickle.dump(material,open(dir_root+'/WORKSPACE/Analyse_material.p','wb'))
+        pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
         #sinfo = yarara_check_rv_sys_wrapper(dir_root,master,0) #check if on 0
     
-    if force_resolution:
-        ccf_output = mym.import_ccf(dir_root,'G2')
-        files = ccf_output['filename']
-        rv = ccf_output['rv'].y
-        berv = np.array(summary.loc[np.in1d(summary['filename'],files),'berv'])
-        fwhm_ins = mym.yarara_instrumental_resolution(dir_root, files, rv, berv)
-        sinfo['FWHM']['O2'] = np.round(fwhm_ins,2)
-        pickle.dump(sinfo,open(dir_root+'/STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
-
     if force_atmos:
         master = mym.import_master(dir_root)
         fwhm = sinfo['FWHM']['G2']
@@ -309,7 +307,7 @@ def reduce(
             sinfo['Contrast'][kw] = CT[kw]
         for kw in EW.keys():
             sinfo['EW'][kw] = EW[kw]
-        pickle.dump(sinfo,open(dir_root+'/STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+        pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
         atmos = mym.yarara_atmos_xgb_spectroscopy(dir_root, sinfo, resolution=80000, phot=True)
         teff,feh,logg,M,R,BV,vmicro,vmacro = atmos
@@ -327,8 +325,27 @@ def reduce(
         sinfo['Vmacro'] = {'fixed':1.0,'SNAKY':vmacro}
         sinfo['stellar_template'] = {'fixed':'MARCS_T5750_g4.5','SNAKY':suffixe} 
 
-        pickle.dump(sinfo,open(dir_root+'/STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+        pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
+    if force_resolution:
+        summary = mym.import_summary(dir_root)
+        ccf_output = mym.import_ccf(dir_root,'G2')
+        files = ccf_output['filename']
+        shift_rv = ccf_output['rv'].y
+        berv = np.array(summary.loc[np.in1d(summary['filename'],files),'berv'])
+        fwhm_ins = mym.yarara_instrumental_resolution(dir_root, files, shift_rv, berv)
+        if ins[0:6]=='SOPHIE':
+            output = np.array([files,fwhm_ins]).T
+            newins = np.array([['SOPHIE-HE_0.5','SOPHIE_0.5'][i<5] for i in fwhm_ins])
+            output[:,-1] = newins
+            loc = [np.where(summary['filename']==f)[0][0] for f in output[:,0]]
+            summary.loc[loc,'ins'] = output[:,-1]
+        
+        sinfo['FWHM']['O2'] = np.round(np.nanmedian(fwhm_ins),2)            
+        pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+        summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
+
+    summary = mym.import_summary(dir_root)
     sinfo = mym.import_star_info(dir_root)
     rv_sys = sinfo['Rv_sys']['SNAKY']
 
@@ -338,29 +355,29 @@ def reduce(
         feh = sinfo['FeH']['SNAKY']
         ins_res = sinfo['FWHM']['O2']
         vsini = mym.yarara_vcat(dir_root, teff, logg, ins, ins_res=ins_res, sub_dico=sub_dico) 
+        mym.yarara_vsini(dir_root, Prot=None, Rs=None)
         sinfo['Vsini'] = {'fixed':2.0,'SNAKY':np.round(np.nanmean(vsini),2)}
-        pickle.dump(sinfo,open(dir_root+'/STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+        pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
     material = mym.import_material(dir_root)
     if ('correction_factor' not in material.keys())|(force_abs_continuum):
-        model = sinfo['stellar_template']['SNAKY']
         master = mym.import_master(dir_root)
-        template_flux, correction = mym.yarara_correct_continuum_absorption(dir_root, master, model, rv_sys)
+        template_flux, correction = mym.yarara_correct_continuum_absorption(dir_root, master, sinfo)
         material['stellar_template'] = template_flux
         material['correction_factor'] = correction
-        pickle.dump(material,open(dir_root+'/WORKSPACE/Analyse_material.p','wb'))
+        pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
 
     if force_activity:
-        kept = np.array(summary['flag1'])*np.array(summary['flag2'])
+        kept = np.array(1-summary['flag1'])*np.array(1-summary['flag2'])
         files = np.array(summary.loc[kept==1,'filename'])
         ccf_output = mym.import_ccf(dir_root,'G2')
         tab_proxies, CT, mask_activity = mym.yarara_activity_index(ccf_output['filename'], rv_sys, ccf_output['rv'].y, material=material)
         material['activity_proxies'] = mask_activity
-        pickle.dump(material,open(dir_root+'/WORKSPACE/Analyse_material.p','wb'))
+        pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
 
         for kw in CT.keys():
             sinfo['Contrast'][kw] = np.round(CT[kw],5)
-        pickle.dump(sinfo,open(dir_root+'/STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+        pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
         for kw in tab_proxies:
             if (kw!='filename')&(kw in summary.keys()):
                 del summary[kw]
@@ -392,9 +409,11 @@ def reduce(
         prot_vsini = np.min([prot_vsini,100])
         sinfo['Prot'] = {'fixed':25.0,'Mamaj+08':prot1,'Noyes+84':prot2,'VSINI':prot_vsini}
 
-        pickle.dump(sinfo,open(dir_root+'/STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+        pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
         mym.plot_mhk(dir_root)
+
+        mym.create_finch_db(dir_root=dir_root)
 
     if force_spectroscopy:
         material = mym.import_material(dir_root)
@@ -418,12 +437,12 @@ def reduce(
                 extracted = sinfo[kw]
                 del extracted['fixed']
                 spectroscopy[kw] = extracted
-        pickle.dump(spectroscopy,open(dir_root+'/WORKSPACE/Analyse_spectroscopy.p','wb'))
+        pickle.dump(spectroscopy,open(dir_root+'WORKSPACE/Analyse_spectroscopy.p','wb'))
 
     time_end = time.time()
     duration = np.round((time_end-time_start)/60,2)
     tag_duration = str(int(duration//1))+'m'+str(int((duration%1)*60))+'s'
-    print(" [INFO] Processing achieved in "+tag_duration+" of dir_root = '"+dir_root+"' \n")
+    print(Fore.CYAN+"\n [INFO] Processing achieved in "+tag_duration+" of dir_root = '"+dir_root+"' \n"+Fore.RESET)
 
     if force_cleaning:
         mym.clean_light_dir(dir_root)
@@ -434,8 +453,8 @@ force_summary = bool(np.sum(steps==2))
 force_rvsys = bool(np.sum(steps==3))
 force_ccf = bool(np.sum(steps==4))
 force_master = bool(np.sum(steps==5))
-force_resolution = bool(np.sum(steps==6))
-force_atmos = bool(np.sum(steps==7))
+force_atmos = bool(np.sum(steps==6))
+force_resolution = bool(np.sum(steps==7))
 force_vsini = bool(np.sum(steps==8))
 force_abs_continuum = bool(np.sum(steps==9))
 force_activity = bool(np.sum(steps==10))
@@ -464,8 +483,8 @@ else:
                 force_rvsys = force_rvsys,
                 force_ccf = force_ccf,
                 force_master = force_master,
-                force_resolution = force_resolution,
                 force_atmos = force_atmos,
+                force_resolution = force_resolution,
                 force_vsini = force_vsini,
                 force_abs_continuum = force_abs_continuum,
                 force_activity = force_activity,
@@ -488,8 +507,8 @@ else:
             force_rvsys = force_rvsys,                   #3
             force_ccf = force_ccf,                       #4
             force_master = force_master,                 #5
-            force_resolution = force_resolution,         #6
-            force_atmos = force_atmos,                   #7
+            force_atmos = force_atmos,                   #6
+            force_resolution = force_resolution,         #7
             force_vsini = force_vsini,                   #8
             force_abs_continuum = force_abs_continuum,   #9
             force_activity = force_activity,             #10
