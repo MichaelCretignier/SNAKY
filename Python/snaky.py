@@ -159,7 +159,7 @@ def reduce(
         if not len(files):
             print(Fore.YELLOW+' [EMERGENCY STOP] No spectra found in the RAW directory %s'%(dir_root)+Fore.RESET)
             print('\n')
-            force_pre, force_summary, force_rvsys, force_ccf, force_master, force_atmos, force_resolution, force_vsini,force_abs_continuum, force_activity ,force_mhk,force_spectroscopy ,force_cleaning = [False]*13           
+            force_pre, force_summary, force_rvsys, force_ccf, force_master, force_atmos, force_resolution, force_vsini,force_abs_continuum, force_activity ,force_mhk, force_spectroscopy, force_magcycle ,force_cleaning = [False]*14         
         else:
             summary = mym.extract_header(files, ins, debug=debug, dec=dec, ra=ra)
             summary['fileroot'] = files
