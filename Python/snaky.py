@@ -124,13 +124,14 @@ def reduce(
         summary = mym.import_summary(dir_root)
         if 'snr_computed' in summary.keys():
             summary['snr'] = summary['snr_computed']
+        summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
         sinfo = mym.import_star_info(dir_root)
         ra = mym.ra_to_deg(sinfo['Ra']['fixed'].replace(' ',''))
         dec = mym.dec_to_deg(sinfo['Dec']['fixed'].replace(' ',''))
         dace_summary = pd.read_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv',index_col=0)
         dace_summary['RA'] = np.round(ra,6) ; dace_summary['DEC'] = np.round(dec,6)
         dace_summary.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
-        
+
         force_pre = False
         force_summary = False
     else:
@@ -382,8 +383,7 @@ def reduce(
 
     material = mym.import_material(dir_root)
     if ('correction_factor' not in material.keys())|(force_abs_continuum):
-        master = mym.import_master(dir_root)
-        template_flux, correction = mym.yarara_correct_continuum_absorption(dir_root, master, sinfo)
+        template_flux, correction = mym.yarara_correct_continuum_absorption(dir_root)
         material['stellar_template'] = template_flux
         material['correction_factor'] = correction
         pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))

@@ -2084,7 +2084,7 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None):
         plt.figure('vsini2')
         G.interpolate(new_grid=np.sort(np.random.randn(99999)*std_F+mean_F),method='linear',replace=False)
         V = G.y_interp
-        
+
         sample = V
         sample = sample[sample>=0]
         samples.append(sample)
@@ -2380,12 +2380,52 @@ def yarara_activity_index(files, rv_sys, shift_rv, material=None, sub_dico='matc
     CT = {'NaDC':C,'Ha':X,'NaD':Y,'MgI':Z,'Hb':H}
     return tab, CT, mask_activity
 
+def yarara_compute_snr(dir_root,sub_dico):
+    material = import_material(dir_root)
+    summary = import_summary(dir_root)
+    master = material['reference_spectrum']*material['correction_factor']
+    grid = material['wave']
+    star_info = import_star_info(dir_root)
 
-def yarara_correct_continuum_absorption(dir_root, master, star_info):
+    rv_sys = star_info['Rv_sys']['SNAKY']
+    teff = star_info['Teff']['SNAKY']
+    logg = star_info['Log_g']['SNAKY']
+    feh = star_info['FeH']['SNAKY']
+
+    template_empi = import_stellar_template(teff,logg=logg,feh=feh,model='SNAKY',rv_sys=rv_sys)
+    template_empi.interpolate(grid,method='linear',fill_value=np.nan)
+
+    grid, flux, err_flux = import_sts(summary['filename'], err=False, sub_dico=sub_dico)    
+
+    ratio = master/template_empi.y-1
+    mask = template_empi.y!=0
+    for j in range(4):
+        ratio = ratio - myf.smooth(ratio,100)
+        sigma = myf.mad(ratio[mask])
+        mask = (ratio<2*sigma)&(ratio>(-2*sigma))&(template_empi.y!=0)
+    snr = 1/sigma
+    print(' [INFO] Master spectrum SNR = %.0f'%(snr))
+    
+    snrs = []
+    for f in flux:
+        ratio = f/template_empi.y-1
+        mask = template_empi.y!=0
+        for j in range(4):
+            ratio = ratio - myf.smooth(ratio,100)
+            sigma = myf.mad(ratio[mask])
+            mask = (ratio<2*sigma)&(ratio>(-2*sigma))&(template_empi.y!=0)
+        snrs.append(int(np.round(1/sigma,0)))
+    return np.array(snrs)
+
+def yarara_correct_continuum_absorption(dir_root):
     
     myf.print_box('\n---- RECIPE : CORRECT ABSORPTION CONTINUUM ----\n')
 
     ins = dir_root.split('/')[-2].split('_')[0]
+    
+    master = import_master(dir_root)
+    star_info = import_star_info(dir_root)
+
     rv_sys = star_info['Rv_sys']['SNAKY']
     feh = star_info['FeH']['SNAKY']
     model = star_info['stellar_template']['SNAKY']
@@ -2488,7 +2528,6 @@ def yarara_correct_continuum_absorption(dir_root, master, star_info):
     correction = local.y_smoothed        
 
     if ins=='NEID':
-        
         template_empi = import_stellar_template(teff,logg=logg,feh=feh,model='SNAKY',rv_sys=rv_sys)
         template_empi.interpolate(master.x,method='linear',fill_value=np.nan)
 
