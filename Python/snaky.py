@@ -159,7 +159,7 @@ def reduce(
         if not len(files):
             print(Fore.YELLOW+' [EMERGENCY STOP] No spectra found in the RAW directory %s'%(dir_root)+Fore.RESET)
             print('\n')
-            force_pre, force_summary, force_rvsys, force_ccf, force_master, force_atmos, force_resolution, force_vsini,force_abs_continuum, force_activity ,force_mhk, force_spectroscopy, force_magcycle ,force_cleaning = [False]*14         
+            force_pre, force_summary, force_rvsys, force_ccf, force_master, force_atmos, force_resolution, force_vsini,force_abs_continuum, force_activity ,force_mhk, force_spectroscopy, force_magcycle, force_cleaning = [False]*14         
         else:
             summary = mym.extract_header(files, ins, debug=debug, dec=dec, ra=ra)
             summary['fileroot'] = files
@@ -226,11 +226,15 @@ def reduce(
     summary = mym.import_summary(dir_root)
     files = np.array(summary['filename'])
     if 'flag1' not in summary.keys():
+        
         wave_grid, sts, sts_err = mym.import_sts(files, sub_dico=sub_dico)
         anomalous = np.sum((sts>1.02)|(sts<0),axis=1)*100/len(wave_grid)
         anomalous = np.round(anomalous,0).astype('int')
         summary['anomalous'] = anomalous
-        kept = (anomalous<5)
+        if np.min(anomalous<5):
+            kept = (anomalous<5)
+        else:
+            kept = (anomalous<10)
 
         print(' [INFO] Number of good spectra = %.0f'%(sum(kept)))
         print(' [INFO] Number of anomalous spectra = %.0f'%(len(kept)-sum(kept)))
@@ -466,18 +470,21 @@ def reduce(
         pickle.dump(spectroscopy,open(dir_root+'WORKSPACE/Analyse_spectroscopy.p','wb'))
 
     if force_magcycle:
-        finch_output = mym.yarara_finch(dir_root, rm_source=['DACE'], offset_instrument='no!', ext='')
-        sinfo = myf.update_info_lvl2(sinfo,'Pmag','SNAKY', finch_output[1])
-        pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
-        pickle.dump({
-            'Starname':star,
-            'Pmag':finch_output[1],
-            'Kmag_mean':finch_output[2],
-            'Kmag_amp':finch_output[3],
-            'Kmag_pred':finch_output[4],
-            'Phase_pred':finch_output[5],
-            'Phase_side':finch_output[6]}, 
-            open(dir_root.replace(ins+'/','ALLINS_MERGED/Pmag_FINCH_info.p'),'wb'))
+        try:
+            finch_output = mym.yarara_finch(dir_root, rm_source=['DACE'], offset_instrument='no!', ext='')
+            sinfo = myf.update_info_lvl2(sinfo,'Pmag','SNAKY', finch_output[1])
+            pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+            pickle.dump({
+                'Starname':star,
+                'Pmag':finch_output[1],
+                'Kmag_mean':finch_output[2],
+                'Kmag_amp':finch_output[3],
+                'Kmag_pred':finch_output[4],
+                'Phase_pred':finch_output[5],
+                'Phase_side':finch_output[6]}, 
+                open(dir_root.replace(ins+'/','ALLINS_MERGED/Pmag_FINCH_info.p'),'wb'))
+        except:
+            pass
 
     time_end = time.time()
     duration = np.round((time_end-time_start)/60,2)

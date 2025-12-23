@@ -562,6 +562,8 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
     if not print_reference:
         vec.print_reference = False
 
+    vec.mask_flag[vec.yerr>20] = True
+
     #self.debug = vec,trend_degree,harm,automatic_fit,automatic_fit,offset_instrument,predict,x_unit
 
     if ((np.max(vec.x)-np.min(vec.x))/365.25)>4: #at least 4 years baseline to fit
@@ -1597,10 +1599,10 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None,
         fwhm_ins = np.nanmedian(ccf_fwhm.y)
         if ins.split('_')[0] in myv.instrument_res_kms.keys():
             ref = myv.instrument_res_kms[ins.split('_')[0]]
-            print(' [INFO] Reference value for %s is %.1f'%(ins,fwhm_ins))
+            print(' [INFO] Reference value for %s is %.1f km/_s'%(ins,ref))
             if abs(ref - fwhm_ins)>1:
                 warning = 1
-                print(Fore.YELLOW + '\n [WARNING] Instrumental resolution is not usual'+Fore.RESET)
+                print(Fore.YELLOW + '\n [WARNING] Instrumental resolution is not usual (%.1f km/s)'%(fwhm_ins)+Fore.RESET)
         else:
             ref = np.nan
 
@@ -1945,7 +1947,17 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
 def yarara_vcat(dir_root, teff, logg, instrument, ins_res=np.nan, sub_dico='matching_diff', Prot=None):
 
     ins = instrument.split('_')[0]
+    ref_resolution = myv.instrument_res_kms[ins]
+    diff = ref_resolution - ins_res
+
     myf.print_box('\n---- RECIPE : VSINI EXTRACTION ----\n')
+
+    print(' [INFO] Reference instrument resolution = %.2f km/s'%(ref_resolution))
+    print(' [INFO] Telluric measured one = %.2f km/s (Delta = %.2f)'%(ins_res,diff))
+    if abs(diff)>1:
+        print(Fore.YELLOW+' [WARNING] Resolution is too different from reference value, O2 correction applied.'+Fore.RESET)
+    else:
+        diff = 0
 
     calib_product = 'Calib_HARPN_GKM_vsini_HD10700.p'
     print(' [INFO] Calibration product used : %s'%(calib_product))
@@ -2004,13 +2016,9 @@ def yarara_vcat(dir_root, teff, logg, instrument, ins_res=np.nan, sub_dico='matc
         fwhmG = np.array(fwhmG)
         kw = mask.upper()
         ins_calib = ins
-        #if ins_calib=='SOPHIE':
-        #    ins_calib = 'CORALIE14'
-        #if ins_calib=='NEID':
-        #    ins_calib = 'HARPN'
 
         calib_ins = pd.read_csv(root+'/Python/Material_snaky/Table_calib_vsini_%s.csv'%(kw),index_col=0)
-        calib_ins = myc.tableXY(calib_ins[ins_calib],calib_ins['HARPN'],0*calib_ins[ins_calib]) #reference HARPN
+        calib_ins = myc.tableXY(np.sqrt(calib_ins[ins_calib]**2-diff**2),calib_ins['HARPN'],0*calib_ins[ins_calib]) #reference HARPN
         calib_ins.order()
         calib_ins.interpolate(new_grid=fwhmG,replace=False,method='linear')
         fwhmG_HARPN = calib_ins.y_interp
