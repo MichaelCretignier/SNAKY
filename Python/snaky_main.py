@@ -2051,7 +2051,7 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None):
         fwhmG = np.sqrt(fwhmG**2-ins_res**2+ref_resolution**2)
 
         calib_ins = pd.read_csv(root+'/Python/Material_snaky/Table_calib_vsini_%s.csv'%(kw),index_col=0)
-        calib_ins = myc.tableXY(np.sqrt(calib_ins[ins_calib]**2-diff**2),calib_ins['HARPN'],0*calib_ins[ins_calib]) #reference HARPN
+        calib_ins = myc.tableXY(calib_ins[ins_calib],calib_ins['HARPN'],0*calib_ins[ins_calib]) #reference HARPN
         calib_ins.order()
         calib_ins.interpolate(new_grid=fwhmG,replace=False,method='linear')
         fwhmG_HARPN = calib_ins.y_interp
@@ -2575,9 +2575,12 @@ def yarara_instrumental_resolution(dir_root, files, shift_rv, berv, sub_dico='ma
     FWHM_ins = np.nanmedian(fwhm_ins)
     print('\n [INFO] Instrumental resolution measured by O2 lines = %.1f km/s \n'%(FWHM_ins))
     calib = myc.tableXY([1, 2, 3, 4, 5, 6, 7, 8, 9],[299792,149896,99931,74948,59958,49965,42828,37474,33310])
-    calib.interpolate(new_grid=np.array([FWHM_ins]),method='cubic')
+    calib.interpolate(new_grid=np.array([FWHM_ins]),method='cubic',fill_value=np.nan)
     print(' [INFO] Estimate intrumental resolution = %.0f'%(np.round(calib.y[0],-3)))
 
+    fwhm_ins[fwhm_ins<1] = np.nan
+    fwhm_ins[fwhm_ins>10] = np.nan
+    
     return fwhm_ins
 
 mhk_c1 = -4.04840205e+01        #calibration with RHK DRS

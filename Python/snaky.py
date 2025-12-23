@@ -362,12 +362,12 @@ def reduce(
         fwhm_ins = mym.yarara_instrumental_resolution(dir_root, files, shift_rv, berv)
         if ins[0:6]=='SOPHIE':
             output = np.array([files,fwhm_ins]).T
-            newins = np.array([['SOPHIE-HE_0.5','SOPHIE_0.5'][i<5] for i in fwhm_ins])
+            newins = np.array([['SOPHIE_0.5','SOPHIE-HE_0.5'][int(i>5)] for i in fwhm_ins])
             output[:,-1] = newins
             loc = [np.where(summary['filename']==f)[0][0] for f in output[:,0]]
             summary.loc[loc,'ins'] = output[:,-1]
-        
-        sinfo = myf.update_info_lvl2(sinfo,'FWHM','O2',np.round(np.nanmedian(fwhm_ins),2))
+        ins_res = np.round(np.nanmedian(fwhm_ins),2)
+        sinfo = myf.update_info_lvl2(sinfo,'FWHM','O2',ins_res)
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
 
