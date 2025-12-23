@@ -2056,6 +2056,8 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None):
         calib_ins.interpolate(new_grid=fwhmG,replace=False,method='linear')
         fwhmG_HARPN = calib_ins.y_interp
 
+        fwhmG_HARPN[fwhmG_HARPN!=fwhmG_HARPN] = np.min(calib_ins.y) # to avoid crash
+        
         #print(fwhmG_HARPN)
         #fwhmG_HARPN = np.sqrt(fwhmG_HARPN**2 - vmacro[mask]**2 + vmacro_sun[mask]**2)
         #print(fwhmG_HARPN)
@@ -2082,9 +2084,9 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None):
         plt.figure('vsini2')
         G.interpolate(new_grid=np.sort(np.random.randn(99999)*std_F+mean_F),method='linear',replace=False)
         V = G.y_interp
-
+        
         sample = V
-        sample = sample[sample>0]
+        sample = sample[sample>=0]
         samples.append(sample)
         plt.hist(sample,bins=100,density=True,histtype='step')
         plt.hist(sample,bins=100,density=True,alpha=0.4,color='C%.0f'%(num),label=mask)
@@ -2580,7 +2582,7 @@ def yarara_instrumental_resolution(dir_root, files, shift_rv, berv, sub_dico='ma
 
     fwhm_ins[fwhm_ins<1] = np.nan
     fwhm_ins[fwhm_ins>10] = np.nan
-    
+
     return fwhm_ins
 
 mhk_c1 = -4.04840205e+01        #calibration with RHK DRS
