@@ -367,7 +367,7 @@ def reduce(
             loc = [np.where(summary['filename']==f)[0][0] for f in output[:,0]]
             summary.loc[loc,'ins'] = output[:,-1]
         
-        sinfo['FWHM']['O2'] = np.round(np.nanmedian(fwhm_ins),2)            
+        sinfo = myf.update_info_lvl2(sinfo,'FWHM','O2',np.round(np.nanmedian(fwhm_ins),2))
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
 
@@ -375,11 +375,7 @@ def reduce(
     sinfo = mym.import_star_info(dir_root)
 
     if force_vsini:
-        teff = sinfo['Teff']['SNAKY']
-        logg = sinfo['Log_g']['SNAKY']
-        feh = sinfo['FeH']['SNAKY']
-        ins_res = sinfo['FWHM']['O2']
-        vsini = mym.yarara_vcat(dir_root, teff, logg, ins, ins_res=ins_res, sub_dico=sub_dico) 
+        vsini = mym.yarara_vcat(dir_root, sub_dico=sub_dico) 
         mym.yarara_vsini(dir_root, Prot=None, Rs=None)
         sinfo = myf.update_info_lvl2(sinfo,'Vsini','SNAKY',np.round(np.nanmean(vsini),2))
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
@@ -471,7 +467,7 @@ def reduce(
 
     if force_magcycle:
         try:
-            finch_output = mym.yarara_finch(dir_root, rm_source=['DACE'], offset_instrument='no!', ext='')
+            finch_output = mym.yarara_finch(dir_root, rm_source=['DACE'], offset_instrument='no!', ext='_fix_model')
             sinfo = myf.update_info_lvl2(sinfo,'Pmag','SNAKY', finch_output[1])
             pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
             pickle.dump({
@@ -483,6 +479,7 @@ def reduce(
                 'Phase_pred':finch_output[5],
                 'Phase_side':finch_output[6]}, 
                 open(dir_root.replace(ins+'/','ALLINS_MERGED/Pmag_FINCH_info.p'),'wb'))
+            finch_output = mym.yarara_finch(dir_root, rm_source=['DACE'], offset_instrument='yes', automatic_fit=True, ext='_free_model')
         except:
             pass
 

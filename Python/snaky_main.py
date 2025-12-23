@@ -36,7 +36,7 @@ SNAKY — Spectroscopic Novel Analysis Kit of Yarara
 
 """
 
-__version__ = '0.5'
+__version__ = '0.5.0'
 
 print(Fore.GREEN+"""\n[INFO SNAKY]
 [INFO USER] SNAKY version = """+__version__ +""" 
@@ -68,6 +68,27 @@ def get_berv(ra_deg, dec_deg, obstime_utc, instrument):
 
 def snaky_help():
     print(Fore.GREEN +'\n [SNAKY ADVICE] Here is some help!'+Fore.RESET)
+
+def snaky_print_sequence():
+    names = [
+        "force_pre",
+        "force_summary",
+        "force_rvsys",
+        "force_ccf",
+        "force_master",
+        "force_atmos",
+        "force_resolution",
+        "force_vsini",
+        "force_abs_continuum",
+        "force_activity",
+        "force_mhk",
+        "force_spectroscopy",
+        "force_magcycle",
+        "force_cleaning",
+    ]
+
+    for i, name in enumerate(names, start=1):
+        print(f"{i:2d}  {name}")
 
 def create_snaky_dir(star,ins):
     
@@ -482,7 +503,7 @@ def plot_mhk(dir_root, hide_outliers=True, daily_binned=True, debug=False):
     plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'MHK.png')
 
 
-def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offset_instrument='no!', automatic_fit=False, x_unit='years',predict='today', print_reference=True, rm_source=['DACE']):
+def yarara_finch(dir_root, branch='Snaky', proxy_name='MHK',ext='',trend_degree=0, harm=0, offset_instrument='no!', automatic_fit=False, x_unit='years',predict='today', print_reference=True, rm_source=['DACE']):
 
     myf.print_box('\n---- RECIPE : FINCH MAGNETIC CYCLE PERIOD ----\n')
 
@@ -492,7 +513,7 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
 
     x=[] ; y=[] ; yerr=[] ; instrument = [] ; reference = [] ; flag = []
 
-    files = glob.glob(dir_root.replace(ins,'*')+'WORKSPACE/Analyse_Finch_table.csv')
+    files = glob.glob(dir_root.replace(ins,'*').replace('Snaky',branch)+'WORKSPACE/Analyse_Finch_table.csv')
     for file in files:
         table = pd.read_csv(file,index_col=0)
         yerr.append(np.array(table[proxy_name.lower()+'_std']))
@@ -541,11 +562,9 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
     instrument = np.hstack(instrument)
     reference = np.hstack(reference)
     flag = np.hstack(flag)
-    ext = '_database_'+proxy_name
+    ext = '_'+proxy_name+ext
 
     instru = np.array([i.split('_')[0] for i in instrument])
-
-    raw_vec = myc.tableXY(proxy.x, proxy.y, proxy.yerr)
 
     vec = Finch.tableXY(proxy.x, proxy.y, proxy.yerr, proxy_name = proxy_name) 
     vec.set_instrument(instru)
@@ -620,7 +639,7 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
     FINCH_Mmag_GP = np.round(vec.out_gp_meanmag,1)   
     FINCH_Kmag_GP = np.round(vec.out_gp_ampmag,1)   
 
-    plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_magnetic_cycle'+ext+'_GP.png')
+    plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_magnetic_cycle_GP'+ext+'.png')
 
     fig_gp.set_figwidth(10)
     plt.title('Teff = %.0f K   |    Logg = %.2f dex   |    Fe/H = %.2f dex   |    Pmag = %.2f years   |    < M > = %.1f %% (A = %.1f %%)    '%(vec.star_teff, vec.star_logg, vec.star_feh, vec.out_gp_pmag, vec.out_gp_meanmag, vec.out_gp_ampmag))
@@ -628,7 +647,7 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
     plt.ylim(-15,90)
     plt.legend()
     plt.axhline(y=0,color='k',ls='-',alpha=0.7,lw=1)
-    plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_magnetic_cycle'+ext+'_GP_fixed_axis.png')
+    plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_magnetic_cycle_GP_fixed_axis'+ext+'.png')
 
     if not vec.out_convergence_flag:
         vec.bin.fit_line()
@@ -1944,20 +1963,32 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
     return teff,feh,logg,M,R,BV,vmicro,vmacro
 
 
-def yarara_vcat(dir_root, teff, logg, instrument, ins_res=np.nan, sub_dico='matching_diff', Prot=None):
+def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None):
 
+    myf.print_box('\n---- RECIPE : VSINI EXTRACTION ----\n')
+
+    sinfo = import_star_info(dir_root)
+
+    teff = sinfo['Teff']['SNAKY']
+    logg = sinfo['Log_g']['SNAKY']
+    feh = sinfo['FeH']['SNAKY']
+    ins_res = sinfo['FWHM']['O2']
+
+    instrument = dir_root.split('/')[-2]
     ins = instrument.split('_')[0]
     ref_resolution = myv.instrument_res_kms[ins]
     diff = ref_resolution - ins_res
 
-    myf.print_box('\n---- RECIPE : VSINI EXTRACTION ----\n')
-
     print(' [INFO] Reference instrument resolution = %.2f km/s'%(ref_resolution))
     print(' [INFO] Telluric measured one = %.2f km/s (Delta = %.2f)'%(ins_res,diff))
-    if abs(diff)>1:
-        print(Fore.YELLOW+' [WARNING] Resolution is too different from reference value, O2 correction applied.'+Fore.RESET)
+    
+    if instrument[0:6]=='SOPHIE':
+        if abs(diff)>1:
+            print(Fore.YELLOW+'\n [WARNING] Resolution is too different from reference value, O2 correction applied. \n'+Fore.RESET)
+        else:
+            ins_res = ref_resolution
     else:
-        diff = 0
+        ins_res = ref_resolution
 
     calib_product = 'Calib_HARPN_GKM_vsini_HD10700.p'
     print(' [INFO] Calibration product used : %s'%(calib_product))
@@ -2016,6 +2047,8 @@ def yarara_vcat(dir_root, teff, logg, instrument, ins_res=np.nan, sub_dico='matc
         fwhmG = np.array(fwhmG)
         kw = mask.upper()
         ins_calib = ins
+
+        fwhmG = np.sqrt(fwhmG**2-ins_res**2+ref_resolution**2)
 
         calib_ins = pd.read_csv(root+'/Python/Material_snaky/Table_calib_vsini_%s.csv'%(kw),index_col=0)
         calib_ins = myc.tableXY(np.sqrt(calib_ins[ins_calib]**2-diff**2),calib_ins['HARPN'],0*calib_ins[ins_calib]) #reference HARPN
@@ -2095,7 +2128,7 @@ def yarara_vcat(dir_root, teff, logg, instrument, ins_res=np.nan, sub_dico='matc
 
 def yarara_vsini(dir_root, Prot=None, Rs=None):
 
-    vsun = 1.87 ; psun = 27
+    vsun = 1.87 ; psun = 27.5
 
     vmax_veq = 2*pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stell*')[0])['FWHM']['G2']
     samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv',index_col=0)
@@ -2173,10 +2206,9 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
     plt.plot(pbx,pby)
     plt.axvline(x=p90m[0],ls=':',color='k')
     if Prot is not None:
-        plt.axvline(x=Prot,color='k',ls='-')
+        plt.axvline(x=Prot,color='k',ls='-',label=r'$P_{rot}$=%.1f days'%(Prot))
+        plt.legend()
 
-    if Prot is not None:
-        plt.axvline(x=Prot,color='k',ls='-')
     plt.xlim(1,100)
     plt.ylim(0,None)
     plt.xscale('log')
