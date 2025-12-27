@@ -90,6 +90,127 @@ def snaky_print_sequence():
     for i, name in enumerate(names, start=1):
         print(f"{i:2d}  {name}")
 
+##### CONTROL CHECK FUNCTIONS (DB PROCESSING)
+
+def check_force_pre(dir_root):
+    try:
+        test = pd.read_pickle(glob.glob(dir_root+'WORKSPACE/RASSINE*')[0])
+        os.system('touch '+dir_root+'REDUCTION_INFO/force_pre.txt')
+        print(Fore.GREEN+' [INFO] Recipe PRE done!'+Fore.RESET) ; QC=1
+    except:
+        print(Fore.YELLOW+' [INFO] Recipe PRE not launched or crashed!'+Fore.RESET) ; QC=0
+    return QC
+
+def check_force_summary(dir_root):
+    try:
+        test = pd.read_csv(dir_root+'WORKSPACE/Analyse_summary.csv',index_col=0)['flag1']
+        os.system('touch '+dir_root+'REDUCTION_INFO/force_summary.txt')
+        print(Fore.GREEN+' [INFO] Recipe SUMMARY done!'+Fore.RESET) ; QC=1
+    except:
+        print(Fore.YELLOW+' [INFO] Recipe SUMMARY not launched or crashed!'+Fore.RESET) ; QC=0
+    return QC
+
+def check_force_rvsys(dir_root):
+    try:
+        test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['Rv_sys']['SNAKY']
+        os.system('touch '+dir_root+'REDUCTION_INFO/force_rvsys.txt')
+        print(Fore.GREEN+' [INFO] Recipe RVSYS done!'+Fore.RESET) ; QC=1
+    except:
+        print(Fore.YELLOW+' [INFO] Recipe RVSYS not launched or crashed!'+Fore.RESET) ; QC=0
+    return QC
+
+def check_force_ccf(dir_root):
+    try:
+        test = pd.read_pickle(dir_root+'WORKSPACE/Analyse_ccf.p')['CCF_G2']['table']
+        os.system('touch '+dir_root+'REDUCTION_INFO/force_ccf.txt')
+        print(Fore.GREEN+' [INFO] Recipe CCF done!'+Fore.RESET) ; QC=1
+    except:
+        print(Fore.YELLOW+' [INFO] Recipe CCF not launched or crashed!'+Fore.RESET) ; QC=0
+    return QC
+
+def check_force_master(dir_root):
+    try:
+        test = pd.read_pickle(dir_root+'WORKSPACE/Analyse_material.p')['reference_spectrum']
+        os.system('touch '+dir_root+'REDUCTION_INFO/force_master.txt')
+        print(Fore.GREEN+' [INFO] Recipe MASTER done!'+Fore.RESET) ; QC=1
+    except:
+        print(Fore.YELLOW+' [INFO] Recipe MASTER not launched or crashed!'+Fore.RESET) ; QC=0
+    return QC
+
+def check_force_atmos(dir_root):
+    try:
+        test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['Mstar']['SNAKY']
+        os.system('touch '+dir_root+'REDUCTION_INFO/force_atmos.txt')
+        print(Fore.GREEN+' [INFO] Recipe ATMOS done!'+Fore.RESET) ; QC=1
+    except:
+        print(Fore.YELLOW+' [INFO] Recipe ATMOS not launched or crashed!'+Fore.RESET) ; QC=0
+    return QC
+
+def check_force_resolution(dir_root):
+    try:
+        test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['FWHM']['O2']
+        os.system('touch '+dir_root+'REDUCTION_INFO/force_resolution.txt')
+        print(Fore.GREEN+' [INFO] Recipe RESOLUTION done!'+Fore.RESET) ; QC=1
+    except:
+        print(Fore.YELLOW+' [INFO] Recipe RESOLUTION not launched or crashed!'+Fore.RESET) ; QC=0
+    return QC
+
+def check_force_vsini(dir_root):
+    try:
+        test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['Vsini']['SNAKY']
+        os.system('touch '+dir_root+'REDUCTION_INFO/force_vsini.txt')
+        print(Fore.GREEN+' [INFO] Recipe VSINI done!'+Fore.RESET) ; QC=1
+    except:
+        print(Fore.YELLOW+' [INFO] Recipe VSINI not launched or crashed!'+Fore.RESET) ; QC=0
+    return QC
+
+def check_force_abs_continuum(dir_root):
+    try:
+        test = pd.read_pickle(dir_root+'WORKSPACE/Analyse_material.p')['correction_factor']
+        os.system('touch '+dir_root+'REDUCTION_INFO/force_abs_continuum.txt')
+        print(Fore.GREEN+' [INFO] Recipe ABSCONTINUUM done!'+Fore.RESET) ; QC=1
+    except:
+        print(Fore.YELLOW+' [INFO] Recipe ABSCONTINUUM not launched or crashed!'+Fore.RESET) ; QC=0
+    return QC
+
+def check_force_activity(dir_root):
+    try:
+        test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['Contrast']['Ha']
+        os.system('touch '+dir_root+'REDUCTION_INFO/force_activity.txt')
+        print(Fore.GREEN+' [INFO] Recipe ACTIVITY done!'+Fore.RESET) ; QC=1
+    except:
+        print(Fore.YELLOW+' [INFO] Recipe ACTIVITY not launched or crashed!'+Fore.RESET) ; QC=0
+    return QC
+
+def check_force_mhk(dir_root):
+    try:
+        test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['MHK']['SNAKY']
+        os.system('touch '+dir_root+'REDUCTION_INFO/force_mhk.txt')
+        print(Fore.GREEN+' [INFO] Recipe MHK done!'+Fore.RESET) ; QC=1
+    except:
+        print(Fore.YELLOW+' [INFO] Recipe MHK not launched or crashed!'+Fore.RESET) ; QC=0
+    return QC
+
+def check_force_spectroscopy(dir_root):
+    try:
+        test = pd.read_pickle(dir_root+'WORKSPACE/Analyse_spectroscopy.p')['flux_corrected']
+        os.system('touch '+dir_root+'REDUCTION_INFO/force_spectroscopy.txt')
+        print(Fore.GREEN+' [INFO] Recipe SPECTROSCOPY done!'+Fore.RESET) ; QC=1
+    except:
+        print(Fore.YELLOW+' [INFO] Recipe SPECTROSCOPY not launched or crashed!'+Fore.RESET) ; QC=0
+    return QC
+
+def check_force_magcycle(dir_root):
+    try:
+        test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['Pmag']['SNAKY']
+        os.system('touch '+dir_root+'REDUCTION_INFO/force_magcycle.txt')
+        print(Fore.GREEN+' [INFO] Recipe MAGCYCLE done!'+Fore.RESET) ; QC=1
+    except:
+        print(Fore.YELLOW+' [INFO] Recipe MAGCYCLE not launched or crashed!'+Fore.RESET) ; QC=0
+    return QC
+
+#
+
 def create_snaky_dir(star,ins):
     
     if not os.path.exists(root+'/Snaky/'+star+'/data/s1d/ALLINS_MERGED'):
@@ -123,8 +244,10 @@ def create_snaky_dir(star,ins):
 def clean_light_dir(dir_root):
     os.system('rm '+dir_root+'CCF_MASK/CCF*.fits')
     material = import_material(dir_root)
-    del material['activity_proxies']
-    del material['stellar_template']
+    if 'activity_proxies' in material.keys():
+        del material['activity_proxies']
+    if 'stellar_template' in material.keys():
+        del material['stellar_template']
     pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
 
 def fix_dir_root(instrument='SOPHIE-HE_0.5'):
@@ -219,6 +342,43 @@ def create_finch_db(dir_root=None):
             summary['rhk'] = np.round(summary['rhk'],4)
             summary['rhk_std'] = np.round(summary['rhk_std'],4)
             summary.to_csv(f2.replace('summary.csv','Finch_table.csv'))
+
+def check_snaky_processing(instrument='*'):
+    os.makedirs(root+'/Snaky/database', exist_ok=True)
+    all_dir = glob.glob(root+'/Snaky/*/data/s1d/'+instrument+'/RAW')
+    stars = [d.split('/data')[0].split('/')[-1] for d in all_dir]
+    ins = [d.split('/RAW')[0].split('/')[-1] for d in all_dir]
+    code = [i+'_'+j for i,j in zip(stars,ins)]
+
+    all_info = pd.DataFrame(np.array([code,stars,ins]).T,columns=['code','star','ins'])
+
+    kws = [
+        'force_pre',
+        'force_summary',
+        'force_rvsys',
+        'force_ccf',
+        'force_master',
+        'force_atmos',
+        'force_resolution',
+        'force_vsini',
+        'force_abs_continuum',
+        'force_activity',
+        'force_mhk',
+        'force_spectroscopy',
+        'force_magcycle',
+          ]
+    
+    for kw in kws:
+        all_files2 = glob.glob(root+'/Snaky/*/data/s1d/'+instrument+'/REDUCTION_INFO/'+kw+'.txt')
+        stars2 = [d.split('/data')[0].split('/')[-1] for d in all_files2]
+        ins2 = [d.split('/REDUCTION_INFO')[0].split('/')[-1] for d in all_files2]
+        code2 = [i+'_'+j for i,j in zip(stars2,ins2)]
+        mask = np.in1d(np.array(all_info['code']),np.array(code2))
+        all_info[kw.split('_')[1][0:5]] = 'XXXX'
+        all_info.loc[mask,kw.split('_')[1][0:5]] = ''
+    all_info = all_info.sort_values(by='code').reset_index(drop=True)
+    print(root+'/Snaky/database/Snaky_processing_db_'+instrument+'.csv')
+    all_info.to_csv(root+'/Snaky/database/Snaky_processing_db_'+instrument+'.csv')
 
 def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
     os.makedirs(root+'/Snaky/database', exist_ok=True)
@@ -503,7 +663,7 @@ def plot_mhk(dir_root, hide_outliers=True, daily_binned=True, debug=False):
     plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'MHK.png')
 
 
-def yarara_finch(dir_root, branch='Snaky', proxy_name='MHK',ext='',trend_degree=0, harm=0, offset_instrument='no!', automatic_fit=False, x_unit='years',predict='today', print_reference=True, rm_source=['DACE']):
+def yarara_finch(dir_root, branch='Snaky', proxy_name='MHK',ext='',trend_degree=0, harm=0, offset_instrument='no!', automatic_fit=False, x_unit='years',predict='today', predict_samples=None,print_reference=True, rm_source=['DACE','Yu+23']):
 
     myf.print_box('\n---- RECIPE : FINCH MAGNETIC CYCLE PERIOD ----\n')
 
@@ -658,8 +818,44 @@ def yarara_finch(dir_root, branch='Snaky', proxy_name='MHK',ext='',trend_degree=
         model[vec.out_gp_model[0]>=(np.max(trend.x)+2000)] = vec.out_gp_model[1][vec.out_gp_model[0]>=(np.max(trend.x)+2000)]
         vec.out_gp_model[1] = model
     
-    exportation3 = myc.tableXY(myf.conv_time(vec.out_gp_model[0])[0],vec.out_gp_model[1],vec.out_gp_model[2])
-    exportation3.export(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_%s_GP_model.csv'%(proxy_name),format='csv',columns=['jdb','proxy','proxy_std','qc'])
+    export3 = myc.tableXY(myf.conv_time(vec.out_gp_model[0])[0],vec.out_gp_model[1],vec.out_gp_model[2])
+    export3.export(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_%s_GP_model.csv'%(proxy_name),format='csv',columns=['jdb','proxy','proxy_std','qc'])
+
+    if predict_samples is not None:
+        export3.x = myf.conv_time(export3.x)[1]
+        export3.interpolate(new_grid=np.arange(predict_samples[0],predict_samples[1],0.25))
+        plt.figure(figsize=(10,6))
+        plt.subplot(2,1,1)
+        plt.title('Predicted activity level')
+        plt.plot(export3.x,export3.y,color='k',ls='-',alpha=0.7)
+        plt.fill_between(export3.x,export3.y-export3.yerr,export3.y+export3.yerr,color='k',alpha=0.2)
+        samples_mhk = []
+        nb = int(99999/len(export3.x))
+        for i,j in zip(export3.y,export3.yerr):
+            samples_mhk.append(np.random.randn(nb)*j+i)
+        samples_mhk = np.ravel(samples_mhk)
+        plt.xlim(predict_samples[0],predict_samples[1])
+        plt.ylabel('MHK [%]',fontsize=13)
+        plt.xlabel('Date [year]',fontsize=13)
+
+        plt.scatter(export3.x[::4],export3.y[::4],color='k')
+        for i,j in zip(export3.x[::4],export3.y[::4]):
+            plt.text(i,j,'%.1f %%'%(j),color='k',ha='left',va='bottom')
+
+        plt.subplot(2,1,2)
+        pby,pbx = np.histogram(samples_mhk,bins=np.arange(-41,200,1),density=True)
+        pbx = 0.5*(pbx[1:]+pbx[0:-1])
+        plt.fill_between(pbx,pby,alpha=0.2,color='k',label=r'MHK = %.1f $\pm$ %.1f'%(np.nanmean(samples_mhk),myf.mad(samples_mhk))+'%')
+        plt.plot(pbx,pby,color='k')
+        plt.xlabel('MHK [%]',fontsize=13)
+        plt.ylim(0,None)
+        plt.xlim(-40,200)
+        plt.axvline(x=0,ls=':',color='k')
+        plt.axvline(x=50,ls='-.',color='k',label='active stars',lw=1)
+        plt.legend()
+        plt.xticks(np.arange(-25,200,25))
+        plt.subplots_adjust(hspace=0.35)
+        plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'MHK_samples_%.1f_%.1f'%(predict_samples[0],predict_samples[1])+ext+'.pdf')
 
     output = [
         FINCH_Pmag,
@@ -725,8 +921,8 @@ def import_sts(files, rv_shift=None, err=False, sub_dico='matching_diff'):
 
     return wave_grid, sts, sts_err    
 
-def read_neid(file,force=False,debug=False):
-    outname = file.replace('RAW','WORKSPACE').replace('.fits','.p').replace('WORKSPACE/','WORKSPACE/RASSINE_Stacked_spectrum_B0.00_')
+def read_neid(file,dir_root,force=False,debug=False):
+    outname = dir_root+'WORKSPACE/RASSINE_Stacked_spectrum_B0.00_'+fname.replace('.fits','.p')
     if (not os.path.exists(outname))|(force):
         t = fits.open(file)
         berv = t[0].header['SSBRV100']
@@ -775,8 +971,8 @@ def read_neid(file,force=False,debug=False):
             'parameters':{'arcfiles':[file]}}
         pickle.dump(export,open(outname,'wb'))
 
-def read_espresso(file,force=False,debug=False):
-    outname = file.replace('RAW','WORKSPACE').replace('.fits','.p').replace('WORKSPACE/','WORKSPACE/RASSINE_Stacked_spectrum_B0.00_')
+def read_espresso(file,dir_root,force=False,debug=False):
+    outname = dir_root+'WORKSPACE/RASSINE_Stacked_spectrum_B0.00_'+fname.replace('.fits','.p')
     if (not os.path.exists(outname))|(force):
         t = fits.open(file)
         wave = t[1].data['wavelength_air']
@@ -800,8 +996,9 @@ def read_espresso(file,force=False,debug=False):
             print('[WARNING] RASSINE continuum size wrong, potential multiprocessing issue')
     
 
-def read_sophie(file,force=False,debug=False):
-    outname = file.replace('RAW','WORKSPACE').replace('.fits','.p').replace('WORKSPACE/','WORKSPACE/RASSINE_Stacked_spectrum_B0.00_')
+def read_sophie(file,dir_root,force=False,debug=False):
+    fname = file.split('/')[-1]
+    outname = dir_root+'WORKSPACE/RASSINE_Stacked_spectrum_B0.00_'+fname.replace('.fits','.p')
     if (not os.path.exists(outname))|(force):
         t = fits.open(file)
         cdelt1 = t[0].header['CDELT1']
@@ -885,8 +1082,12 @@ def get_vmacro(teff,logg, source='Cretignier+26'):
 def extract_header(files,instru,debug=False,ra=None,dec=None):
     instrument = instru.split('_')[0]
     ins = instrument[0:5]
+    
     if (ins=='HARPS')&(instru.split('_')[-1]=='3.5'):
         ins = 'harps'
+    if ins=='NEID-':
+        ins='NEID'
+    
     all_infos = []
     kws = {'SOPHI':{'HIERARCH OHP DRS BJD':'rjd', 'HIERARCH OHP DRS BERV':'berv', 'HIERARCH OHP DRS CAL EXT SN30':'snr', 'HIERARCH OHP TARG ALPHA':'RA', 'HIERARCH OHP TARG DELTA':'DEC'},
            'NEID':{'OBSJD':'rjd', 'SSBRV100':'berv', 'EXTSNR':'snr', 'QRA':'RA', 'QDEC':'DEC'},
@@ -1625,22 +1826,22 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None,
         else:
             ref = np.nan
 
-    if (ccf_name=='Garfield')&(np.nanstd(ccf_rv.y)>1000): # SB flag
+    if (ccf_name=='G2')&(np.nanstd(ccf_rv.y)>1000): # SB flag
         warning = 1
 
     plt.figure(figsize=(9,8))
     plt.axes([0.1,0.72,0.6,0.22])
     med = np.nanmedian(ccf_rv.y)
-    ccf_rv.plot() ; plt.ylabel('RV [m/s]') ; plt.axhline(y=med,color='r',label='%.1f'%(med))
+    ccf_rv.plot() ; plt.ylabel('RV [m/s]') ; plt.axhline(y=med,color='r',label='%.1f'%(med)) ; plt.tick_params(labelbottom=False)
     plt.axes([0.1,0.50,0.6,0.22])
     med = np.nanmedian(ccf_fwhm.y)
-    ccf_fwhm.plot() ; plt.ylabel('FWHM [km/s]') ; plt.axhline(y=med,color='r',label='%.2f km/s'%(med))
+    ccf_fwhm.plot() ; plt.ylabel('FWHM [km/s]') ; plt.axhline(y=med,color='r',label='%.2f km/s'%(med)) ; plt.tick_params(labelbottom=False)
     if ccf_name=='mask_telluric_o2':
         plt.axhline(y=ref,color='k',ls='-.',lw=1)
     plt.legend(loc=3)
     plt.axes([0.1,0.28,0.6,0.22])
     med = np.nanmedian(ccf_contrast.y)
-    ccf_contrast.plot() ; plt.ylabel('CT [%]') ; plt.axhline(y=med,color='r',label='%.1f %%'%(med))
+    ccf_contrast.plot() ; plt.ylabel('CT [%]') ; plt.axhline(y=med,color='r',label='%.1f %%'%(med)) ; plt.tick_params(labelbottom=False)
     plt.legend(loc=3)
     plt.axes([0.1,0.06,0.6,0.22])
     med = np.nanmedian(ccf_vspan.y)
@@ -2050,6 +2251,9 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None):
 
         fwhmG = np.sqrt(fwhmG**2-ins_res**2+ref_resolution**2)
 
+        if ins_calib == 'NEID-HE':
+            ins_calib = 'SOPHIE'
+
         calib_ins = pd.read_csv(root+'/Python/Material_snaky/Table_calib_vsini_%s.csv'%(kw),index_col=0)
         calib_ins = myc.tableXY(calib_ins[ins_calib],calib_ins['HARPN'],0*calib_ins[ins_calib]) #reference HARPN
         calib_ins.order()
@@ -2167,8 +2371,8 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
     plt.title(r'Rs = %.2f$^{+%.2f}_{-%.2f}$ Rs'%(rm[0],rm[1],rm[2]))
     pby,pbx = np.histogram(sample_Rs,bins=np.arange(0,2,0.025),density=True)
     pbx = 0.5*(pbx[1:]+pbx[0:-1])
-    plt.fill_between(pbx,pby,alpha=0.2)
-    plt.plot(pbx,pby)
+    plt.fill_between(pbx,pby,alpha=0.2,color='C0')
+    plt.plot(pbx,pby,color='C0')
     plt.xlim(0,2)
     plt.ylim(0,None)
     plt.xlabel(r'Radius [Rs]')
@@ -2177,9 +2381,9 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
     plt.title(r'v $\sin$ i = %.2f$^{+%.2f}_{-%.2f}$ km/s'%(vm[0],vm[1],vm[2]))
     pby,pbx = np.histogram(sample_vsini,bins=np.arange(0,vmax_veq,vmax_veq/200),density=True)
     pbx = 0.5*(pbx[1:]+pbx[0:-1])
-    plt.fill_between(pbx,pby,alpha=0.2)
-    plt.plot(pbx,pby)
-    plt.axvline(x=vm[0],ls=':',color='k')
+    plt.fill_between(pbx,pby,alpha=0.2,color='C0')
+    plt.plot(pbx,pby,color='C0')
+    plt.axvline(x=vm[0],ls=':',color='C0')
     if vm[0]>4:
         plt.xlim(vm[0]*0.5,vm[0]*1.5)
     else:
@@ -2191,21 +2395,25 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
     sample_sini = np.sqrt(1-np.random.rand(99999)**2) # np.sin of np.arccos
     sample_prot = np.ravel(sample_prot90*sample_sini)
 
-    if Prot is not None:
-        sample_prot = np.random.randn(99999)*(0.10*Prot)+Prot #10% prot uncertainty
-
     plt.subplot(1,4,3)
     plt.title(r'$P_{90} = %.1f^{+%.1f}_{-%.1f}$ days'%(p90m[0],p90m[1],p90m[2]))
 
     pby,pbx = np.histogram(sample_prot,bins=np.linspace(0,100,100),density=True)
     pbx = 0.5*(pbx[1:]+pbx[0:-1])
-    plt.fill_between(pbx,pby,alpha=0.2,color='k')
-    plt.plot(pbx,pby,color='k')
+    plt.fill_between(pbx,pby,alpha=0.2,color='C0')
+    plt.plot(pbx,pby,color='C0')
+
+    if Prot is not None:
+        sample_prot_known = np.random.randn(99999)*(0.10*Prot)+Prot #10% prot uncertainty
+        pby,pbx = np.histogram(sample_prot,bins=np.linspace(0,100,100),density=True)
+        pbx = 0.5*(pbx[1:]+pbx[0:-1])
+        plt.fill_between(pbx,pby,alpha=0.2,color='k')
+        plt.plot(pbx,pby,color='k')
 
     pby,pbx = np.histogram(sample_prot90,bins=np.linspace(0,100,100),density=True)
     pbx = 0.5*(pbx[1:]+pbx[0:-1])
-    plt.fill_between(pbx,pby,alpha=0.2)
-    plt.plot(pbx,pby)
+    plt.fill_between(pbx,pby,alpha=0.2,color='C2')
+    plt.plot(pbx,pby,color='C2')
     plt.axvline(x=p90m[0],ls=':',color='k')
     if Prot is not None:
         plt.axvline(x=Prot,color='k',ls='-',label=r'$P_{rot}$=%.1f days'%(Prot))
@@ -2219,6 +2427,19 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
 
     sample_sininc = np.ravel((sample_vsini/vsun)*(sample_prot/psun)/sample_Rs)
     
+    plt.subplot(1,4,4)
+    iby,ibx = np.histogram(sample_sininc,bins=np.arange(0,1,0.01),density=True)
+    ibx = 0.5*(ibx[1:]+ibx[0:-1])
+    plt.fill_between(ibx,iby,alpha=0.2,color='C0')
+    plt.plot(ibx,iby,color='C0')
+
+    if Prot is not None:
+        sample_sininc = np.ravel((sample_vsini/vsun)*(sample_prot_known/psun)/sample_Rs)
+        iby,ibx = np.histogram(sample_sininc,bins=np.arange(0,1,0.01),density=True)
+        ibx = 0.5*(ibx[1:]+ibx[0:-1])
+        plt.fill_between(ibx,iby,alpha=0.2,color='k')
+        plt.plot(ibx,iby,color='k')
+
     I = np.arcsin(np.nanpercentile(sample_sininc,50))*180/np.pi
     Ii =  np.arcsin(np.nanpercentile(sample_sininc,16))*180/np.pi
     Is = np.arcsin(np.nanpercentile(sample_sininc,84))*180/np.pi
@@ -2228,14 +2449,8 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
     Is = [Is,90][int(Is!=Is)]
 
     print(' [INFO] Inclination estimated = %.0f [%.0f - %.0f] degree'%(I,Ii,Is))
-
-    plt.subplot(1,4,4)
     plt.title(r'$i = %.0f^{+%.0f}_{-%.0f}$ [°]'%(I,Is-I,I-Ii))
 
-    iby,ibx = np.histogram(sample_sininc,bins=np.arange(0,1,0.01),density=True)
-    ibx = 0.5*(ibx[1:]+ibx[0:-1])
-    plt.fill_between(ibx,iby,alpha=0.2)
-    plt.plot(ibx,iby,label='[%.0f - %.0f - %.0f]'%(Ii,I,Is))
     plt.axvline(x=np.sin(I*np.pi/180),color='k',ls=':')
     plt.tick_params(top=True,bottom=True,direction='inout',which='both')
     plt.xlim(0,1)
@@ -2405,7 +2620,7 @@ def yarara_compute_snr(dir_root,sub_dico):
         mask = (ratio<2*sigma)&(ratio>(-2*sigma))&(template_empi.y!=0)
     snr = 1/sigma
     print(' [INFO] Master spectrum SNR = %.0f'%(snr))
-    
+
     snrs = []
     for f in flux:
         ratio = f/template_empi.y-1
@@ -2979,5 +3194,59 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
     plt.ylabel(r'$\log$ $R_{HK}$ [dex]')
     plt.subplots_adjust(right=0.85) 
     plt.savefig(dir_root+'IMAGES/MHK_RHK.pdf')
+
+    nb = int(99999/len(jdb))
+    samples_mhk = []
+    for i,j in zip(np.array(dico['MHK']),np.array(dico['MHK_std'])):
+        samples_mhk.append(np.random.randn(nb)*j+i)
+    samples_mhk = np.ravel(samples_mhk)
+    samples_mhk = samples_mhk[samples_mhk>-40]
+    samples_mhk = samples_mhk[samples_mhk<300]
+
+    #assuming no magnetic cycle and a single mu for all the Xi
+    #Xi = np.array(dico['MHK'])
+    #sigma = np.array(dico['MHK_std'])
+    #samples_gpt = np.random.randn(99999,len(Xi))*sigma+Xi
+    #samples_mhk2 = np.sum(samples_gpt / sigma**2, axis=1) / np.sum(1 / sigma**2)
+
+    plt.figure('MHK_samples',figsize=(10,6))
+    plt.subplot(2,1,1) ; plt.title('MHK = %.1f +/- %.1f %%'%(np.nanmedian(samples_mhk),myf.mad(samples_mhk)))
+    pby,pbx = np.histogram(samples_mhk,bins=np.arange(-41,200,1),density=True)
+    pbx = 0.5*(pbx[1:]+pbx[0:-1])
+    plt.fill_between(pbx,pby,alpha=0.2,color='C0')
+    plt.plot(pbx,pby,color='k')
+
+    plt.xlabel('MHK [%]',fontsize=13)
+    plt.ylim(0,None)
+    plt.xlim(-40,200)
+    plt.axvline(x=0,ls=':',color='k')
+    plt.axvline(x=50,ls='-.',color='k',label='active stars',lw=1)
+
+    samples_rhk = []
+    for i,j in zip(np.array(dico['RHK']),np.array(dico['RHK_std'])):
+        samples_rhk.append(np.random.randn(nb)*j+i)
+    samples_rhk = np.ravel(samples_rhk)
+    samples_rhk = samples_rhk[samples_rhk>-6]
+    samples_rhk = samples_rhk[samples_rhk<-4]
+
+    plt.subplot(2,1,2) ; plt.title('RHK = %.2f +/- %.2f dex'%(np.nanmedian(samples_rhk),myf.mad(samples_rhk)))
+    pby,pbx = np.histogram(samples_rhk,bins=np.arange(-6.0,-4.0,0.02),density=True)
+    pbx = 0.5*(pbx[1:]+pbx[0:-1])
+    plt.fill_between(pbx,pby,alpha=0.2,color='C1')
+    plt.plot(pbx,pby,color='k')
+    plt.xlabel(r'$\log$ $R_{HK}$ [dex]',fontsize=13)
+    plt.axvline(x=-5.0,ls=':',color='k')
+    plt.axvline(x=-4.65,ls='-.',color='k',label='active stars',lw=1)
+    plt.ylim(0,None)
+    plt.xlim(-6,-4)
+    plt.subplots_adjust(hspace=0.35)
+
+    plt.savefig(dir_root+'IMAGES/MHK_samples.pdf')
     
+    if len(samples_mhk)&len(samples_rhk):
+        samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv',index_col=0)
+        samples_table['mhk'] = np.random.choice(samples_mhk,99999)
+        samples_table['rhk'] = np.random.choice(samples_rhk,99999)
+        samples_table.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv')
+
     return dico, RHK_mean, MHK_mean
