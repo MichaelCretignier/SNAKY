@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pylab as plt
 from scipy.interpolate import interp1d
+from scipy.optimize import nnls
 from lmfit import Model, Parameters
 from tqdm import tqdm
 import warnings
@@ -737,10 +738,183 @@ class tableXY(object):
         self.rassine_output = rassine_file['output']
         os.system('rm '+cwd+'/temp/RASSINE_spectrum_to_normalise%s.p'%(tag))
 
+    def fit_multi_sb(self):
+
+        x = self.x 
+        y = 1 - self.y #CCF normalise to 1
+
+        profiles = []
+        params = []
+        cen = np.linspace(0,np.max(self.x)*0.75,20)
+        centers = np.hstack([-cen[::-1],cen[1:]])
+        widths = np.array([3,4,5,7,9,12,15,20,40,70,100,200])
+        widths = widths[widths<np.max(self.x)*0.75]
+        for cen in centers:
+            for wid in widths:
+                for beta in [2,3,4]:
+                    profiles.append(myf.GND(x,cen,1,0,wid,beta))
+                    params.append([cen,wid,beta])
+        params = np.array(params)
+
+        P = np.column_stack(profiles)   # shape (M, K)
+        M, K = P.shape
+
+        # --- Precompute quantities ---
+        G = P.T @ P                      # shape (K, K)  (Gram matrix)
+        c = P.T @ y                      # shape (K,)
+        yTy = float(y @ y)
+        sum_y = float(y.sum())
+        ones_sum = float(M)              # sum of ones column
+
+        eps = 1e-12
+        # config for degeneracy avoidance
+        corr_thresh = 0.95
+        min_sep = 0.0   # set >0 to force minimum center separation (e.g. 4.0)
+
+        best1 = None
+        best1_RSS = np.inf
+
+        sum_p_vec = P.sum(axis=0)   # shape (K,)
+
+        eps = 1e-12
+
+        # Find best single-component + offset: solve 2x2 normal equations for each i
+        best = None
+        best_RSS = np.inf
+
+        for i in range(K):
+            Gii = float(G[i, i])
+            sum_p = float(sum_p_vec[i])
+
+            A2 = np.array([[Gii, sum_p],
+                        [sum_p, M]], dtype=float)
+            b2 = np.array([c[i], sum_y], dtype=float)
+
+            # solve (regularize if necessary)
+            try:
+                theta2 = np.linalg.solve(A2, b2)
+            except np.linalg.LinAlgError:
+                A2 += np.eye(2) * eps
+                theta2 = np.linalg.solve(A2, b2)
+
+            a_i, off_i = float(theta2[0]), float(theta2[1])
+
+            # enforce non-negative amplitude
+            if a_i <= 0:
+                continue
+
+            # RSS using fast formula
+            RSS = yTy - theta2.dot(b2)
+
+            if RSS < best_RSS:
+                best_RSS = RSS
+                best = (i, a_i, off_i, RSS)
+
+        # handle no-solution case
+        if best is None:
+            raise RuntimeError("No positive-amplitude single+offset fit found")
+
+        # unpack best and reconstruct
+        i_best, amp_c1, offset_best, best_RSS = best
+        comp_c1 = amp_c1 * P[:, i_best]
+        baseline = offset_best * np.ones_like(y)
+        model_c1 = comp_c1 + baseline
+        residuals_c1 = y - model_c1
+        rms1 = np.std(residuals_c1)
+
+        # useful metadata
+        best_params = params[i_best]   # [cen, wid, beta]
+
+        plt.figure('multiGND',figsize=(6,10))
+        plt.subplot(2,1,1)
+        plt.plot(self.x,1-model_c1,color='C2',label='RV = %.0f | FWHM = %.0f | CT = %.1f'%(best_params[0],best_params[1],amp_c1*100))
+        plt.plot(self.x,1-y,color='k',lw=2)
+        plt.axvline(x=0,color='k',ls='-.',lw=1)
+        plt.axhline(y=1,color='k',ls='-.',lw=1)
+        plt.legend(loc=4)
+        plt.xlabel('RV [km/s]')
+        plt.ylabel('CCF normalised')
+
+        # --- Loop over unique pairs (i < j) and compute least-square amplitudes quickly ---
+        results = []  # store tuples (i, j, a, b, RSS)
+        for i in range(K):
+            # optional: skip j <= i to avoid duplicates
+            for j in range(i+1, K):
+                S = np.array([[G[i,i], G[i,j]],
+                            [G[j,i], G[j,j]]], dtype=float)
+                bvec = np.array([c[i], c[j]], dtype=float)
+                # Solve 2x2 system (S @ theta = bvec)
+                # If S is singular (rare), catch and skip or regularize
+                try:
+                    theta = np.linalg.solve(S, bvec)   # theta = [a, b]
+                except np.linalg.LinAlgError:
+                    # tiny regularisation to avoid singulars
+                    S += np.eye(2) * 1e-12
+                    theta = np.linalg.solve(S, bvec)
+                a, b = theta
+
+                if a <= 0 or b <= 0 or a>=1 or b>=1:
+                    continue
+                
+                # Residual sum of squares (fast formula)
+                RSS = yTy - theta.dot(bvec)  # derived: RSS = y^T y - theta^T (P^T y)
+                results.append((i, j, a, b, RSS))
+
+        # Sort by RSS (best fits first)
+        results.sort(key=lambda t: t[4])
+        best = results[:20]   # top 20 fits
+        params_selected = np.array([np.hstack([params[i[0]],params[i[1]],np.round(i[2]*100,1),np.round(i[2]*100,1)]) for i in best])
+        #print(params_selected)
+
+        i, j, amp1, amp2, best_RSS = best[0]
+
+        comp1 = amp1 * P[:, i]
+        comp2 = amp2 * P[:, j]
+        model = comp1 + comp2
+        residuals = y - model
+        model_xy = tableXY(x,1-model)
+        model_xy.find_min(vicinity=5)
+        rms2 = np.std(residuals)
+        print(' [INFO] RMS model 1-component = %.2f'%(rms1*100))
+        print(' [INFO] RMS model 2-components = %.2f'%(rms2*100))
+
+        if amp1<amp2:
+            ratio = np.round(100*amp1/amp2,2)
+        else:
+            ratio = np.round(100*amp2/amp1,2)
+
+        print(' [INFO] Ratio of the two fitted components = %.1f'%(ratio))
+        condition = 0
+        if (ratio>10)&(len(model_xy.x_min)>1)&(rms2/rms1<0.80):
+            condition = 1
+
+        p1 = params[i] ; p2 = params[j]
+
+        plt.subplot(2,1,2)
+        plt.plot(self.x,1-model,color='C2')
+        plt.plot(self.x,1-comp1,color='C1',alpha=0.7,label='RV = %.0f | FWHM = %.0f | CT = %.1f'%(p1[0],p1[1],amp1*100))
+        plt.plot(self.x,1-comp2,color='C0',alpha=0.7,label='RV = %.0f | FWHM = %.0f | CT = %.1f'%(p2[0],p2[1],amp2*100))
+        plt.plot(self.x,1-residuals,color='gray')
+        plt.plot(self.x,1-y,color='k',lw=2)
+        plt.axvline(x=0,color='k',ls='-.',lw=1)
+        plt.axhline(y=1,color='k',ls='-.',lw=1)
+
+        plt.xlabel('RV [km/s]')
+        plt.ylabel('CCF normalised')
+        plt.legend(loc=4)
+        if condition:
+            plt.title('Two components detected!')
+            print(' [INFO] Two components detected')
+        else:
+            plt.subplot(2,1,1)
+            plt.title('One component detected!')
+            print(' [INFO] Only one component detected')
+        plt.subplots_adjust(hspace=0.35)
+        return condition
 
     def ccf(self, mask2, rv_sys=0, rv_range=15, weighted=True, ccf_oversampling=1, wave_min=None, wave_max=None, norm=True, Plot=True, pow_weight=2, fit_gaussian=True, return_mask=False, static=''):
 
-        grid = self.x.copy()
+        grid = np.round(self.x.copy(),4) # for 0.01 sampling
         flux = self.y[:,np.newaxis].T.copy()
         flux_err = self.yerr[:,np.newaxis].T.copy()
 
@@ -750,10 +924,10 @@ class tableXY(object):
         
         if rv_sys:
             mask[:,0] = myf.doppler_r(mask[:,0],rv_sys)[0]
-        
+
         mask_shifted = myf.doppler_r(mask[:,0],(rv_range+5)*1000)
 
-        mask = mask[(myf.doppler_r(mask[:,0],30000)[0]<grid.max())&(myf.doppler_r(mask[:,0],30000)[1]>grid.min()),:] #supres line farther than 30kms
+        mask = mask[(myf.doppler_r(mask[:,0],300000)[0]<grid.max())&(myf.doppler_r(mask[:,0],300000)[1]>grid.min()),:] #supres line farther than 300kms
         if wave_min is not None:
             mask = mask[mask[:,0]>wave_min,:] 
         if wave_max is not None:
@@ -764,7 +938,7 @@ class tableXY(object):
         else:
             mask_min = np.min(mask[:,0])
             mask_max = np.max(mask[:,0])
-            
+
             grid_min = int(myf.find_nearest(grid,myf.doppler_r(mask_min,-100000)[0])[0])
             grid_max = int(myf.find_nearest(grid,myf.doppler_r(mask_max,100000)[0])[0])
             grid = grid[grid_min:grid_max]
@@ -772,16 +946,16 @@ class tableXY(object):
             log_grid = np.linspace(np.log10(grid).min(),np.log10(grid).max(),len(grid))
             dgrid = log_grid[1] - log_grid[0]
             #dv = (10**(dgrid)-1)*299.792e6  
-            
+
             used_region = ((10**log_grid)>=mask_shifted[1][:,np.newaxis])&((10**log_grid)<=mask_shifted[0][:,np.newaxis])
             used_region = (np.sum(used_region,axis=0)!=0).astype('bool')
             print('\n [INFO] Percentage of the spectrum used : %.1f [%%] \n'%(100*sum(used_region)/len(grid)))
-            
+
             if static=='':
                 mask_wave = np.log10(mask[:,0])
                 mask_contrast = mask[:,1]*weighted + (1-weighted)
-                        
-                log_grid_mask = np.arange(log_grid.min()-10*dgrid,log_grid.max()+10*dgrid+dgrid/10,dgrid/11)
+
+                log_grid_mask = np.arange(log_grid.min()-10*dgrid,log_grid.max()+10*dgrid+dgrid/10,dgrid/11)   
                 log_mask = np.zeros(len(log_grid_mask))
                 
                 match = myf.identify_nearest(mask_wave,log_grid_mask)
@@ -805,6 +979,16 @@ class tableXY(object):
             flux_err = np.array(all_flux_err)
 
             log_template = interp1d(log_grid_mask, log_mask, kind='linear', bounds_error=False, fill_value=0)(log_grid)
+
+            import pickle
+            pickle.dump({
+                'log_grid':log_grid,
+                'used_region':used_region,
+                'flux':flux,
+                'log_template':log_template,
+                'flux_err':flux_err,
+                'rv_range':rv_range,
+                'ccf_oversampling':ccf_oversampling}, open('/Users/cretignier/Documents/Analysis/test.p','wb'))
             
             vrad, ccf_power, ccf_power_std = myf.ccf(log_grid[used_region], flux[:,used_region], log_template[used_region], 
                                                     rv_range = rv_range, oversampling = ccf_oversampling, spec1_std = flux_err[:,used_region]) #to compute on all the ccf simultaneously
@@ -861,7 +1045,7 @@ class tableXY(object):
                     res.find_min(sort=True)
                     contrast2 = -res.y_min[0] 
                     contrast1 = -ccf_profile.params['amp'].value
-                    if (contrast2>0.05)&(contrast2<contrast1)&(abs(res.x_min[0]/1000)<40):
+                    if (contrast2>0.05)&(contrast2<contrast1)&(abs(res.x_min[0]/1000)<100):
                         res.plot(color='gray',ls='-',offset=1.025)
                         plt.axvline(x=res.x_min[0],color='r',ls='-.')
                         self.warning_multipeak = 1

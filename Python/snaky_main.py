@@ -1188,7 +1188,7 @@ def yarara_flux_density(files,sub_dico='matching_diff'):
     all_flux_density = np.array(all_flux_density)
     all_flux_density = np.median(all_flux_density,axis=0)
 
-    print('\n [INFO] Flux density 5, 10, 15, 20, 25 : ',np.round(all_flux_density,2))
+    print('\n [INFO] Flux density 5, 10, 15, 20, 25 : ',np.round(all_flux_density,3))
 
     xgb_file = '/Python/Material_snaky/xgb_model_yarara_atmos_FluxD.p'
     xgb_obj = pickle.load(open(root+xgb_file,'rb'))
@@ -1201,7 +1201,7 @@ def yarara_flux_density(files,sub_dico='matching_diff'):
     print(' [INFO] Rough Teff estimation %.0f +/- 300 K'%(Teff_rough_est))
     print(' [INFO] Rough FeH estimation %.2f +/- ?? dex'%(FeH_rough_est))
 
-    return (Teff_rough_est,FeH_rough_est)
+    return (Teff_rough_est,FeH_rough_est,np.round(all_flux_density,3))
 
 def yarara_rough_rv_sys(spec,teff=6000, verbose=False):
     
@@ -1283,7 +1283,7 @@ def yarara_check_rv_sys(spec, fwhm, rv_sys_approx, ccf_tag, dir_root=None):
             if ccf_tag==0:
                 spec.ccf(mask, weighted=True, rv_range=rv_range*1.5,rv_sys=rv_sys_est1*1000)
             else:
-                spec.ccf(mask, weighted=True, rv_range=rv_range*1.5, rv_sys=rv_sys_fit, static=dir_root+'CCF_MASK/CCF_'+mask_harps+'_N%.0f.fits'%(ccf_tag))
+                spec.ccf(mask, weighted=True, rv_range=rv_range*1.5, rv_sys=rv_sys_est1*1000, static=dir_root+'CCF_MASK/CCF_'+mask_harps+'_N%.0f.fits'%(ccf_tag))
             rv_sys_fit = rv_sys_est1*1000 + spec.ccf_params['cen'].value
             rv_sys_fit = np.round(rv_sys_fit/1000,2)
             rv_sys_est3 = rv_sys_fit
@@ -1314,29 +1314,46 @@ def yarara_check_rv_sys(spec, fwhm, rv_sys_approx, ccf_tag, dir_root=None):
     contrast_fit = 100*(abs(spec.ccf_params['amp'].value))
     rv_sys_fit = np.round(rv_sys_fit,2)
 
+    y_max = 1.1
     y_min = 1-2*contrast_fit/100
     if y_min<0:
         y_min=0
-    plt.ylim(y_min,1.1)
+    if contrast_fit<2:
+        y_max = 1.01
+    plt.ylim(y_min,y_max)
+
 
     print('\n [INFO] RV_sys value fitted as %.2f kms'%(rv_sys_fit))
     
     if dir_root is not None:
         plt.savefig(dir_root+'IMAGES/RV_sys_fitting.pdf')
     
-    SB2 = 0
+    SB1 = 0
     if spec.warning_multipeak==1:
-        SB2 = 1
+        SB1 = 1
         if dir_root is not None:
             plt.savefig(dir_root+'WARNING/WARNING_RV_sys_fitting.pdf')
 
     ccf = pd.DataFrame(np.array([spec.ccf_profile.x/1000,spec.ccf_profile.y]).T,columns=['vrad','ccf'])
     contrast = np.round(contrast_fit/100,3)
     
-    output = (fwhm,rv_sys_fit,contrast,ccf_beta,SB2,ccf)
+    output = (fwhm,rv_sys_fit,contrast,ccf_beta,SB1,ccf)
     if dir_root is not None:
         ccf.to_csv(dir_root+'STAR_INFO/CCF_RV_SYS.csv')
     return output
+
+def yarara_check_sb(dir_root):
+
+    myf.print_box('\n---- RECIPE : CHECK SB ---- \n')
+
+    ccf = pd.read_csv(dir_root+'STAR_INFO/CCF_RV_SYS.csv',index_col=0)
+    ccf = myc.tableXY(np.array(ccf['vrad']),np.array(ccf['ccf']),0*np.array(ccf['ccf']))
+    criterion = ccf.fit_multi_sb()
+    plt.savefig(dir_root+'IMAGES/SB_check.pdf')
+    if criterion:
+        plt.savefig(dir_root+'WARNING/WARNING_SB.pdf')
+    return criterion
+
 
 def yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag=0):
     
@@ -1350,24 +1367,32 @@ def yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag=0):
     save = []
     for fwhm in [6,10,20,50,100,200][::-1]:
         sinfo = yarara_check_rv_sys(spec, fwhm, rv_sys_approx, ccf_tag, dir_root=dir_root)
-        if sinfo[0]>500:
-            save.append([fwhm,-999,-999,-999,-999])
+        if abs(sinfo[0])>500:
+            save.append([fwhm,-999,-999,-999,-999,-999])
         else:
-            save.append([fwhm,sinfo[0],sinfo[2],sinfo[1],rv_sys_approx])
+            save.append([fwhm,sinfo[0],sinfo[2],sinfo[1],rv_sys_approx,sinfo[4]])
     save = np.array(save)
     plt.close('all')
 
     print(' [INFO] Table summary FWHM | RV_SYS \n')
     save[save[:,3]==save[:,4],3] = -999
-    print(pd.DataFrame(save,columns=['RVRANGE','FWHM','CT','RV','RV_APPROX']))
-    if np.max(save[:,2])>0.01: 
-        fwhm1 = save[np.argmin(abs(save[:,3]-save[:,4])),1]
-        fwhm = save[np.argmin(abs(save[:,0]-fwhm1)),1]
-        rv_sys = save[np.argmin(abs(save[:,0]-fwhm1)),3]
+    
+    kept = save[save[:,3]!=-999]
+    print(pd.DataFrame(save,columns=['RVRANGE','FWHM','CT','RV','RV_APPROX','SB1']))
+    if np.max(kept[:,2])>0.01: 
+        fwhm1 = kept[np.argmin(abs(kept[:,3]-kept[:,4])),1]
+        fwhm = kept[np.argmin(abs(kept[:,0]-fwhm1)),1]
+        rv_sys = kept[np.argmin(abs(kept[:,0]-fwhm1)),3]
     else: #if CT < 1% likely fast rotating stars and RV not reliable
-        fwhm = save[np.argmax(save[:,2]),1]
-        rv_sys = save[np.argmax(save[:,2]),3]
-    print('\n [INFO] Best FWHM detected is %.2f km/s \n'%(fwhm))
+        fwhm = kept[np.argmax(kept[:,2]),1]
+        rv_sys = kept[np.argmax(kept[:,2]),3]
+    print('\n [INFO] Best FWHM detected is %.2f km/s'%(fwhm))
+    print('\n [INFO] Best RV_SYS detected is %.1f km/s \n'%(rv_sys))
+    SB1 = int(np.sum(kept[:,-1])!=0)
+
+    if ccf_tag!=0:
+        os.system('rm '+dir_root+'/CCF_MASK/*.fits')
+    
     sinfo = yarara_check_rv_sys(spec, fwhm, rv_sys, ccf_tag, dir_root=dir_root)
     
     if ccf_tag!=0:
@@ -1376,7 +1401,7 @@ def yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag=0):
     if fwhm<50:
         pass#yarara_check_fwhm()
 
-    return sinfo
+    return sinfo,SB1
 
 
 def replace_none(y,yerr):
@@ -1836,7 +1861,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
     for n,rv in enumerate(rvs):
         if rv==rv:
             profile = myc.tableXY(vrad-rv,ccf_shifted[:,n],0*vrad)
-            profile.interpolate(new_grid=vrad)
+            profile.interpolate(new_grid=vrad,method='linear')
             ccf_shifted[:,n] = profile.y
     master_ccf = np.nanmean(ccf_shifted,axis=1)
     ccf_res = ccf_norm - master_ccf[:,np.newaxis]
@@ -2102,6 +2127,8 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
     
     myf.print_box('\n---- RECIPE : XGB ATMOSPHERIC PARAMETERS ----\n')
 
+    sinfo = import_star_info(dir_root)
+
     if phot:
         lines = ['FeIU','FeIS','FeIIS','TiI','VI','MnI','NdII','TiII','CaH','Z']
         xgb_file = '/Python/Material_snaky/xgb_model_yarara_atmos_phot.p'
@@ -2131,11 +2158,17 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
     norm_mean = np.array(means[['teff','feh','logg']])
     norm_std = np.array(stds[['teff','feh','logg']])
 
-    output = output*norm_std+norm_mean
-    teff,feh,logg = output.values[0]
-    teff = int(teff)
-    feh = np.round(feh,3)
-    logg = np.round(logg,3)
+    if sinfo['Teff']['FluxD']<6500:
+        output = output*norm_std+norm_mean
+        teff,feh,logg = output.values[0]
+        teff = int(teff)
+        feh = np.round(feh,3)
+        logg = np.round(logg,3)
+    else: #outside calibration range
+        print(Fore.YELLOW + '\n [WARNING] The temperature is outside the calibration range. XGB skipped.'+Fore.RESET)
+        teff = int(sinfo['Teff']['FluxD'])
+        feh = 0
+        logg = 4.0
 
     M, dust, dust = myf.find_stellar_mass_radius(teff, sp_type='G2V')
     M_inf, dust, dust = myf.find_stellar_mass_radius(teff-75, sp_type='G2V')

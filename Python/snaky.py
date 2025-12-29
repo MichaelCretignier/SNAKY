@@ -228,12 +228,14 @@ def reduce(
             'Name':star,
             'Ra':{'fixed':0.0},
             'Dec':{'fixed':0.0},
+            'FluxD':{'fixed':0.0},
             'Teff':{'fixed':5775},
             'FeH':{'fixed':0.0},
             'FWHM':{'fixed':6.0},
             'Rv_sys':{'fixed':0.0},
             'Contrast':{'fixed':0.4},
             'CCF_beta':{'fixed':2.0},
+            'SB1':{'fixed':0.0},
             'SB2':{'fixed':0.0},
             'EW':{'fixed':0.0},
             'Mstar':{'fixed':1.0},
@@ -288,7 +290,7 @@ def reduce(
 
     if force_rvsys:
         summary = mym.import_summary(dir_root)
-        teff,feh = mym.yarara_flux_density(files)
+        teff,feh,fluxD = mym.yarara_flux_density(files)
         
         rv_sys = []
         for f in files:
@@ -305,7 +307,15 @@ def reduce(
 
         anomalous = np.array(summary['anomalous'])
         spec  = mym.import_spectrum(files[np.argmin(anomalous)],sub_dico=sub_dico)
-        sinfo2 = mym.yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag=chunck)
+        
+        sb_flag2 = False
+        if rv_sys_std>10: 
+            print(Fore.YELLOW+' [WARNING] RV_SYS RMS high (%.1f km/s), SB flag'%(rv_sys_std)+Fore.RESET)
+            sb_flag2 = True
+            pd.DataFrame(np.array([files,rv_sys]).T,columns=['files','rv_sys']).to_csv(dir_root+'WARNING/RV_SYS_JITTER.csv')
+            rv_sys_approx = mym.yarara_rough_rv_sys(spec,teff=teff,verbose=debug)
+        print('\n [INFO] RV_sys ini guess = %.1f +/- %.1f kms'%(rv_sys_approx,rv_sys_std))
+        sinfo2,sb_flag1 = mym.yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag=chunck)
 
         dace_summary = pd.read_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv',index_col=0)
         ra_deg = np.nanmedian(dace_summary['RA'])
@@ -313,19 +323,32 @@ def reduce(
         
         fwhm, rv_sys, contrast, beta_gnd, sb_flag, ccf = sinfo2
         sinfo = mym.import_star_info(dir_root)
+        sinfo = myf.update_info_lvl2(sinfo,'FluxD','P05',fluxD[0])
+        sinfo = myf.update_info_lvl2(sinfo,'FluxD','P10',fluxD[1])
+        sinfo = myf.update_info_lvl2(sinfo,'FluxD','P15',fluxD[2])
+        sinfo = myf.update_info_lvl2(sinfo,'FluxD','P20',fluxD[3])
+        sinfo = myf.update_info_lvl2(sinfo,'FluxD','P25',fluxD[4])
         sinfo = myf.update_info_lvl2(sinfo,'Rv_sys','SNAKY',rv_sys)
         sinfo = myf.update_info_lvl2(sinfo,'CCF_beta','SNAKY',beta_gnd)
-        sinfo = myf.update_info_lvl2(sinfo,'SB2','SNAKY',sb_flag)
         sinfo = myf.update_info_lvl2(sinfo,'Ra','SNAKY',ra_deg)
         sinfo = myf.update_info_lvl2(sinfo,'Dec','SNAKY',dec_deg)
         sinfo = myf.update_info_lvl2(sinfo,'Teff','fixed',teff)
+        sinfo = myf.update_info_lvl2(sinfo,'Teff','FluxD',teff)
         sinfo = myf.update_info_lvl2(sinfo,'CCF_beta','SNAKY',beta_gnd)
         sinfo = myf.update_info_lvl2(sinfo,'FeH','fixed',feh)
         sinfo = myf.update_info_lvl2(sinfo,'FWHM','fixed',fwhm)
         sinfo = myf.update_info_lvl2(sinfo,'Contrast','SNAKY',contrast)
+
+        try:
+            sb_flag1 = sb_flag1|mym.yarara_check_sb(dir_root)
+        except:
+            pass
+
+        sinfo = myf.update_info_lvl2(sinfo,'SB1','SNAKY',int(sb_flag1))
+        sinfo = myf.update_info_lvl2(sinfo,'SB2','SNAKY',int(sb_flag2))
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
-        if sb_flag:
+        if sb_flag1|sb_flag2:
             print(Fore.YELLOW+' [EMERGENCY STOP] Spectroscopy binary detected'+Fore.RESET)
             print('\n')
             force_pre, force_summary, force_rvsys, force_ccf, force_master, force_atmos, force_resolution, force_vsini,force_abs_continuum, force_activity ,force_mhk, force_spectroscopy, force_magcycle, force_cleaning = [False]*14   
@@ -393,6 +416,7 @@ def reduce(
         for kw in EW.keys():
             sinfo['EW'][kw] = EW[kw]
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+
 
         atmos = mym.yarara_atmos_xgb_spectroscopy(dir_root, sinfo, resolution=80000, phot=True)
         teff,feh,logg,M,R,BV,vmicro,vmacro = atmos
@@ -597,8 +621,8 @@ if star=='': #multiprocessing via multiterminal for stars in parallel
     stars = np.array([r.split('/')[-2] for r in raws])
     gr8 = pd.read_csv('/Users/cretignier/Documents/THE/TCS/THE_SIMBAD.csv',index_col=0)
     mask = np.in1d(stars,np.array(gr8['HD']))
-    #raws = raws[mask]
-    #stars = stars[mask]
+    raws = raws[mask]
+    stars = stars[mask]
 
     to_process = np.array_split(np.arange(len(stars)),multiprocess)[chunck-1]
     print('[INFO] The following %.0f stars will be processed:'%(len(to_process)))
