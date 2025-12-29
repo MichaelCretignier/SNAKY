@@ -748,7 +748,7 @@ class tableXY(object):
         cen = np.linspace(0,np.max(self.x)*0.75,20)
         centers = np.hstack([-cen[::-1],cen[1:]])
         widths = np.array([3,4,5,7,9,12,15,20,40,70,100,200])
-        widths = widths[widths<np.max(self.x)*0.75]
+        widths = widths[widths<np.max(self.x)*0.75] 
         for cen in centers:
             for wid in widths:
                 for beta in [2,3,4]:
@@ -979,16 +979,6 @@ class tableXY(object):
             flux_err = np.array(all_flux_err)
 
             log_template = interp1d(log_grid_mask, log_mask, kind='linear', bounds_error=False, fill_value=0)(log_grid)
-
-            import pickle
-            pickle.dump({
-                'log_grid':log_grid,
-                'used_region':used_region,
-                'flux':flux,
-                'log_template':log_template,
-                'flux_err':flux_err,
-                'rv_range':rv_range,
-                'ccf_oversampling':ccf_oversampling}, open('/Users/cretignier/Documents/Analysis/test.p','wb'))
             
             vrad, ccf_power, ccf_power_std = myf.ccf(log_grid[used_region], flux[:,used_region], log_template[used_region], 
                                                     rv_range = rv_range, oversampling = ccf_oversampling, spec1_std = flux_err[:,used_region]) #to compute on all the ccf simultaneously
