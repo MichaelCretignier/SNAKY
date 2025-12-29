@@ -21,6 +21,7 @@ import matplotlib.cm as cmx
 
 import snaky_functions as myf
 import snaky_variables as myv
+from astropy.io import fits
 
 try:
     np.warnings.filterwarnings('ignore', category=RuntimeWarning)
@@ -737,16 +738,16 @@ class tableXY(object):
         os.system('rm '+cwd+'/temp/RASSINE_spectrum_to_normalise%s.p'%(tag))
 
 
-    def ccf(self, mask2, rv_sys=0, rv_range=15, weighted=True, ccf_oversampling=1, wave_min=None, wave_max=None, norm=True, Plot=True, pow_weight=2, fit_gaussian=True, return_mask=False):
-        
-        mask = mask2.copy()
-        if len(np.shape(mask))<2:
-            mask = np.hstack([mask[:,np.newaxis],np.ones(len(mask))[:,np.newaxis]])
-        
+    def ccf(self, mask2, rv_sys=0, rv_range=15, weighted=True, ccf_oversampling=1, wave_min=None, wave_max=None, norm=True, Plot=True, pow_weight=2, fit_gaussian=True, return_mask=False, static=''):
+
         grid = self.x.copy()
         flux = self.y[:,np.newaxis].T.copy()
         flux_err = self.yerr[:,np.newaxis].T.copy()
 
+        mask = mask2.copy()
+        if len(np.shape(mask))<2:
+            mask = np.hstack([mask[:,np.newaxis],np.ones(len(mask))[:,np.newaxis]])
+        
         if rv_sys:
             mask[:,0] = myf.doppler_r(mask[:,0],rv_sys)[0]
         
@@ -776,15 +777,24 @@ class tableXY(object):
             used_region = (np.sum(used_region,axis=0)!=0).astype('bool')
             print('\n [INFO] Percentage of the spectrum used : %.1f [%%] \n'%(100*sum(used_region)/len(grid)))
             
-            mask_wave = np.log10(mask[:,0])
-            mask_contrast = mask[:,1]*weighted + (1-weighted)
-                    
-            log_grid_mask = np.arange(log_grid.min()-10*dgrid,log_grid.max()+10*dgrid+dgrid/10,dgrid/11)
-            log_mask = np.zeros(len(log_grid_mask))
-            
-            match = myf.identify_nearest(mask_wave,log_grid_mask)
-            for j in np.arange(-5,6,1):
-                log_mask[match+j] = (mask_contrast)**pow_weight        
+            if static=='':
+                mask_wave = np.log10(mask[:,0])
+                mask_contrast = mask[:,1]*weighted + (1-weighted)
+                        
+                log_grid_mask = np.arange(log_grid.min()-10*dgrid,log_grid.max()+10*dgrid+dgrid/10,dgrid/11)
+                log_mask = np.zeros(len(log_grid_mask))
+                
+                match = myf.identify_nearest(mask_wave,log_grid_mask)
+                for j in np.arange(-5,6,1):
+                    log_mask[match+j] = (mask_contrast)**pow_weight
+            else:
+                check_file1 = os.path.exists(static)
+                check_file2 = os.path.exists(root+'/Python/Material_snaky/MASK_CCF/'+static.split('/')[-1])
+                if (not check_file1)&(check_file2):
+                    ccf_pipeline = fits.open(root+'/Python/Material_snaky/MASK_CCF/'+static.split('/')[-1])
+                    ccf_pipeline[0].data[:,0] = np.log10(myf.doppler_r(10**ccf_pipeline[0].data[:,0],rv_sys)[0])
+                    ccf_pipeline.writeto(static)
+                log_grid_mask, log_mask = fits.open(static)[0].data.T
 
             all_flux = []
             all_flux.append(interp1d(np.log10(self.x), flux[0], kind='cubic', bounds_error=False, fill_value='extrapolate')(log_grid))
@@ -794,7 +804,7 @@ class tableXY(object):
             all_flux_err.append(interp1d(np.log10(self.x), flux_err[0], kind='linear', bounds_error=False, fill_value='extrapolate')(log_grid))
             flux_err = np.array(all_flux_err)
 
-            log_template = interp1d(log_grid_mask, log_mask, kind='linear', bounds_error=False, fill_value='extrapolate')(log_grid)
+            log_template = interp1d(log_grid_mask, log_mask, kind='linear', bounds_error=False, fill_value=0)(log_grid)
             
             vrad, ccf_power, ccf_power_std = myf.ccf(log_grid[used_region], flux[:,used_region], log_template[used_region], 
                                                     rv_range = rv_range, oversampling = ccf_oversampling, spec1_std = flux_err[:,used_region]) #to compute on all the ccf simultaneously

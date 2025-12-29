@@ -40,7 +40,7 @@ cwd = os.getcwd()
 root = '/'.join(cwd.split('/')[:-1])
 
 ins = 'SOPHIE_0.5'
-star = 'HD101'
+star = ''
 chunck = 0
 multiprocess = 5
 sub_dico = 'matching_diff'
@@ -114,6 +114,7 @@ def reduce(
         force_magcycle = False,
         force_cleaning = False,
         automatic_db = False,
+        chunck = 0,
         ):
 
     myf.print_box('\n---- Launching reduction %s with instrument %s  ----\n'%(star,ins))
@@ -144,7 +145,7 @@ def reduce(
         force_magcycle = bool(1-mym.check_force_magcycle(dir_root))&force_magcycle
         print(' [INFO] Automatic sequence done!\n')
 
-    if use_yarara:
+    if use_yarara&force_summary:
         print(' [INFO] Loading YARARA workspace...')
         data_found = int(len(glob.glob(dir_root.replace('Snaky','Yarara')+'WORKSPACE/RASSINE*'))!=0)
 
@@ -163,7 +164,6 @@ def reduce(
         dace_summary.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
 
         force_pre = False
-        force_summary = False
     else:
         sub_dico = 'matching_diff'
 
@@ -189,7 +189,7 @@ def reduce(
     qc = mym.check_force_pre(dir_root)
 
     #extract time information from headers
-    if force_summary:
+    if force_summary&(use_yarara==False):
         if not len(files):
             print(Fore.YELLOW+' [EMERGENCY STOP] No spectra found in the RAW directory %s'%(dir_root)+Fore.RESET)
             print('\n')
@@ -201,7 +201,7 @@ def reduce(
             summary.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
 
     files = np.sort(glob.glob(dir_root+'WORKSPACE/RASSINE*.p'))
-    if force_summary:
+    if force_summary&(use_yarara==False):
         dace_summary = pd.read_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv',index_col=0)
         berv = np.array(dace_summary['berv_computed'])
         inss = np.array(dace_summary['ins'])
@@ -305,7 +305,7 @@ def reduce(
 
         anomalous = np.array(summary['anomalous'])
         spec  = mym.import_spectrum(files[np.argmin(anomalous)],sub_dico=sub_dico)
-        sinfo2 = mym.yarara_check_rv_sys_wrapper(dir_root,spec,rv_sys_approx)
+        sinfo2 = mym.yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag=chunck)
 
         dace_summary = pd.read_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv',index_col=0)
         ra_deg = np.nanmedian(dace_summary['RA'])
@@ -341,7 +341,7 @@ def reduce(
         if sum(kept)!=0:
             sub = summary.loc[summary['flag1']==0]
             files = np.array(sub['filename'])
-            ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'G2', debug=debug)
+            ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'G2', debug=debug, sub_dico=sub_dico, ccf_tag=chunck)
             ct = ccf_output['contrast'].y
             med_ct = np.nanmedian(ct)
             kept2 = abs(ct-med_ct)<2
@@ -359,17 +359,19 @@ def reduce(
         kept = np.array(1-summary['flag1'])*np.array(1-summary['flag2'])
         if sum(kept)!=0:
             files = np.array(summary.loc[kept==1,'filename'])
-            ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'G2', debug=debug, sub_dico=sub_dico)
+            ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Magicat', debug=debug, sub_dico=sub_dico, ccf_tag=chunck)
+            ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'G2', debug=debug, sub_dico=sub_dico, ccf_tag=chunck)
             sinfo['FWHM']['G2'] = np.round(np.nanmedian(ccf_output['fwhm'].y),2)
-            ccf_output1 = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Kitty', ccf_oversampling=3, debug=debug, sub_dico=sub_dico)
+            ccf_output1 = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Kitty', ccf_oversampling=3, debug=debug, sub_dico=sub_dico, ccf_tag=chunck)
             sinfo['FWHM']['KITTY'] = np.round(np.nanmedian(ccf_output1['fwhm'].y),2)
-            ccf_output2 = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Garfield', ccf_oversampling=3, debug=debug, sub_dico=sub_dico)
+            ccf_output2 = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Garfield', ccf_oversampling=3, debug=debug, sub_dico=sub_dico, ccf_tag=chunck)
             sinfo['FWHM']['GARFIELD'] = np.round(np.nanmedian(ccf_output2['fwhm'].y),2)
-            pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
             if (np.std(ccf_output['rv'].y)>1000)&(np.median(ccf_output['fwhm'].y)<30):
+                sinfo = myf.update_info_lvl2(sinfo,'SB2','SNAKY',1)
                 print(Fore.YELLOW+' [EMERGENCY STOP] Spectroscopy binary detected'+Fore.RESET)
                 print('\n')
                 force_pre, force_summary, force_rvsys, force_ccf, force_master, force_atmos, force_resolution, force_vsini,force_abs_continuum, force_activity ,force_mhk, force_spectroscopy, force_magcycle, force_cleaning = [False]*14   
+            pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
     qc = mym.check_force_ccf(dir_root)
 
     if force_master:
@@ -416,7 +418,7 @@ def reduce(
         summary = mym.import_summary(dir_root)
         ccf_output = mym.import_ccf(dir_root,'G2')
         files = ccf_output['filename']
-        shift_rv = ccf_output['rv'].y
+        shift_rv = ccf_output['rv'].y*0 
         berv = np.array(summary.loc[np.in1d(summary['filename'],files),'berv'])
         fwhm_ins = mym.yarara_instrumental_resolution(dir_root, files, shift_rv, berv)
         output = np.array([files,fwhm_ins]).T
@@ -537,6 +539,7 @@ def reduce(
 
     if force_magcycle:
         try:
+            sinfo = mym.import_star_info(dir_root)
             finch_output = mym.yarara_finch(dir_root, rm_source=['DACE','Yu+23'], offset_instrument='no!', ext='_fix_model')
             sinfo = myf.update_info_lvl2(sinfo,'Pmag','SNAKY', finch_output[1])
             pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
@@ -580,76 +583,90 @@ force_cleaning = bool(np.sum(steps==14))
 
 if (len(steps)==1)&(np.sum(steps==0)):
     star, ins = mym.create_snaky_dir(star,ins)
-else:
-    if chunck!=0: #multiprocessing via multiterminal for stars in parallel
-        #files = glob.glob(root+'/Snaky/*/data/s1d/%s/RAW/*.fits'%(ins))
-        #stars = np.sort(np.unique([f.split('Snaky/')[-1].split('/')[0] for f in files]))
-        #raws = [None]*len(stars)
-        files = glob.glob('/Volumes/MyPassport/SOPHIE/HD*/*.fits')
-        raws = np.sort(np.unique(['/'.join(f.split('/')[:-1])+'/' for f in files]))
-        stars = np.array([r.split('/')[-2] for r in raws])
 
-        to_process = np.array_split(np.arange(len(stars)),multiprocess)[chunck-1]
-        print('[INFO] The following stars will be processed:')
-        print(stars[to_process])
-        for i in to_process:
-            try:
-                star = stars[i]
-                dir_raw = raws[i]
-                reduce(
-                    star,
-                    ins = ins,
-                    debug = debug,
-                    ra = ra,
-                    dec = dec,
-                    dir_raw = dir_raw,
-                    force_pre = force_pre,
-                    force_summary = force_summary,
-                    force_rvsys = force_rvsys,
-                    force_ccf = force_ccf,
-                    force_master = force_master,
-                    force_atmos = force_atmos,
-                    force_resolution = force_resolution,
-                    force_vsini = force_vsini,
-                    force_abs_continuum = force_abs_continuum,
-                    force_activity = force_activity,
-                    force_mhk = force_mhk,  
-                    force_spectroscopy = force_spectroscopy,
-                    force_magcycle = force_magcycle,      
-                    force_cleaning = force_cleaning,
-                    automatic_db = automatic_db,
-                    )
-                plt.close('all')
-            except:
-                pass
-        mym.check_snaky_processing(instrument=ins)
-    else: #single star launch
-        reduce(
-            star,
-            ins = ins,
-            debug = debug, 
-            ra = ra,
-            dec = dec,
-            dir_raw = dir_raw,
-            use_yarara = use_yarara,
-            sub_dico = sub_dico,
-            force_pre = force_pre,                       #1
-            force_summary = force_summary,               #2
-            force_rvsys = force_rvsys,                   #3
-            force_ccf = force_ccf,                       #4
-            force_master = force_master,                 #5
-            force_atmos = force_atmos,                   #6
-            force_resolution = force_resolution,         #7
-            force_vsini = force_vsini,                   #8
-            force_abs_continuum = force_abs_continuum,   #9
-            force_activity = force_activity,             #10
-            force_mhk = force_mhk,                       #11
-            force_spectroscopy = force_spectroscopy,     #12
-            force_magcycle = force_magcycle,             #13
-            force_cleaning = force_cleaning,             #14
-            automatic_db = automatic_db,
-            )
-    
+if chunck!=0:
+    for ccf_mask in ['G2','Garfield','Kitty','Magicat']:
+        os.system('cp '+root+'/Python/Material_snaky/MASK_CCF/CCF_'+ccf_mask+'.fits '+root+'/Python/Material_snaky/MASK_CCF/CCF_'+ccf_mask+'_N%.0f.fits'%(chunck))
+
+if star=='': #multiprocessing via multiterminal for stars in parallel
+    #files = glob.glob(root+'/Snaky/*/data/s1d/%s/RAW/*.fits'%(ins))
+    #stars = np.sort(np.unique([f.split('Snaky/')[-1].split('/')[0] for f in files]))
+    #raws = [None]*len(stars)
+    files = glob.glob('/Volumes/MyPassport/SOPHIE/HD*/*.fits')
+    raws = np.sort(np.unique(['/'.join(f.split('/')[:-1])+'/' for f in files]))
+    stars = np.array([r.split('/')[-2] for r in raws])
+    gr8 = pd.read_csv('/Users/cretignier/Documents/THE/TCS/THE_SIMBAD.csv',index_col=0)
+    mask = np.in1d(stars,np.array(gr8['HD']))
+    #raws = raws[mask]
+    #stars = stars[mask]
+
+    to_process = np.array_split(np.arange(len(stars)),multiprocess)[chunck-1]
+    print('[INFO] The following %.0f stars will be processed:'%(len(to_process)))
+    print(stars[to_process])
+
+    for i in to_process:
+        try:
+            star = stars[i]
+            dir_raw = raws[i]
+            reduce(
+                star,
+                ins = ins,
+                debug = debug,
+                ra = ra,
+                dec = dec,
+                dir_raw = dir_raw,
+                force_pre = force_pre,
+                force_summary = force_summary,
+                force_rvsys = force_rvsys,
+                force_ccf = force_ccf,
+                force_master = force_master,
+                force_atmos = force_atmos,
+                force_resolution = force_resolution,
+                force_vsini = force_vsini,
+                force_abs_continuum = force_abs_continuum,
+                force_activity = force_activity,
+                force_mhk = force_mhk,  
+                force_spectroscopy = force_spectroscopy,
+                force_magcycle = force_magcycle,      
+                force_cleaning = force_cleaning,
+                automatic_db = automatic_db,
+                chunck = chunck,
+                )
+            plt.close('all')
+        except:
+            pass
+    mym.check_snaky_processing(instrument=ins)
+else: #single star launch
+    reduce(
+        star,
+        ins = ins,
+        debug = debug, 
+        ra = ra,
+        dec = dec,
+        dir_raw = dir_raw,
+        use_yarara = use_yarara,
+        sub_dico = sub_dico,
+        force_pre = force_pre,                       #1
+        force_summary = force_summary,               #2
+        force_rvsys = force_rvsys,                   #3
+        force_ccf = force_ccf,                       #4
+        force_master = force_master,                 #5
+        force_atmos = force_atmos,                   #6
+        force_resolution = force_resolution,         #7
+        force_vsini = force_vsini,                   #8
+        force_abs_continuum = force_abs_continuum,   #9
+        force_activity = force_activity,             #10
+        force_mhk = force_mhk,                       #11
+        force_spectroscopy = force_spectroscopy,     #12
+        force_magcycle = force_magcycle,             #13
+        force_cleaning = force_cleaning,             #14
+        automatic_db = automatic_db,
+        chunck = chunck,
+        )
+
+if chunck!=0:
+    os.system('rm '+root+'/Python/Material_snaky/MASK_CCF/CCF_*_N%.0f.fits'%(chunck))
+
 if False:
     pass
     #run snaky.py -s HD128621 -y 1 -i CORALIE14_3.8 -b 2 -e 12

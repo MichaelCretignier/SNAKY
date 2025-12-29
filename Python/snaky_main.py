@@ -377,6 +377,13 @@ def check_snaky_processing(instrument='*'):
         all_info[kw.split('_')[1][0:5]] = 'XXXX'
         all_info.loc[mask,kw.split('_')[1][0:5]] = ''
     all_info = all_info.sort_values(by='code').reset_index(drop=True)
+    nb_stars = len(all_info)
+    stat = [nb_stars]
+    print('total = %.0f'%(nb_stars))
+    for kw in kws:
+        nb = int(nb_stars-np.sum(all_info[kw.split('_')[1][0:5]]=='XXXX'))
+        print('%s = %.0f (%.1f%%)'%(kw,nb,100*nb/nb_stars))
+
     print(root+'/Snaky/database/Snaky_processing_db_'+instrument+'.csv')
     all_info.to_csv(root+'/Snaky/database/Snaky_processing_db_'+instrument+'.csv')
 
@@ -869,6 +876,7 @@ def yarara_finch(dir_root, branch='Snaky', proxy_name='MHK',ext='',trend_degree=
 def import_spectrum(file,sub_dico='matching_diff'):
     file = pd.read_pickle(file)
     spec = myc.tableXY(file['wave'],file['flux']/file[sub_dico]['continuum_linear'],0*file['wave'])
+    spec.filename = file
     return spec
 
 def master_spectrum(files, rv_shift, rv_sys, plot=False, sub_dico='matching_diff'):
@@ -922,6 +930,7 @@ def import_sts(files, rv_shift=None, err=False, sub_dico='matching_diff'):
     return wave_grid, sts, sts_err    
 
 def read_neid(file,dir_root,force=False,debug=False):
+    fname = file.split('/')[-1]
     outname = dir_root+'WORKSPACE/RASSINE_Stacked_spectrum_B0.00_'+fname.replace('.fits','.p')
     if (not os.path.exists(outname))|(force):
         t = fits.open(file)
@@ -972,6 +981,7 @@ def read_neid(file,dir_root,force=False,debug=False):
         pickle.dump(export,open(outname,'wb'))
 
 def read_espresso(file,dir_root,force=False,debug=False):
+    fname = file.split('/')[-1]
     outname = dir_root+'WORKSPACE/RASSINE_Stacked_spectrum_B0.00_'+fname.replace('.fits','.p')
     if (not os.path.exists(outname))|(force):
         t = fits.open(file)
@@ -1235,7 +1245,7 @@ def yarara_rough_rv_sys(spec,teff=6000, verbose=False):
 
     return RV_sys    
 
-def yarara_check_rv_sys(spec, fwhm, rv_sys_approx, dir_root=None):
+def yarara_check_rv_sys(spec, fwhm, rv_sys_approx, ccf_tag, dir_root=None):
     #UPDATE 12.12.2023 producing the plot even if condition satisfied
 
     print(' [INFO] Selected CCF mask : MagiCat')
@@ -1248,8 +1258,11 @@ def yarara_check_rv_sys(spec, fwhm, rv_sys_approx, dir_root=None):
     rv_sys_fit = rv_sys_approx*1000 # Update 28.08.24
     rv_sys_est1 = rv_sys_fit/1000
 
-    spec.ccf(mask, weighted=True, rv_range=rv_range*1.5,rv_sys=rv_sys_fit)
-    
+    if ccf_tag==0:
+        spec.ccf(mask, weighted=True, rv_range=rv_range*1.5,rv_sys=rv_sys_fit)
+    else:
+        spec.ccf(mask, weighted=True, rv_range=rv_range*1.5, rv_sys=rv_sys_fit, static=dir_root+'CCF_MASK/CCF_Magicat_N%.0f.fits'%(ccf_tag))
+
     rv_sys_fit += spec.ccf_params['cen'].value
     
     rv_sys_fit = np.round(rv_sys_fit/1000,2)
@@ -1267,7 +1280,10 @@ def yarara_check_rv_sys(spec, fwhm, rv_sys_approx, dir_root=None):
             print(' [INFO] Second attempt to fit a CCF with standard HARPS DRS mask')
             mask = np.genfromtxt(root+'/Python/Material_snaky/MASK_CCF/%s.txt'%(mask_harps))
             mask = np.array([0.5*(mask[:,0]+mask[:,1]),mask[:,2]]).T 
-            spec.ccf(mask, weighted=True, rv_range=rv_range*1.5,rv_sys=rv_sys_est1*1000)
+            if ccf_tag==0:
+                spec.ccf(mask, weighted=True, rv_range=rv_range*1.5,rv_sys=rv_sys_est1*1000)
+            else:
+                spec.ccf(mask, weighted=True, rv_range=rv_range*1.5, rv_sys=rv_sys_fit, static=dir_root+'CCF_MASK/CCF_'+mask_harps+'_N%.0f.fits'%(ccf_tag))
             rv_sys_fit = rv_sys_est1*1000 + spec.ccf_params['cen'].value
             rv_sys_fit = np.round(rv_sys_fit/1000,2)
             rv_sys_est3 = rv_sys_fit
@@ -1322,31 +1338,41 @@ def yarara_check_rv_sys(spec, fwhm, rv_sys_approx, dir_root=None):
         ccf.to_csv(dir_root+'STAR_INFO/CCF_RV_SYS.csv')
     return output
 
-def yarara_check_rv_sys_wrapper(dir_root,spec,rv_sys_approx):
+def yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag=0):
     
     myf.print_box('\n---- RECIPE : RV_SYS EXTRACTION ---- \n')
+    
+    if ccf_tag!=0:
+        os.system('rm '+dir_root+'/CCF_MASK/*.fits')
 
     spec.clip(min=[4000,None])
 
     save = []
     for fwhm in [6,10,20,50,100,200][::-1]:
-        sinfo = yarara_check_rv_sys(spec, fwhm, rv_sys_approx, dir_root=dir_root)
+        sinfo = yarara_check_rv_sys(spec, fwhm, rv_sys_approx, ccf_tag, dir_root=dir_root)
         if sinfo[0]>500:
-            save.append([fwhm,-999,-999,-999])
+            save.append([fwhm,-999,-999,-999,-999])
         else:
-            save.append([fwhm,sinfo[0],sinfo[1],rv_sys_approx])
+            save.append([fwhm,sinfo[0],sinfo[2],sinfo[1],rv_sys_approx])
     save = np.array(save)
     plt.close('all')
 
     print(' [INFO] Table summary FWHM | RV_SYS \n')
-    save[save[:,2]==save[:,3],2] = -999
-    print(save)
-    fwhm1 = save[np.argmin(abs(save[:,2]-save[:,3])),1]
-    fwhm = save[np.argmin(abs(save[:,0]-fwhm1)),1]
-    rv_sys = save[np.argmin(abs(save[:,0]-fwhm1)),2]
+    save[save[:,3]==save[:,4],3] = -999
+    print(pd.DataFrame(save,columns=['RVRANGE','FWHM','CT','RV','RV_APPROX']))
+    if np.max(save[:,2])>0.01: 
+        fwhm1 = save[np.argmin(abs(save[:,3]-save[:,4])),1]
+        fwhm = save[np.argmin(abs(save[:,0]-fwhm1)),1]
+        rv_sys = save[np.argmin(abs(save[:,0]-fwhm1)),3]
+    else: #if CT < 1% likely fast rotating stars and RV not reliable
+        fwhm = save[np.argmax(save[:,2]),1]
+        rv_sys = save[np.argmax(save[:,2]),3]
     print('\n [INFO] Best FWHM detected is %.2f km/s \n'%(fwhm))
-    sinfo = yarara_check_rv_sys(spec, fwhm, rv_sys, dir_root=dir_root)
+    sinfo = yarara_check_rv_sys(spec, fwhm, rv_sys, ccf_tag, dir_root=dir_root)
     
+    if ccf_tag!=0:
+        os.system('rm '+dir_root+'/CCF_MASK/*.fits')
+
     if fwhm<50:
         pass#yarara_check_fwhm()
 
@@ -1359,7 +1385,7 @@ def replace_none(y,yerr):
     else:
         return y,yerr
 
-def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, 
+def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_tag=0,
                 mask_col='weight_rv', analytical_model='auto', sub_dico='matching_diff',
                 weighted=True, debug=False, normalisation='left', return_ccf=False,
                 del_outside_max = False, ccf_oversampling=1, check_non_transform=True, continuum_method='flux',
@@ -1458,14 +1484,20 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None,
     print(' [INFO] Percentage of the spectrum used : %.1f [%%] (%.0f)'%(100*sum(used_region)/len(grid),len(grid)))
     time.sleep(1)
 
+    if ccf_tag!=0:
+        check_file1 = os.path.exists(dir_root+'CCF_MASK/CCF_'+mask_name.split('.')[0]+'.fits')
+        check_file2 = os.path.exists(root+'/Python/Material_snaky/MASK_CCF/CCF_'+mask_name.split('.')[0]+'_N%.0f.fits'%(ccf_tag))
+        if (not check_file1)&(check_file2):
+            print('\n [INFO] CCF mask found : %s'%(root+'/Python/Material_snaky/MASK_CCF/CCF_'+mask_name.split('.')[0]+'_N%.0f.fits'%(ccf_tag)))
+            ccf_pipeline = fits.open(root+'/Python/Material_snaky/MASK_CCF/CCF_'+mask_name.split('.')[0]+'_N%.0f.fits'%(ccf_tag))
+            ccf_pipeline[0].data[:,0] = np.log10(myf.doppler_r(10**ccf_pipeline[0].data[:,0],rv_sys)[0])
+            ccf_pipeline.writeto(dir_root+'CCF_MASK/CCF_'+mask_name.split('.')[0]+'.fits')
+
     if not os.path.exists(dir_root+'CCF_MASK/CCF_'+mask_name.split('.')[0]+'.fits'):
         print('\n [INFO] CCF mask reduced for the first time, wait for the static mask producing... \n')
         time.sleep(1)
         mask_wave = np.log10(mask[:,0])
         mask_contrast = mask[:,1]*weighted + (1-weighted)
-                    
-        mask_hole = (mask[:,0]>myf.doppler_r(hole_left,-30000)[0])&(mask[:,0]<myf.doppler_r(hole_right,30000)[0])
-        mask_contrast[mask_hole] = 0
         
         log_grid_mask = np.arange(log_grid.min()-10*dgrid,log_grid.max()+10*dgrid+dgrid/10,dgrid/11)
         log_mask = np.zeros(len(log_grid_mask))
@@ -1490,7 +1522,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None,
     
     log_mask = log_mask**(1.0+float(squared))
     log_template = myc.tableXY(log_grid_mask,log_mask,0*log_mask)
-    log_template.interpolate(new_grid=log_grid,method='linear',replace=True)
+    log_template.interpolate(new_grid=log_grid,method='linear',replace=True,fill_value=0)
     log_template = log_template.y
 
     amplitudes = [] ; amplitudes_std = []
@@ -2334,6 +2366,17 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None):
 
 def yarara_vsini(dir_root, Prot=None, Rs=None):
 
+    sinfo = import_star_info(dir_root)
+    if (Prot is None):
+        try:
+            Prot = sinfo['Prot']['FINCH']
+            print(' [INFO] Stellar Prot measured by FINCH found! Prot = %.1f days'%(Prot))
+        except:
+            pass
+    
+    if Prot!=Prot: #np.nan
+        Prot = None
+
     vsun = 1.87 ; psun = 27.5
 
     vmax_veq = 2*pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stell*')[0])['FWHM']['G2']
@@ -2448,6 +2491,7 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
     Ii = [Ii,90][int(Ii!=Ii)]
     Is = [Is,90][int(Is!=Is)]
 
+    print('\n [INFO] Isotropic distribution = 60 [33 - 81] degree')
     print(' [INFO] Inclination estimated = %.0f [%.0f - %.0f] degree'%(I,Ii,Is))
     plt.title(r'$i = %.0f^{+%.0f}_{-%.0f}$ [°]'%(I,Is-I,I-Ii))
 
@@ -2458,6 +2502,14 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
     plt.xlabel(r'$\sin i$ []')
     plt.subplots_adjust(left=0.05,right=0.97)
     plt.savefig(dir_root+'IMAGES/Vsini_inclination.pdf')
+
+    samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv',index_col=0)
+    if Prot is not None:
+        samples_table['prot'] = sample_prot_known
+    else:
+        samples_table['prot'] = sample_prot
+    samples_table['sini'] = sample_sininc
+    samples_table.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv')
 
 def yarara_activity_index(files, rv_sys, shift_rv, material=None, sub_dico='matching_diff'):
 
