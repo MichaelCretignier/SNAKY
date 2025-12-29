@@ -314,7 +314,7 @@ def reduce(
             sb_flag2 = True
             pd.DataFrame(np.array([files,rv_sys]).T,columns=['files','rv_sys']).to_csv(dir_root+'WARNING/RV_SYS_JITTER.csv')
             rv_sys_approx = mym.yarara_rough_rv_sys(spec,teff=teff,verbose=debug)
-        print('\n [INFO] RV_sys ini guess = %.1f +/- %.1f kms'%(rv_sys_approx,rv_sys_std))
+        print('\n [INFO] RV_sys initial guess = %.1f +/- %.1f kms'%(rv_sys_approx,rv_sys_std))
         sinfo2,sb_flag1 = mym.yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag=chunck)
 
         dace_summary = pd.read_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv',index_col=0)

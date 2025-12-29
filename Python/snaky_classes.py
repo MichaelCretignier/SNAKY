@@ -979,7 +979,7 @@ class tableXY(object):
             flux_err = np.array(all_flux_err)
 
             log_template = interp1d(log_grid_mask, log_mask, kind='linear', bounds_error=False, fill_value=0)(log_grid)
-            
+
             vrad, ccf_power, ccf_power_std = myf.ccf(log_grid[used_region], flux[:,used_region], log_template[used_region], 
                                                     rv_range = rv_range, oversampling = ccf_oversampling, spec1_std = flux_err[:,used_region]) #to compute on all the ccf simultaneously
 
@@ -1035,11 +1035,13 @@ class tableXY(object):
                     res.find_min(sort=True)
                     contrast2 = -res.y_min[0] 
                     contrast1 = -ccf_profile.params['amp'].value
-                    if (contrast2>0.05)&(contrast2<contrast1)&(abs(res.x_min[0]/1000)<100):
+                    if (contrast2>0.05)&(contrast2/contrast1>0.10)&(contrast2<contrast1)&(abs(res.x_min[0]/1000)<100):
                         res.plot(color='gray',ls='-',offset=1.025)
-                        plt.axvline(x=res.x_min[0],color='r',ls='-.')
+                        plt.axvline(x=res.x_min[0],color='r',ls='-.',label='RV =%.1f | CT = %.1f'%(res.x_min[0]/1000,contrast2*100))
                         self.warning_multipeak = 1
                         print(' [WARNING] Multi peak detected!')
+                        print(' [INFO] CT1 = %.1f & CT2 = %.1f'%(contrast1*100,contrast2*100))
+                        plt.legend()
                 except:
                     pass
 
