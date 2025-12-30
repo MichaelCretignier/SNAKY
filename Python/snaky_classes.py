@@ -1033,11 +1033,12 @@ class tableXY(object):
                 try:
                     res = tableXY(ccf_profile.x,ccf_profile.res)
                     res.find_min(sort=True)
-                    contrast2 = -res.y_min[0] 
+                    contrast2 = -res.y_min[0]
                     contrast1 = -ccf_profile.params['amp'].value
-                    if (contrast2>0.05)&(contrast2/contrast1>0.10)&(contrast2<contrast1)&(abs(res.x_min[0]/1000)<100):
+                    center2 = res.x_min[0]/1000
+                    if (contrast2>0.05)&(contrast2/contrast1>0.10)&(contrast2<contrast1)&(abs(center2)<100)&(abs(center2)>6):
                         res.plot(color='gray',ls='-',offset=1.025)
-                        plt.axvline(x=res.x_min[0],color='r',ls='-.',label='RV =%.1f | CT = %.1f'%(res.x_min[0]/1000,contrast2*100))
+                        plt.axvline(x=res.x_min[0],color='r',ls='-.',label='RV =%.1f | CT = %.1f'%(center2,contrast2*100))
                         self.warning_multipeak = 1
                         print(' [WARNING] Multi peak detected!')
                         print(' [INFO] CT1 = %.1f & CT2 = %.1f'%(contrast1*100,contrast2*100))
