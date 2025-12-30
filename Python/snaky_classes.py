@@ -1043,7 +1043,7 @@ class tableXY(object):
                         self.warning_multipeak = 1
                         print(' [WARNING] Multi peak detected!')
                         print(' [INFO] CT1 = %.1f (RV=%.1f km/s) & CT2 = %.1f (RV=%.1f km/s)'%(contrast1*100,contrast2*100,center1,center2))
-                        plt.legend()
+                        plt.legend(loc=4)
                 except:
                     pass
 
