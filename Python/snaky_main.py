@@ -1363,7 +1363,7 @@ def yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag=0):
         os.system('rm '+dir_root+'/CCF_MASK/*.fits')
 
     spec.clip(min=[4000,None])
-
+    spec.y[spec.y>1.50] = 1.0
     save = []
     for fwhm in [6,10,20,50,100,200][::-1]:
         sinfo = yarara_check_rv_sys(spec, fwhm, rv_sys_approx, ccf_tag, dir_root=dir_root)

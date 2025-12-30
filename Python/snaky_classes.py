@@ -985,9 +985,13 @@ class tableXY(object):
 
             self.ccf_profile = tableXY(vrad,np.ravel(ccf_power))
             if norm:
-                self.ccf_profile.yerr/=np.max(self.ccf_profile.y)
-                self.ccf_profile.y/=np.max(self.ccf_profile.y)
-            
+                if np.nanmedian(self.ccf_profile.y/np.percentile(self.ccf_profile.y,95))>0.90:
+                    self.ccf_profile.yerr/=np.percentile(self.ccf_profile.y,95)
+                    self.ccf_profile.y/=np.percentile(self.ccf_profile.y,95)
+                else:
+                    self.ccf_profile.yerr/=np.median(self.ccf_profile.y)
+                    self.ccf_profile.y/=np.median(self.ccf_profile.y)
+
             ccf_profile = self.ccf_profile
             
             if Plot:

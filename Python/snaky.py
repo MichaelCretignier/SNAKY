@@ -576,7 +576,7 @@ def reduce(
                 'Phase_pred':finch_output[5],
                 'Phase_side':finch_output[6]}, 
                 open(dir_root.replace(ins+'/','ALLINS_MERGED/Pmag_FINCH_info.p'),'wb'))
-            finch_output = mym.yarara_finch(dir_root, rm_source=['DACE'], offset_instrument='yes', automatic_fit=True, ext='_free_model', predict_samples=[2026,2036])
+            finch_output = mym.yarara_finch(dir_root, rm_source=['DACE','Yu+23'], offset_instrument='yes', automatic_fit=True, ext='_free_model', predict_samples=[2026,2036])
         except:
             pass
     qc = mym.check_force_magcycle(dir_root)
@@ -617,12 +617,13 @@ if star=='': #multiprocessing via multiterminal for stars in parallel
     #stars = np.sort(np.unique([f.split('Snaky/')[-1].split('/')[0] for f in files]))
     #raws = [None]*len(stars)
     files = glob.glob('/Volumes/MyPassport/SOPHIE/HD*/*.fits')
+    files = glob.glob('/Volumes/MyPassport/NEID/HD*/*.fits')
     raws = np.sort(np.unique(['/'.join(f.split('/')[:-1])+'/' for f in files]))
     stars = np.array([r.split('/')[-2] for r in raws])
     gr8 = pd.read_csv('/Users/cretignier/Documents/THE/TCS/THE_SIMBAD.csv',index_col=0)
     mask = np.in1d(stars,np.array(gr8['HD']))
-    raws = raws[mask]
-    stars = stars[mask]
+    #raws = raws[mask]
+    #stars = stars[mask]
 
     to_process = np.array_split(np.arange(len(stars)),multiprocess)[chunck-1]
     print('[INFO] The following %.0f stars will be processed:'%(len(to_process)))
