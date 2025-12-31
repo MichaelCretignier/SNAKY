@@ -20,6 +20,7 @@ SNAKY — Spectroscopic Novel Analysis Kit of Yarara
 
 Sequence:
 
+force_reset = force_reset,                   #-1. Remove figures and subproducts
 force_pre = force_pre,                       #1.  Read the spectrum in fits
 force_summary = force_summary,               #2.  Extract header information
 force_rvsys = force_rvsys,                   #3.  Compute the systemic RV
@@ -84,6 +85,9 @@ if len(sys.argv)>1:
         elif j[0] == '-A':
             automatic_db = bool(int(j[1]))
 
+if end<begin:
+    end=begin
+
 steps = np.arange(begin,end+1,1).astype('int')
 if begin==99:
     automatic_db = False
@@ -113,6 +117,7 @@ def reduce(
         force_spectroscopy = False,
         force_magcycle = False,
         force_cleaning = False,
+        force_reset = False,
         automatic_db = False,
         chunck = 0,
         ):
@@ -127,6 +132,13 @@ def reduce(
     print(Fore.CYAN+" [INFO] (root directory) dir_root = '"+dir_root+"' \n"+Fore.RESET)
 
     star, ins = mym.create_snaky_dir(star,ins)
+
+    if force_reset:
+        os.system('rm -f '+dir_root+'/IMAGES/*')
+        os.system('rm -f '+dir_root+'/WORKSPACE/Analyse_*')
+        os.system('rm -f '+dir_root+'/WARNING/*.png')
+        os.system('rm -f '+dir_root+'/STAR_INFO/*')
+        os.system('rm -f '+dir_root+'/CCF_MASK/*.fits')
 
     if automatic_db:
         print(' [INFO] Automatic sequence build...')
@@ -270,10 +282,12 @@ def reduce(
         anomalous = np.sum((sts>1.02)|(sts<0),axis=1)*100/len(wave_grid)
         anomalous = np.round(anomalous,0).astype('int')
         summary['anomalous'] = anomalous
-        if np.min(anomalous<5):
+        if np.min(anomalous)<5:
             kept = (anomalous<5)
-        else:
+        elif np.min(anomalous)<10:
             kept = (anomalous<10)
+        else:
+            kept = (anomalous<15)
 
         print(' [INFO] Number of good spectra = %.0f'%(sum(kept)))
         print(' [INFO] Number of anomalous spectra = %.0f'%(len(kept)-sum(kept)))
@@ -322,6 +336,16 @@ def reduce(
         dec_deg = np.nanmedian(dace_summary['DEC'])
         
         fwhm, rv_sys, contrast, beta_gnd, sb_flag, ccf = sinfo2
+        if abs(rv_sys)>600:
+            rv_sys=0
+        if fwhm>300:
+            fwhm=300 
+        if teff>7500:
+            fwhm=200
+            force_ccf, force_vsini, force_activity, force_mhk, force_magcycle = [False]*5
+        if teff<4000:
+            force_activity, force_mhk, force_magcycle = [False]*3
+
         sinfo = mym.import_star_info(dir_root)
         sinfo = myf.update_info_lvl2(sinfo,'FluxD','P05',fluxD[0])
         sinfo = myf.update_info_lvl2(sinfo,'FluxD','P10',fluxD[1])
@@ -398,8 +422,16 @@ def reduce(
     qc = mym.check_force_ccf(dir_root)
 
     if force_master:
-        ccf_output = mym.import_ccf(dir_root,'G2')
-        master = mym.master_spectrum(ccf_output['filename'],ccf_output['rv'].y,0)
+        try:
+            ccf_output = mym.import_ccf(dir_root,'G2')
+            files = ccf_output['filename']
+            rv = ccf_output['rv'].y
+        except:
+            summary = mym.import_summary(dir_root)
+            rv_sys = mym.import_star_info(dir_root)['Rv_sys']['SNAKY']
+            files = summary['filename']
+            rv = np.ones(len(files))*rv_sys
+        master = mym.master_spectrum(files,rv,0)
         material = {'wave':master.x,'reference_spectrum':master.y}
         pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
         #sinfo = yarara_check_rv_sys_wrapper(dir_root,master,0) #check if on 0
@@ -408,7 +440,10 @@ def reduce(
     if force_atmos:
         sinfo = mym.import_star_info(dir_root)
         master = mym.import_master(dir_root)
-        fwhm = sinfo['FWHM']['G2']
+        try:
+            fwhm = sinfo['FWHM']['G2']
+        except:
+            fwhm = sinfo['FWHM']['fixed']
         rv_sys = sinfo['Rv_sys']['SNAKY']
         CT,EW = mym.yarara_iron_lines(dir_root, master, fwhm, rv_sys=rv_sys)
         for kw in CT.keys():
@@ -416,7 +451,6 @@ def reduce(
         for kw in EW.keys():
             sinfo['EW'][kw] = EW[kw]
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
-
 
         atmos = mym.yarara_atmos_xgb_spectroscopy(dir_root, sinfo, resolution=80000, phot=True)
         teff,feh,logg,M,R,BV,vmicro,vmacro = atmos
@@ -440,11 +474,12 @@ def reduce(
     if force_resolution:
         sinfo = mym.import_star_info(dir_root)
         summary = mym.import_summary(dir_root)
-        ccf_output = mym.import_ccf(dir_root,'G2')
-        files = ccf_output['filename']
-        shift_rv = ccf_output['rv'].y*0 
+        try:
+            files = mym.import_ccf(dir_root,'G2')['filename']
+        except:
+            files = summary['filename']
         berv = np.array(summary.loc[np.in1d(summary['filename'],files),'berv'])
-        fwhm_ins = mym.yarara_instrumental_resolution(dir_root, files, shift_rv, berv)
+        fwhm_ins = mym.yarara_instrumental_resolution(dir_root, files, berv*0, berv)
         output = np.array([files,fwhm_ins]).T
         if ins[0:6]=='SOPHIE':
             newins = np.array([['SOPHIE_0.5','SOPHIE-HE_0.5'][int(i>5)] for i in fwhm_ins])
@@ -589,6 +624,7 @@ def reduce(
     if force_cleaning:
         mym.clean_light_dir(dir_root)
 
+
 force_init = bool(np.sum(steps==0))
 force_pre = bool(np.sum(steps==1))
 force_summary = bool(np.sum(steps==2))
@@ -604,6 +640,7 @@ force_mhk = bool(np.sum(steps==11))
 force_spectroscopy = bool(np.sum(steps==12))
 force_magcycle = bool(np.sum(steps==13))
 force_cleaning = bool(np.sum(steps==14))
+force_reset = bool(np.sum(steps==666))
 
 if (len(steps)==1)&(np.sum(steps==0)):
     star, ins = mym.create_snaky_dir(star,ins)
@@ -617,7 +654,7 @@ if star=='': #multiprocessing via multiterminal for stars in parallel
     #stars = np.sort(np.unique([f.split('Snaky/')[-1].split('/')[0] for f in files]))
     #raws = [None]*len(stars)
     files = glob.glob('/Volumes/MyPassport/SOPHIE/HD*/*.fits')
-    files = glob.glob('/Volumes/MyPassport/NEID/HD*/*.fits')
+    files = glob.glob('/Volumes/MyPassport/'+ins.split('_')[0]+'/*/*.fits')
     raws = np.sort(np.unique(['/'.join(f.split('/')[:-1])+'/' for f in files]))
     stars = np.array([r.split('/')[-2] for r in raws])
     gr8 = pd.read_csv('/Users/cretignier/Documents/THE/TCS/THE_SIMBAD.csv',index_col=0)
@@ -654,6 +691,7 @@ if star=='': #multiprocessing via multiterminal for stars in parallel
                 force_spectroscopy = force_spectroscopy,
                 force_magcycle = force_magcycle,      
                 force_cleaning = force_cleaning,
+                force_reset = force_reset,
                 automatic_db = automatic_db,
                 chunck = chunck,
                 )
@@ -685,6 +723,7 @@ else: #single star launch
         force_spectroscopy = force_spectroscopy,     #12
         force_magcycle = force_magcycle,             #13
         force_cleaning = force_cleaning,             #14
+        force_reset = force_reset,                   #666
         automatic_db = automatic_db,
         chunck = chunck,
         )
@@ -693,5 +732,6 @@ if chunck!=0:
     os.system('rm '+root+'/Python/Material_snaky/MASK_CCF/CCF_*_N%.0f.fits'%(chunck))
 
 if False:
+
     pass
     #run snaky.py -s HD128621 -y 1 -i CORALIE14_3.8 -b 2 -e 12

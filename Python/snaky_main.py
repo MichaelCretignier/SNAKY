@@ -103,6 +103,7 @@ def check_force_pre(dir_root):
 
 def check_force_summary(dir_root):
     try:
+        os.system('rm -f '+dir_root+'REDUCTION_INFO/force_summary.txt')
         test = pd.read_csv(dir_root+'WORKSPACE/Analyse_summary.csv',index_col=0)['flag1']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_summary.txt')
         print(Fore.GREEN+' [INFO] Recipe SUMMARY done!'+Fore.RESET) ; QC=1
@@ -112,6 +113,7 @@ def check_force_summary(dir_root):
 
 def check_force_rvsys(dir_root):
     try:
+        os.system('rm -f '+dir_root+'REDUCTION_INFO/force_rvsys.txt')
         test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['Rv_sys']['SNAKY']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_rvsys.txt')
         print(Fore.GREEN+' [INFO] Recipe RVSYS done!'+Fore.RESET) ; QC=1
@@ -121,6 +123,7 @@ def check_force_rvsys(dir_root):
 
 def check_force_ccf(dir_root):
     try:
+        os.system('rm -f '+dir_root+'REDUCTION_INFO/force_ccf.txt')
         test = pd.read_pickle(dir_root+'WORKSPACE/Analyse_ccf.p')['CCF_G2']['table']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_ccf.txt')
         print(Fore.GREEN+' [INFO] Recipe CCF done!'+Fore.RESET) ; QC=1
@@ -130,6 +133,7 @@ def check_force_ccf(dir_root):
 
 def check_force_master(dir_root):
     try:
+        os.system('rm -f '+dir_root+'REDUCTION_INFO/force_master.txt')
         test = pd.read_pickle(dir_root+'WORKSPACE/Analyse_material.p')['reference_spectrum']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_master.txt')
         print(Fore.GREEN+' [INFO] Recipe MASTER done!'+Fore.RESET) ; QC=1
@@ -139,6 +143,7 @@ def check_force_master(dir_root):
 
 def check_force_atmos(dir_root):
     try:
+        os.system('rm -f '+dir_root+'REDUCTION_INFO/force_atmos.txt')
         test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['Mstar']['SNAKY']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_atmos.txt')
         print(Fore.GREEN+' [INFO] Recipe ATMOS done!'+Fore.RESET) ; QC=1
@@ -148,6 +153,7 @@ def check_force_atmos(dir_root):
 
 def check_force_resolution(dir_root):
     try:
+        os.system('rm -f '+dir_root+'REDUCTION_INFO/force_resolution.txt')
         test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['FWHM']['O2']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_resolution.txt')
         print(Fore.GREEN+' [INFO] Recipe RESOLUTION done!'+Fore.RESET) ; QC=1
@@ -157,6 +163,7 @@ def check_force_resolution(dir_root):
 
 def check_force_vsini(dir_root):
     try:
+        os.system('rm -f '+dir_root+'REDUCTION_INFO/force_vsini.txt')
         test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['Vsini']['SNAKY']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_vsini.txt')
         print(Fore.GREEN+' [INFO] Recipe VSINI done!'+Fore.RESET) ; QC=1
@@ -166,6 +173,7 @@ def check_force_vsini(dir_root):
 
 def check_force_abs_continuum(dir_root):
     try:
+        os.system('rm -f '+dir_root+'REDUCTION_INFO/force_abs_continuum.txt')
         test = pd.read_pickle(dir_root+'WORKSPACE/Analyse_material.p')['correction_factor']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_abs_continuum.txt')
         print(Fore.GREEN+' [INFO] Recipe ABSCONTINUUM done!'+Fore.RESET) ; QC=1
@@ -175,6 +183,7 @@ def check_force_abs_continuum(dir_root):
 
 def check_force_activity(dir_root):
     try:
+        os.system('rm -f '+dir_root+'REDUCTION_INFO/force_activity.txt')
         test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['Contrast']['Ha']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_activity.txt')
         print(Fore.GREEN+' [INFO] Recipe ACTIVITY done!'+Fore.RESET) ; QC=1
@@ -184,6 +193,7 @@ def check_force_activity(dir_root):
 
 def check_force_mhk(dir_root):
     try:
+        os.system('rm -f '+dir_root+'REDUCTION_INFO/force_mhk.txt')
         test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['MHK']['SNAKY']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_mhk.txt')
         print(Fore.GREEN+' [INFO] Recipe MHK done!'+Fore.RESET) ; QC=1
@@ -193,6 +203,7 @@ def check_force_mhk(dir_root):
 
 def check_force_spectroscopy(dir_root):
     try:
+        os.system('rm -f '+dir_root+'REDUCTION_INFO/force_spectroscopy.txt')
         test = pd.read_pickle(dir_root+'WORKSPACE/Analyse_spectroscopy.p')['flux_corrected']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_spectroscopy.txt')
         print(Fore.GREEN+' [INFO] Recipe SPECTROSCOPY done!'+Fore.RESET) ; QC=1
@@ -202,6 +213,7 @@ def check_force_spectroscopy(dir_root):
 
 def check_force_magcycle(dir_root):
     try:
+        os.system('rm -f '+dir_root+'REDUCTION_INFO/force_magcycle.txt')
         test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['Pmag']['SNAKY']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_magcycle.txt')
         print(Fore.GREEN+' [INFO] Recipe MAGCYCLE done!'+Fore.RESET) ; QC=1
@@ -1201,6 +1213,9 @@ def yarara_flux_density(files,sub_dico='matching_diff'):
     print(' [INFO] Rough Teff estimation %.0f +/- 300 K'%(Teff_rough_est))
     print(' [INFO] Rough FeH estimation %.2f +/- ?? dex'%(FeH_rough_est))
 
+    if Teff_rough_est>7000:
+        print(Fore.YELLOW+'\n [WARNING] Very hot star! Parameters unreliable'+Fore.RESET)
+
     return (Teff_rough_est,FeH_rough_est,np.round(all_flux_density,3))
 
 def yarara_rough_rv_sys(spec,teff=6000, verbose=False):
@@ -1368,7 +1383,7 @@ def yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag=0):
     for fwhm in [6,10,20,50,100,200][::-1]:
         sinfo = yarara_check_rv_sys(spec, fwhm, rv_sys_approx, ccf_tag, dir_root=dir_root)
         if abs(sinfo[0])>500:
-            save.append([fwhm,-999,-999,-999,-999,-999])
+            save.append([fwhm,-999,-999,-999,-999,0])
         else:
             save.append([fwhm,sinfo[0],sinfo[2],sinfo[1],rv_sys_approx,sinfo[4]])
     save = np.array(save)
@@ -1904,7 +1919,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
     med = np.nanmedian(ccf_vspan.y)
     ccf_vspan.plot() ; plt.ylabel('VSPAN [m/s]') ; plt.axhline(y=med,color='r',label='%.1f'%(med))
     plt.axes([0.75,0.06,0.22,0.66])
-    plt.imshow(ccf_res.T,vmin=-0.05,vmax=0.05,aspect='auto',cmap='seismic') ; 
+    plt.imshow(ccf_res.T,vmin=-0.02,vmax=0.02,aspect='auto',cmap='seismic') ; 
     plt.axvline(x=len(vrad)*0.5,color='k',ls='-.',lw=1)
     plt.axes([0.75,0.72,0.22,0.22])
     plt.plot(vrad/1000,master_ccf,color='k')
@@ -2158,17 +2173,23 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
     norm_mean = np.array(means[['teff','feh','logg']])
     norm_std = np.array(stds[['teff','feh','logg']])
 
-    if sinfo['Teff']['FluxD']<6500:
+    if sinfo['Teff']['FluxD']>6500: #outside calibration range
+        print(Fore.YELLOW + '\n [WARNING] The temperature is outside the calibration range. XGB skipped.'+Fore.RESET)
+        teff = int(sinfo['Teff']['FluxD'])
+        feh = 0
+        logg = 4.0
+    elif sinfo['Teff']['FluxD']<4000: #outside calibration range
+        print(Fore.YELLOW + '\n [WARNING] The temperature is outside the calibration range. XGB skipped.'+Fore.RESET)
+        teff = int(sinfo['Teff']['FluxD'])
+        feh = 0
+        logg = 5.0
+    else:
         output = output*norm_std+norm_mean
         teff,feh,logg = output.values[0]
         teff = int(teff)
         feh = np.round(feh,3)
         logg = np.round(logg,3)
-    else: #outside calibration range
-        print(Fore.YELLOW + '\n [WARNING] The temperature is outside the calibration range. XGB skipped.'+Fore.RESET)
-        teff = int(sinfo['Teff']['FluxD'])
-        feh = 0
-        logg = 4.0
+
 
     M, dust, dust = myf.find_stellar_mass_radius(teff, sp_type='G2V')
     M_inf, dust, dust = myf.find_stellar_mass_radius(teff-75, sp_type='G2V')
@@ -2204,11 +2225,6 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
 
     samples = pd.DataFrame(np.array([samples_ms, samples_rs, samples_teff, samples_logg, samples_feh]).T,columns=['ms','rs','teff','logg','feh'])
     samples.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv')
-
-    if teff<4000:
-        teff=4000
-    elif teff>7000:
-        teff=7000
 
     if logg<3.5:
         logg=3.5
