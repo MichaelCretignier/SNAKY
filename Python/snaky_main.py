@@ -19,7 +19,7 @@ from astropy.coordinates import SkyCoord, EarthLocation
 import astropy.units as u
 from sklearn.neighbors import KNeighborsRegressor #saved in the pickle calibration file
 from colorama import Fore
-
+from scipy.stats import gaussian_kde
 import my_classes as myyc
 
 try:
@@ -254,7 +254,7 @@ def create_snaky_dir(star,ins):
         return star, ins
 
 def clean_light_dir(dir_root):
-    os.system('rm '+dir_root+'CCF_MASK/CCF*.fits')
+    os.system('rm -f '+dir_root+'CCF_MASK/CCF*.fits')
     material = import_material(dir_root)
     if 'activity_proxies' in material.keys():
         del material['activity_proxies']
@@ -394,7 +394,7 @@ def check_snaky_processing(instrument='*'):
     print('total = %.0f'%(nb_stars))
     for kw in kws:
         nb = int(nb_stars-np.sum(all_info[kw.split('_')[1][0:5]]=='XXXX'))
-        print('%s = %.0f (%.1f%%)'%(kw,nb,100*nb/nb_stars))
+        print('%s = %.0f (%.1f%%)'%(kw,nb,100*nb/(nb_stars+1e-6)))
 
     print(root+'/Snaky/database/Snaky_processing_db_'+instrument+'.csv')
     all_info.to_csv(root+'/Snaky/database/Snaky_processing_db_'+instrument+'.csv')
@@ -1375,7 +1375,7 @@ def yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag=0):
     myf.print_box('\n---- RECIPE : RV_SYS EXTRACTION ---- \n')
     
     if ccf_tag!=0:
-        os.system('rm '+dir_root+'/CCF_MASK/*.fits')
+        os.system('rm -f '+dir_root+'/CCF_MASK/*.fits')
 
     spec.clip(min=[4000,None])
     spec.y[spec.y>1.50] = 1.0
@@ -1406,12 +1406,12 @@ def yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag=0):
     SB1 = int(np.sum(kept[:,-1])!=0)
 
     if ccf_tag!=0:
-        os.system('rm '+dir_root+'/CCF_MASK/*.fits')
+        os.system('rm -f '+dir_root+'/CCF_MASK/*.fits')
     
     sinfo = yarara_check_rv_sys(spec, fwhm, rv_sys, ccf_tag, dir_root=dir_root)
     
     if ccf_tag!=0:
-        os.system('rm '+dir_root+'/CCF_MASK/*.fits')
+        os.system('rm -f '+dir_root+'/CCF_MASK/*.fits')
 
     if fwhm<50:
         pass#yarara_check_fwhm()
@@ -2487,9 +2487,21 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
     sample_sini = np.sqrt(1-np.random.rand(99999)**2) # np.sin of np.arccos
     sample_prot = np.ravel(sample_prot90*sample_sini)
 
-    plt.subplot(1,4,3)
+    plt.subplot(2,4,3)
     plt.title(r'$P_{90} = %.1f^{+%.1f}_{-%.1f}$ days'%(p90m[0],p90m[1],p90m[2]))
 
+    pby,pbx = np.histogram(sample_prot90,bins=np.linspace(0,100,100),density=True)
+    pbx = 0.5*(pbx[1:]+pbx[0:-1])
+    plt.fill_between(pbx,pby,alpha=0.2,color='C2')
+    plt.plot(pbx,pby,color='C2')
+    plt.axvline(x=p90m[0],ls=':',color='k')
+
+    plt.xlim(0,100)
+    plt.ylim(0,None)
+    #plt.xscale('log')
+    plt.tick_params(top=True,bottom=True,direction='inout')
+
+    plt.subplot(2,4,7)
     pby,pbx = np.histogram(sample_prot,bins=np.linspace(0,100,100),density=True)
     pbx = 0.5*(pbx[1:]+pbx[0:-1])
     plt.fill_between(pbx,pby,alpha=0.2,color='C0')
@@ -2497,39 +2509,44 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
 
     if Prot is not None:
         sample_prot_known = np.random.randn(99999)*(0.10*Prot)+Prot #10% prot uncertainty
-        pby,pbx = np.histogram(sample_prot,bins=np.linspace(0,100,100),density=True)
+        pby,pbx = np.histogram(sample_prot_known,bins=np.linspace(0,100,100),density=True)
         pbx = 0.5*(pbx[1:]+pbx[0:-1])
         plt.fill_between(pbx,pby,alpha=0.2,color='k')
         plt.plot(pbx,pby,color='k')
 
-    pby,pbx = np.histogram(sample_prot90,bins=np.linspace(0,100,100),density=True)
-    pbx = 0.5*(pbx[1:]+pbx[0:-1])
-    plt.fill_between(pbx,pby,alpha=0.2,color='C2')
-    plt.plot(pbx,pby,color='C2')
-    plt.axvline(x=p90m[0],ls=':',color='k')
     if Prot is not None:
         plt.axvline(x=Prot,color='k',ls='-',label=r'$P_{rot}$=%.1f days'%(Prot))
         plt.legend()
-
-    plt.xlim(1,100)
+    plt.xlim(0,100)
     plt.ylim(0,None)
-    plt.xscale('log')
-    plt.tick_params(top=True,bottom=True,direction='inout')
     plt.xlabel(r'$P_{rot}$ [days]')
+    plt.tick_params(top=True,bottom=True,direction='inout')
 
     sample_sininc = np.ravel((sample_vsini/vsun)*(sample_prot/psun)/sample_Rs)
     
     plt.subplot(1,4,4)
+    
     iby,ibx = np.histogram(sample_sininc,bins=np.arange(0,1,0.01),density=True)
     ibx = 0.5*(ibx[1:]+ibx[0:-1])
+    iby = iby/np.sum(iby)
+
+    #pdf isotropic analytic
+    p = ibx/np.sqrt(1-ibx**2) ; p /= np.sum(p)
+
     plt.fill_between(ibx,iby,alpha=0.2,color='C0')
-    plt.plot(ibx,iby,color='C0')
+    plt.plot(ibx,p,color='C0',label='Isotropic = [33-60-81]')
+    plt.legend(loc=2)
 
     if Prot is not None:
-        sample_sininc = np.ravel((sample_vsini/vsun)*(sample_prot_known/psun)/sample_Rs)
+        #k_corr = 0.98382 # correction for using vsun = 1.89 instead of 1.83
+        sample_sininc = np.ravel((sample_vsini/vsun)*(sample_prot_known/psun)/sample_Rs)#*k_corr
+        f_bad = 100*np.sum(sample_sininc>1)/len(sample_sininc)
+        print(' [INFO] Bad fraction not in [0,1] = %.1f %%'%(f_bad))
+
         iby,ibx = np.histogram(sample_sininc,bins=np.arange(0,1,0.01),density=True)
         ibx = 0.5*(ibx[1:]+ibx[0:-1])
-        plt.fill_between(ibx,iby,alpha=0.2,color='k')
+        iby = iby/np.sum(iby)
+        plt.fill_between(ibx,iby,alpha=0.2,color=None)#,label='Measured = [%.0f-%.0f]'%(Ii,Is))
         plt.plot(ibx,iby,color='k')
 
     I = np.arcsin(np.nanpercentile(sample_sininc,50))*180/np.pi
@@ -2539,10 +2556,11 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
     I = [I,90][int(I!=I)]
     Ii = [Ii,90][int(Ii!=Ii)]
     Is = [Is,90][int(Is!=Is)]
+    #plt.legend(loc=2)
 
     print('\n [INFO] Isotropic distribution = 60 [33 - 81] degree')
     print(' [INFO] Inclination estimated = %.0f [%.0f - %.0f] degree'%(I,Ii,Is))
-    plt.title(r'$i = %.0f^{+%.0f}_{-%.0f}$ [°]'%(I,Is-I,I-Ii))
+    plt.title(r'$i = %.0f^{+%.0f}_{-%.0f}$ [°]  |  $i =$ [%.0f - %.0f - %.0f]'%(I,Is-I,I-Ii,Ii,I,Is))
 
     plt.axvline(x=np.sin(I*np.pi/180),color='k',ls=':')
     plt.tick_params(top=True,bottom=True,direction='inout',which='both')
@@ -2557,7 +2575,7 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
         samples_table['prot'] = sample_prot_known
     else:
         samples_table['prot'] = sample_prot
-    samples_table['sini'] = sample_sininc
+    samples_table['sini'] = np.random.choice(sample_sininc,99999)
     samples_table.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv')
 
 def yarara_activity_index(files, rv_sys, shift_rv, material=None, sub_dico='matching_diff'):

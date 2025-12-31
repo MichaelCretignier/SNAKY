@@ -659,8 +659,8 @@ if star=='': #multiprocessing via multiterminal for stars in parallel
     stars = np.array([r.split('/')[-2] for r in raws])
     gr8 = pd.read_csv('/Users/cretignier/Documents/THE/TCS/THE_SIMBAD.csv',index_col=0)
     mask = np.in1d(stars,np.array(gr8['HD']))
-    #raws = raws[mask]
-    #stars = stars[mask]
+    raws = raws[mask]
+    stars = stars[mask]
 
     to_process = np.array_split(np.arange(len(stars)),multiprocess)[chunck-1]
     print('[INFO] The following %.0f stars will be processed:'%(len(to_process)))
