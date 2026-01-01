@@ -388,7 +388,7 @@ def reduce(
         if sum(kept)!=0:
             sub = summary.loc[summary['flag1']==0]
             files = np.array(sub['filename'])
-            ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'G2', debug=debug, sub_dico=sub_dico, ccf_tag=chunck)
+            ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'G2', debug=debug, sub_dico=sub_dico, ccf_tag=chunck, save=False)
             ct = ccf_output['contrast'].y
             med_ct = np.nanmedian(ct)
             kept2 = abs(ct-med_ct)<2
@@ -458,7 +458,7 @@ def reduce(
         suffixe = 'ATLAS_T%.0f_g%.1f'%(np.round(teff,-2),np.round(logg,1))
         print(' [INFO] Atmospheric model set to : %s'%(suffixe))
 
-        sinfo = myf.update_info_lvl2(sinfo,'Mstar','SNAKY',M)
+        sinfo = myf.update_info_lvl2(sinfo,'Mstar','SNAKY',M)   
         sinfo = myf.update_info_lvl2(sinfo,'Rstar','SNAKY',R)
         sinfo = myf.update_info_lvl2(sinfo,'Teff','SNAKY',teff)
         sinfo = myf.update_info_lvl2(sinfo,'FeH','SNAKY',feh)
@@ -480,14 +480,15 @@ def reduce(
             files = summary['filename']
         berv = np.array(summary.loc[np.in1d(summary['filename'],files),'berv'])
         fwhm_ins = mym.yarara_instrumental_resolution(dir_root, files, berv*0, berv)
+        summary = mym.import_summary(dir_root) # to reload updated table
         output = np.array([files,fwhm_ins]).T
         if ins[0:6]=='SOPHIE':
-            newins = np.array([['SOPHIE_0.5','SOPHIE-HE_0.5'][int(i>5)] for i in fwhm_ins])
+            newins = np.array([[ins.replace('-HE',''),ins.replace('-HE','').replace('_','-HE_')][int(i>5)] for i in fwhm_ins])
             output[:,-1] = newins
             loc = [np.where(summary['filename']==f)[0][0] for f in output[:,0]]
             summary.loc[loc,'ins'] = output[:,-1]
         if ins[0:4]=='NEID':
-            newins = np.array([['NEID_1.0','NEID-HE_1.0'][int(i>4)] for i in fwhm_ins])
+            newins = np.array([[ins.replace('-HE',''),ins.replace('-HE','').replace('_','-HE_')][int(i>4)] for i in fwhm_ins])
             output[:,-1] = newins
             loc = [np.where(summary['filename']==f)[0][0] for f in output[:,0]]
             summary.loc[loc,'ins'] = output[:,-1]

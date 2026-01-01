@@ -262,7 +262,7 @@ def clean_light_dir(dir_root):
         del material['stellar_template']
     pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
 
-def fix_dir_root(instrument='SOPHIE-HE_0.5'):
+def fix_dir_root(instrument='SOPHIE-HE_1.0'):
     a = glob.glob(root+'/Snaky/*/data/s1d/*/WORKSPACE/Analyse_summary.csv')
     for file in a:
         star = file.split('/data')[0].split('/')[-1]
@@ -275,7 +275,9 @@ def fix_dir_root(instrument='SOPHIE-HE_0.5'):
         if (sum(mask)!=0)&(ins!=instrument):
             print(Fore.YELLOW+' [WARNING] Some spectra with the wrong instrument found for %s'%(star)+Fore.RESET)
             create_snaky_dir(star,instrument)
-            
+            os.system('touch '+root+'/Snaky/'+star+'/data/s1d/'+instrument+'/REDUCTION_INFO/force_pre.txt')
+            pouet
+
             all_files = []
             for f in np.array(summary.loc[mask,'filename']):
                 b = pd.read_pickle(f)
@@ -1427,10 +1429,10 @@ def replace_none(y,yerr):
 
 def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_tag=0,
                 mask_col='weight_rv', analytical_model='auto', sub_dico='matching_diff',
-                weighted=True, debug=False, normalisation='left', return_ccf=False,
+                weighted=True, debug=False, normalisation='left', return_ccf=False, save=True,
                 del_outside_max = False, ccf_oversampling=1, check_non_transform=True, continuum_method='flux',
                 rv_range=None, rv_borders=None, bis_range=None, delta_window=5, rv_shift=None,
-                wave_min=4000, wave_max=10000, hole_left=0, hole_right=0, squared=True):
+                wave_min=4000, wave_max=10000, squared=True):
     """ 
     Compute the CCF of a spectrum, reference to use always the same continuum (matching_anchors highest SNR). 
     Display_ccf to plot all the individual CCF. Plot to plot the FWHM, contrast and RV.
@@ -1935,6 +1937,14 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
         'contrast':ccf_contrast,
         'fwhm':ccf_fwhm,
         'vspan':ccf_vspan}
+
+    if save:
+        summary = import_summary(dir_root)
+        mask = np.in1d(np.array(summary['filename']),files)
+        summary['ccf_rv_'+ccf_name] = np.nan ; summary.loc[mask,'ccf_rv_'+ccf_name] = np.round(ccf_rv.y,0) # DONT USE RV FROM SNAKY, PRECISION NOT BETTER THAN 3 M/S
+        summary['ccf_ct_'+ccf_name] = np.nan ; summary.loc[mask,'ccf_ct_'+ccf_name] = np.round(ccf_contrast.y,4)
+        summary['ccf_fwhm_'+ccf_name] = np.nan ; summary.loc[mask,'ccf_fwhm_'+ccf_name] = np.round(ccf_fwhm.y,4)
+        summary.to_csv(dir_root+'/WORKSPACE/Analyse_summary.csv')
 
     if return_ccf:
         return output, vrad, ccf_shifted
