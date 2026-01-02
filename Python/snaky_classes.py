@@ -500,9 +500,6 @@ class tableXY(object):
         if modulo==100000: #default value in YARARA
             modulo=None
         
-        if transit_table is not None:
-            modulo=1 #
-        
         if (modulo is not None)&(cmap is None):
             try:
                 cmap = {'k':'viridis','b':'Blues','r':'Reds','g':'Greens'}[color]
