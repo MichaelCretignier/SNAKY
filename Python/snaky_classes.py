@@ -491,7 +491,7 @@ class tableXY(object):
         if format=='txt':
             np.genfromtxt(np.array(self.x, self.y, self.yerr, self.mask_qc, species),name)
 
-    def plot(self, Show=False, color='k', label='', ls='', lw=2, offset=0, mask=None, capsize=0, fmt='o', markersize=6, zorder=1, species=None, alpha=1, modulo=None, modulo_norm=False, cmap=None, new=False, phase_mod=0, shift_mod=0, periodic=False, frac=1, yerr=True, xerr=True, sp=None, highlight_seasons=False, cmin=None, cmax=None, transit_table=None):
+    def plot(self, Show=False, color='k', label='', ls='', lw=2, offset=0, mask=None, capsize=0, fmt='o', markersize=6, zorder=1, species=None, alpha=1, modulo=None, modulo_norm=False, cmap=None, new=False, phase_mod=0, shift_mod=0, periodic=False, frac=1, yerr=True, xerr=True, sp=None, cmin=None, cmax=None):
         
         '''For the mask give either the first and last index in a list [a,b] or the mask boolean'''
         
@@ -513,10 +513,6 @@ class tableXY(object):
         
         if species is None:
             species = np.ones(len(self.x))
-
-        if highlight_seasons:
-            self.split_seasons(min_gap=highlight_seasons,Plot=False)
-            species = self.seasons_species
 
         if len(np.unique(species))==1:
             colors_species = [color]

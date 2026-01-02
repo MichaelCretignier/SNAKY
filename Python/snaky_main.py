@@ -402,23 +402,68 @@ def check_snaky_processing(instrument='*'):
     print(root+'/Snaky/database/Snaky_processing_db_'+instrument+'.csv')
     all_info.to_csv(root+'/Snaky/database/Snaky_processing_db_'+instrument+'.csv')
 
+def create_snaky_rv_db(filename='All_stars', stars=['*']):
+    files = []
+    for s in stars:
+        files.append(glob.glob(root+'/Snaky/'+s+'/data/s1d/*/STAR_INFO/Stellar_info*.p'))
+    files = np.sort(np.hstack(files))
+    files = np.sort(np.unique(files))
+
+    plt.close('all')
+    infos = []
+    star_ref = ''
+    for f in tqdm(files): 
+        info = pd.read_pickle(f)
+        star = f.split('/data')[0].split('/')[-1]
+        instrument = f.split('/STAR_INFO')[0].split('/')[-1]
+        spectro = instrument.split('_')[0]
+        drs = instrument.split('_')[1]
+        pipeline = f.split('/'+star)[0].split('/')[-1]
+        code = star+'_'+spectro+'_'+drs
+
+        if (star!=star_ref):
+            if star_ref!='':
+                plt.legend()
+                plt.savefig(root+'/Snaky/'+star_ref+'/data/s1d/ALLINS_MERGED/RV.png')
+                plt.close('rv')
+            plt.figure('rv')
+            plt.xlabel('Jdb - 2,400,000 [days]')
+            plt.ylabel('RV [km/s]')  
+            star_ref = star
+
+        rv_sys = info['Rv_sys']['SNAKY']
+        summary = pd.read_csv(f.split('STAR_INFO/')[0]+'WORKSPACE/Analyse_summary.csv',index_col=0)
+        if 'ccf_rv_G2' in summary.keys():
+            if 'rv_shift' not in summary.keys():
+                summary['rv_shift'] = 0
+            if spectro[0:4]=='NEID':
+                summary['rv_shift'] = summary['rv_shift']-summary['ccf_rv_mask_telluric_o2']/1000 - 0.740
+
+            jdb = np.array(summary['jdb'])
+            rv = rv_sys+summary['rv_shift']+summary['ccf_rv_G2']/1000
+            rv_std = np.ones(len(rv))*30/1000 #30 m/s SNAKY RV uncertainties
+
+            table = pd.DataFrame(np.array([jdb,rv,rv_std]).T,columns=['jdb','rv','rv_std'])
+            table['code'] = code
+            table['star'] = star
+            table['ins'] = spectro
+            table['drs'] = drs
+            table = table[['code','star','ins','drs','jdb','rv','rv_std']]
+            infos.append(table)
+            plt.errorbar(jdb,rv,yerr=rv_std,color=None,label=instrument,capsize=0,ls='',marker='o')
+    plt.legend()
+    plt.savefig(root+'/Snaky/'+star_ref+'/data/s1d/ALLINS_MERGED/RV.png')
+    infos = pd.concat(infos)
+    infos.to_csv(root+'/Snaky/database/'+filename+'_RV_infos.csv')
+
+
 def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
     os.makedirs(root+'/Snaky/database', exist_ok=True)
     
-    old_table = [] ; old_ccf = [] ; old_spec = [] ; old_finch = []
-    if os.path.exists(root+'/Snaky/database/'+filename+'_summary_infos.csv'):
-        old_table = pd.read_csv(root+'/Snaky/database/'+filename+'_summary_infos.csv',index_col=0)
-        old_ccf = np.load(root+'/Snaky/database/'+filename+'_ccf.npy')
-        old_spec = np.load(root+'/Snaky/database/'+filename+'_spec.npy')
-        #old_finch = pd.read_csv(root+'/Snaky/database/'+filename+'_Finch_table.csv',index_col=0)
-    
     files = []
-    if stars is None:
-        files = np.sort(glob.glob(root+'/'+branch+'/*/data/s1d/*/STAR_INFO/Stellar_info*.p'))
-    else:
-        for s in stars:
-            files.append(glob.glob(root+'/'+branch+'/'+s+'/data/s1d/*/STAR_INFO/Stellar_info*.p'))
-        files = np.sort(np.hstack(files))
+    for s in stars:
+        files.append(glob.glob(root+'/'+branch+'/'+s+'/data/s1d/*/STAR_INFO/Stellar_info*.p'))
+    files = np.sort(np.hstack(files))
     files = np.sort(np.unique(files))
 
     qc = np.array([len(f.split('/STAR_INFO')[0].split('/')[-1].split('_')) for f in files])
@@ -525,19 +570,7 @@ def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
             all_spec.append(spec.y)
     all_spec = (np.array(all_spec)*1e4).astype('int16')
     
-    print('\n')
-    if len(old_table):
-        mask = ~np.in1d(np.array(old_table['code']),np.array(infos['code']))
-        mask2 = ~np.in1d(np.array(infos['code']),np.array(old_table['code']))
-        print(' [INFO] %.0f datasets modified'%(np.sum(~mask)))
-        print(' [INFO] %.0f new datasets added'%(np.sum(mask2)))
-        if sum(mask):
-            infos = pd.concat([old_table.loc[mask],infos],axis=0)
-            all_spec = np.vstack([old_spec[mask],all_spec])
-            all_ccf = np.vstack([old_ccf[mask],all_ccf])
-    else:
-        print(' [INFO] %.0f new datasets added'%(len(infos)))
-
+    print(' [INFO] %.0f datasets'%(len(infos)))
     print(' [INFO] Nb unique stars = %.0f'%(len(np.unique(infos['star']))))
 
     infos = infos.sort_values(by='code')
@@ -566,7 +599,7 @@ def plot_starinfo(branch='Snaky', ins='*', xvar='Teff_SNAKY', yvar='FWHM_G2', cv
     output = pd.DataFrame(output,columns=['starname','x','y'])
     plt.scatter(output['x'],output['y'])
     
-def plot_fwhm(dir_root, ccf_mask='mask_telluric_o2', xvar='jdb', alpha=0.4, color='k', branch='Snaky',marker='o', label=''):
+def plot_fwhm(dir_root, ccf_mask='mask_telluric_o2', xvar='jdb', yvar='fwhm', alpha=0.4, color='k', branch='Snaky',marker='o', label=''):
     all_files = glob.glob(dir_root+'WORKSPACE/Analyse_ccf.p')
     var = []
     for f in all_files:
@@ -586,16 +619,16 @@ def plot_fwhm(dir_root, ccf_mask='mask_telluric_o2', xvar='jdb', alpha=0.4, colo
         tab = pd.read_pickle(f)
         try:
             ccf = tab['CCF_'+ccf_mask]['table']
-            values.append(np.array(ccf['fwhm']))
+            values.append(np.array(ccf[yvar]))
             if xvar!='':
                 if xvar=='jdb':
                     x = ccf['jdb']
                 else:
-                    x = np.ones(len(ccf['fwhm']))*v
+                    x = np.ones(len(ccf[yvar]))*v
                 if good==0:
-                    plt.scatter(x*np.nan, ccf['fwhm'], color=color, alpha=1.0, marker=marker, label=label)
-                    plt.ylabel('FWHM [km/s]')
-                plt.scatter(x, ccf['fwhm'], color=color, alpha=alpha, marker=marker)
+                    plt.scatter(x*np.nan, ccf[yvar], color=color, alpha=1.0, marker=marker, label=label)
+                    plt.ylabel('%s [km/s]'%(yvar.upper()))
+                plt.scatter(x, ccf[yvar], color=color, alpha=alpha, marker=marker)
                 good = 1
         except:
             pass

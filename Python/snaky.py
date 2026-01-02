@@ -302,7 +302,7 @@ def reduce(
         summary.loc[summary.index[~kept],'flag1'] = 1
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
     qc = mym.check_force_summary(dir_root)
-    
+
     if force_rvsys:
         summary = mym.import_summary(dir_root)
         teff,feh,fluxD = mym.yarara_flux_density(files)
@@ -343,9 +343,6 @@ def reduce(
             fwhm=300 
         if teff>7500:
             fwhm=200
-            force_ccf, force_vsini, force_activity, force_mhk, force_magcycle = [False]*5
-        if teff<4000:
-            force_activity, force_mhk, force_magcycle = [False]*3
 
         sinfo = mym.import_star_info(dir_root)
         sinfo = myf.update_info_lvl2(sinfo,'FluxD','P05',fluxD[0])
@@ -378,6 +375,15 @@ def reduce(
             print('\n')
             #force_pre, force_summary, force_rvsys, force_ccf, force_master, force_atmos, force_resolution, force_vsini,force_abs_continuum, force_activity ,force_mhk, force_spectroscopy, force_magcycle, force_cleaning = [False]*14   
     qc = mym.check_force_rvsys(dir_root)
+
+    try:
+        teff = mym.import_star_info(dir_root)['Teff']['FluxD']
+        if teff>7500:
+            force_ccf, force_vsini, force_activity, force_mhk, force_magcycle = [False]*5
+        if teff<4000:
+            force_activity, force_mhk, force_magcycle = [False]*3
+    except:
+        pass
 
     if force_ccf:
         sinfo = mym.import_star_info(dir_root)
@@ -611,7 +617,7 @@ def reduce(
                 'Kmag_amp':finch_output[3],
                 'Kmag_pred':finch_output[4],
                 'Phase_pred':finch_output[5],
-                'Phase_side':finch_output[6]}, 
+                'Phase_pred_side':finch_output[6]}, 
                 open(dir_root.replace(ins+'/','ALLINS_MERGED/Pmag_FINCH_info.p'),'wb'))
             finch_output = mym.yarara_finch(dir_root, rm_source=['DACE','Yu+23'], offset_instrument='yes', automatic_fit=True, ext='_free_model', predict_samples=[2026,2036])
         except:
