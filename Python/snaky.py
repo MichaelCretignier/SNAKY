@@ -272,6 +272,7 @@ def reduce(
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
     try:
+        mym.check_and_update_path(dir_root)
         summary = mym.import_summary(dir_root)
         files = np.array(summary['filename'])
     except:
@@ -301,9 +302,7 @@ def reduce(
         summary.loc[summary.index[~kept],'flag1'] = 1
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
     qc = mym.check_force_summary(dir_root)
-
-    mym.check_and_update_path(dir_root)
-
+    
     if force_rvsys:
         summary = mym.import_summary(dir_root)
         teff,feh,fluxD = mym.yarara_flux_density(files)
