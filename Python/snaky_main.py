@@ -1064,7 +1064,7 @@ def read_sophie(file,dir_root,force=False,debug=False):
 def check_and_update_path(dir_root):
     if os.path.exists(dir_root+'WORKSPACE/Analyse_summary.csv'):
         processed = glob.glob(dir_root+'WORKSPACE/RASSINE*.p')
-        if len(processed):
+        if len(processed)!=0:
             summary = pd.read_csv(dir_root+'WORKSPACE/Analyse_summary.csv',index_col=0)
             path = processed[0].split('/RASSINE_Stacked')[0]
             summary['filename'] = np.array([path+'/'+f.split('WORKSPACE/')[-1] for f in summary['filename']])
