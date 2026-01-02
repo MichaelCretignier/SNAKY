@@ -302,6 +302,8 @@ def reduce(
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
     qc = mym.check_force_summary(dir_root)
 
+    mym.check_and_update_path(dir_root)
+
     if force_rvsys:
         summary = mym.import_summary(dir_root)
         teff,feh,fluxD = mym.yarara_flux_density(files)
@@ -654,14 +656,21 @@ if star=='': #multiprocessing via multiterminal for stars in parallel
     #files = glob.glob(root+'/Snaky/*/data/s1d/%s/RAW/*.fits'%(ins))
     #stars = np.sort(np.unique([f.split('Snaky/')[-1].split('/')[0] for f in files]))
     #raws = [None]*len(stars)
+
     files = glob.glob('/Volumes/MyPassport/SOPHIE/HD*/*.fits')
     files = glob.glob('/Volumes/MyPassport/'+ins.split('_')[0]+'/*/*.fits')
     raws = np.sort(np.unique(['/'.join(f.split('/')[:-1])+'/' for f in files]))
     stars = np.array([r.split('/')[-2] for r in raws])
+
+
+    #files = glob.glob('/Users/cretignier/Documents/Snaky/*/data/s1d/'+ins+'/WORKSPACE/RASSINE*.p')
+    #raws = [None]*len(files)
+    #stars = np.sort(np.unique(np.array([r.split('/')[-6] for r in files])))
+
     gr8 = pd.read_csv('/Users/cretignier/Documents/THE/TCS/THE_SIMBAD.csv',index_col=0)
     mask = np.in1d(stars,np.array(gr8['HD']))
-    raws = raws[mask]
-    stars = stars[mask]
+    #raws = raws[mask]
+    #stars = stars[mask]
 
     to_process = np.array_split(np.arange(len(stars)),multiprocess)[chunck-1]
     print('[INFO] The following %.0f stars will be processed:'%(len(to_process)))

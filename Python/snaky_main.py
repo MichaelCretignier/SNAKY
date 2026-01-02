@@ -276,7 +276,6 @@ def fix_dir_root(instrument='SOPHIE-HE_1.0'):
             print(Fore.YELLOW+' [WARNING] Some spectra with the wrong instrument found for %s'%(star)+Fore.RESET)
             create_snaky_dir(star,instrument)
             os.system('touch '+root+'/Snaky/'+star+'/data/s1d/'+instrument+'/REDUCTION_INFO/force_pre.txt')
-            pouet
 
             all_files = []
             for f in np.array(summary.loc[mask,'filename']):
@@ -292,7 +291,9 @@ def fix_dir_root(instrument='SOPHIE-HE_1.0'):
             mask_dace = np.in1d(dace['fileroot'],np.array(all_files))
 
             new_summary = summary.loc[mask].reset_index(drop=True)
+            new_summary['filename'] = np.array([n.replace('/'+ins+'/','/'+instrument+'/') for n in new_summary['filename']])
             new_summary.to_csv(file.replace('/'+ins+'/','/'+instrument+'/'))
+
             new_dace = dace.loc[mask_dace].reset_index(drop=True)
             new_dace['ins'] = instrument
             new_dace['fileroot'] = np.array([n.replace('/'+ins+'/','/'+instrument+'/') for n in new_dace['fileroot']])
@@ -413,11 +414,9 @@ def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
     
     files = []
     if stars is None:
-        #files = np.sort(glob.glob(root+'/'+branch+'/*/data/s1d/*/WORKSPACE/Analyse_spectroscopy.p'))
         files = np.sort(glob.glob(root+'/'+branch+'/*/data/s1d/*/STAR_INFO/Stellar_info*.p'))
     else:
         for s in stars:
-            #files.append(glob.glob(root+'/'+branch+'/'+s+'/data/s1d/*/WORKSPACE/Analyse_spectroscopy.p'))
             files.append(glob.glob(root+'/'+branch+'/'+s+'/data/s1d/*/STAR_INFO/Stellar_info*.p'))
         files = np.sort(np.hstack(files))
     files = np.sort(np.unique(files))
@@ -564,30 +563,47 @@ def plot_starinfo(branch='Snaky', ins='*', xvar='Teff_SNAKY', yvar='FWHM_G2', cv
     output = pd.DataFrame(output,columns=['starname','x','y'])
     plt.scatter(output['x'],output['y'])
     
-def plot_fwhm(dir_root, ccf_mask='mask_telluric_o2', xvar='jdb', alpha=0.4, color='k', branch='Snaky'):
+def plot_fwhm(dir_root, ccf_mask='mask_telluric_o2', xvar='jdb', alpha=0.4, color='k', branch='Snaky',marker='o', label=''):
     all_files = glob.glob(dir_root+'WORKSPACE/Analyse_ccf.p')
     var = []
     for f in all_files:
         print(f)
         f2 = f.replace('/WORKSPACE/Analyse_ccf.p','/STAR_INFO/Ste*')
-        if xvar!='jdb':
-            v = pd.read_pickle(glob.glob(f2)[0])[xvar][branch.upper()]
-        else:
+        if xvar=='jdb':
             v = 0
+        elif xvar=='':
+            v = 0
+        else:
+            v = pd.read_pickle(glob.glob(f2)[0])[xvar][branch.upper()]
         var.append(v)
 
+    good = 0
+    values = []
     for v,f in zip(var,all_files):
         tab = pd.read_pickle(f)
         try:
             ccf = tab['CCF_'+ccf_mask]['table']
-            if xvar=='jdb':
-                x = ccf['jdb']
-            else:
-                x = np.ones(len(ccf['fwhm']))*v
-            plt.scatter(x, ccf['fwhm'], color=color, alpha=alpha)
-            plt.ylabel('FWHM [km/s]')
+            values.append(np.array(ccf['fwhm']))
+            if xvar!='':
+                if xvar=='jdb':
+                    x = ccf['jdb']
+                else:
+                    x = np.ones(len(ccf['fwhm']))*v
+                if good==0:
+                    plt.scatter(x*np.nan, ccf['fwhm'], color=color, alpha=1.0, marker=marker, label=label)
+                    plt.ylabel('FWHM [km/s]')
+                plt.scatter(x, ccf['fwhm'], color=color, alpha=alpha, marker=marker)
+                good = 1
         except:
             pass
+    
+    if (xvar=='')&(len(values)!=0):
+        values = np.hstack(np.hstack(values))
+        values = values[values==values]
+        pby,pbx = np.histogram(values,bins=np.arange(0,10,0.025),density=True)
+        pbx = 0.5*(pbx[1:]+pbx[0:-1])
+        plt.fill_between(pbx,pby,alpha=alpha,color=color,label=label)
+        plt.plot(pbx,pby,color='k')
 
 def plot_master(dir_root, srf=False, color='k', alpha=1.0, offset=0, print_info=True, figname='master', branch='Snaky', debug=False):
     """srf: Stellar-rest-frame, will use the Analyse_spectroscopy file"""
@@ -1045,6 +1061,15 @@ def read_sophie(file,dir_root,force=False,debug=False):
         else:
             print('[WARNING] RASSINE continuum size wrong, potential multiprocessing issue')
     
+def check_and_update_path(dir_root):
+    if os.path.exists(dir_root+'WORKSPACE/Analyse_summary.csv'):
+        processed = glob.glob(dir_root+'WORKSPACE/RASSINE*.p')
+        if len(processed):
+            summary = pd.read_csv(dir_root+'WORKSPACE/Analyse_summary.csv',index_col=0)
+            path = processed[0].split('/RASSINE_Stacked')[0]
+            summary['filename'] = np.array([path+'/'+f.split('WORKSPACE/')[-1] for f in summary['filename']])
+            summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
+
 def query_value(header,kws):
     output = []
     for kw in kws:
