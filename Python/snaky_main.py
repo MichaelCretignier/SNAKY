@@ -434,7 +434,10 @@ def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
         pipeline = f.split('/'+star)[0].split('/')[-1]
         processing = 'YV0' #TBD add the info if matching_diff or matching_mad
         code = star+'_'+spectro+'_'+drs+'_'+pipeline
-        
+
+        ra = np.round(myf.get_info_lvl2(info,'RA','SNAKY'),6)
+        dec = np.round(myf.get_info_lvl2(info,'DEC','SNAKY'),6)
+
         teff = np.round(myf.get_info_lvl2(info,'Teff',pipeline.upper()),0)
         logg = np.round(myf.get_info_lvl2(info,'Log_g',pipeline.upper()),2)
         feh = np.round(myf.get_info_lvl2(info,'FeH',pipeline.upper()),2)
@@ -448,9 +451,9 @@ def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
         fwhm_ccf3 = np.round(myf.get_info_lvl2(info,'FWHM','KITTY'),2)
         vsini = np.round(myf.get_info_lvl2(info,'Vsini',pipeline.upper()),2)
 
-        infos.append([code,star,spectro,drs,pipeline,processing,teff,logg,feh,mhk,rhk,fwhm_ins,fwhm_ccf1,fwhm_ccf2,fwhm_ccf3,vsini])
+        infos.append([code,star,spectro,drs,pipeline,processing,ra,dec,teff,logg,feh,mhk,rhk,fwhm_ins,fwhm_ccf1,fwhm_ccf2,fwhm_ccf3,vsini])
 
-    infos = pd.DataFrame(infos,columns=['code','star','ins','drs','pipeline','yvx','teff','logg','feh','mhk','rhk','fwhm_ins','fwhm_g2','fwhm_garfield','fwhm_kitty','vsini'])
+    infos = pd.DataFrame(infos,columns=['code','star','ins','drs','pipeline','yvx','ra','dec','teff','logg','feh','mhk','rhk','fwhm_ins','fwhm_g2','fwhm_garfield','fwhm_kitty','vsini'])
 
     spectro_exist = []
     for f in tqdm(files):
