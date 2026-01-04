@@ -36,7 +36,7 @@ SNAKY — Spectroscopic Novel Analysis Kit of Yarara
 
 """
 
-__version__ = '0.5.1'
+__version__ = '0.5.2'
 
 print(Fore.GREEN+"""\n[INFO SNAKY]
 [INFO USER] SNAKY version = """+__version__ +""" 
@@ -399,8 +399,8 @@ def check_snaky_processing(instrument='*'):
         nb = int(nb_stars-np.sum(all_info[kw.split('_')[1][0:5]]=='XXXX'))
         print('%s = %.0f (%.1f%%)'%(kw,nb,100*nb/(nb_stars+1e-6)))
 
-    print(root+'/Snaky/database/Snaky_processing_db_'+instrument+'.csv')
-    all_info.to_csv(root+'/Snaky/database/Snaky_processing_db_'+instrument+'.csv')
+    print(root+'/Snaky/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
+    all_info.to_csv(root+'/Snaky/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
 
 
 def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
@@ -451,8 +451,8 @@ def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
         if len(f2):
             samples = pd.read_csv(f2[0],index_col=0)
             if 'mhk' in samples.keys():
-                mhk_err = np.std(samples['mhk'])
-                rhk_err = np.std(samples['rhk'])                
+                mhk_err = np.round(np.std(samples['mhk']),2)
+                rhk_err = np.round(np.std(samples['rhk']),3)
         infos.append([code,star,spectro,drs,pipeline,processing,ra,dec,teff,logg,feh,mhk,mhk_err,rhk,rhk_err,fwhm_ins,fwhm_ccf1,fwhm_ccf2,fwhm_ccf3,vsini,sb1,sb2])
 
     infos = pd.DataFrame(infos,columns=['code','star','ins','drs','pipeline','yvx','ra','dec','teff','logg','feh','mhk','mhk_err','rhk','rhk_err','fwhm_ins','fwhm_g2','fwhm_garfield','fwhm_kitty','vsini','sb1','sb2'])
@@ -491,7 +491,7 @@ def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
     print('\n [INFO] %.0f datasets'%(len(infos)))
     print('\n [INFO] Nb unique stars processed = %.0f (%.0f%%)\n'%(nb_processed,100*nb_processed/ntot))
 
-    infos.to_csv(root+'/Snaky/database/'+filename+'_summary_infos.csv')
+    infos.to_csv(root+'/Snaky/database/'+filename.replace('*','')+'_summary_infos.csv')
 
     return infos
 
@@ -812,7 +812,7 @@ def plot_mhk(dir_root, hide_outliers=True, daily_binned=True, debug=False):
     plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'MHK.png')
 
 
-def yarara_finch(dir_root, branch='Snaky', proxy_name='MHK',ext='',trend_degree=0, harm=0, offset_instrument='no!', automatic_fit=False, x_unit='years',predict='today', predict_samples=None,print_reference=True, rm_source=['DACE','Yu+23']):
+def yarara_finch(dir_root, branch='Snaky', proxy_name='MHK',ext='',trend_degree=0, harm=0, offset_instrument='no!', automatic_fit=False, x_unit='years',predict='today', predict_samples=None,print_reference=True, rm_source=['DACE','Yu+23'], rm_ins=[], add_source=[], add_ins=[]):
 
     myf.print_box('\n---- RECIPE : FINCH MAGNETIC CYCLE PERIOD ----\n')
 
@@ -850,7 +850,11 @@ def yarara_finch(dir_root, branch='Snaky', proxy_name='MHK',ext='',trend_degree=
     db_finch = Finch.get_star(
         starname.split('_')[0],
         finch_offset = True,
-        rm_source = rm_source)
+        rm_source = rm_source,
+        add_source = add_source,
+        rm_ins = rm_ins,
+        add_ins = add_ins,
+        )
     
     if db_finch is not None:
         if proxy_name.split('_')[0]=='MHK':
@@ -1214,7 +1218,7 @@ def dec_to_deg(dec):
     else:
         return np.nan
 
-def get_vmacro(teff,logg, source='Cretignier+26'):
+def get_vmacro(teff,logg,feh,source='Cretignier+26'):
     """This is the gaussian width (not FWHM) for a Gaussian macroturbulence approximation"""
     if source=='Doyle+14': #only valid between teff = [5200-6400], logg = [4.0-4.6]
         Teff = np.arange(5250,6400,200)
@@ -1230,14 +1234,15 @@ def get_vmacro(teff,logg, source='Cretignier+26'):
     elif source=='Bruntt+10':
         value = np.round(myf.find_turbulence(teff,logg)[1],3)
         value = (value,value,value)
-    elif source=='Cretignier+26':
-        calib_g2 = myc.tableXY(np.array(myv.calib_vmacro)[:,0],np.array(myv.calib_vmacro)[:,1],np.array(myv.calib_vmacro)[:,0]*0)
-        calib_garfield = myc.tableXY(np.array(myv.calib_vmacro)[:,0],np.array(myv.calib_vmacro)[:,2],np.array(myv.calib_vmacro)[:,0]*0)
-        calib_kitty = myc.tableXY(np.array(myv.calib_vmacro)[:,0],np.array(myv.calib_vmacro)[:,3],np.array(myv.calib_vmacro)[:,0]*0)
-        calib_g2.interpolate(new_grid=np.array([teff]),method='linear')
-        calib_garfield.interpolate(new_grid=np.array([teff]),method='linear')
-        calib_kitty.interpolate(new_grid=np.array([teff]),method='linear')
-        value = (np.round(calib_g2.y[0],4),np.round(calib_garfield.y[0],4),np.round(calib_kitty.y[0],4))
+    elif source=='Cretignier+26': # obtained with GARFIELD on instrument PSF removed
+        vmacro_teff = myc.tableXY([3500,3750,4000,4250,4500,4750,5000,5250,5500,5750,6000,6250,6500],[3.00,3.50,3.90,4.20,4.20,3.90,3.70,3.70,3.90,4.20,4.70,5.80,7.5]) ; vmacro_teff.null()
+        vmacro_feh = myc.tableXY([-1.0,-0.75,-0.50,-0.25,0.00,0.25],[0.00,0.00,0.00,0.00,0.25,0.60]) ; vmacro_feh.null()
+        vmacro_logg = myc.tableXY([3.6, 3.8, 4.0, 4.2, 4.4, 4.6],[1.00,0.75,0.40,0.10,-0.15,-0.25]) ; vmacro_logg.null()
+        vmacro_teff.interpolate(new_grid=np.array([teff]),method='linear',replace=False)
+        vmacro_feh.interpolate(new_grid=np.array([feh]),method='linear',replace=False)
+        vmacro_logg.interpolate(new_grid=np.array([logg]),method='linear',replace=False)
+        value = vmacro_teff.y_interp[0] + vmacro_feh.y_interp[0] + vmacro_logg.y_interp[0]
+        value = (value,value,value)
     value = {'G2':value[0],'Garfield':value[1],'Kitty':value[2]}
     return value
 
@@ -2019,7 +2024,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
             profile.interpolate(new_grid=vrad,method='linear')
             ccf_shifted[:,n] = profile.y
     master_ccf = np.nanmean(ccf_shifted,axis=1)
-    ccf_res = ccf_norm - master_ccf[:,np.newaxis]
+    ccf_res = ccf_norm - np.nanmedian(ccf_norm,axis=1)[:,np.newaxis]
 
     export = myf.touch_pickle(dir_root+'WORKSPACE/Analyse_ccf_saved.p')
     export['CCF_'+ccf_name] = {}
@@ -2393,7 +2398,7 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
     return teff,feh,logg,M,R,BV,vmicro,vmacro
 
 
-def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None):
+def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False):
 
     myf.print_box('\n---- RECIPE : VSINI EXTRACTION ----\n')
 
@@ -2403,6 +2408,29 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None):
     logg = sinfo['Log_g']['SNAKY']
     feh = sinfo['FeH']['SNAKY']
     ins_res = sinfo['FWHM']['O2']
+
+    samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv',index_col=0)
+    teff = samples_table['teff']
+    logg = samples_table['logg']
+    feh = samples_table['feh']
+
+    print(' [INFO] Teff = %.0f'%(np.median(teff)))
+    print(' [INFO] Logg = %.2f'%(np.median(logg)))
+    print(' [INFO] FeH = %.2f'%(np.median(feh)))
+
+    vmacro = get_vmacro(teff,logg,feh,source='Cretignier+26') #Doyle, Bruntt, or Cretignier
+
+    #ratio = garfield/kitty
+    calib_teff = myc.tableXY([3500,3750,4000,4250,4500,4750,5000,5250,5500,5750,6000,6250,6500],[1.245,1.245,1.245,1.245,1.23,1.21,1.17,1.13,1.10,1.080,1.075,1.075,1.075]) ; calib_teff.null()
+    calib_feh = myc.tableXY([-1.0,-0.75,-0.50,-0.25,0.00,0.25],[-0.035,-0.025, -0.014, -0.004, 0.000, 0.009]) ; calib_feh.null()
+
+    calib_teff.interpolate(new_grid=teff,method='linear',replace=False)
+    calib_feh.interpolate(new_grid=feh,method='linear',replace=False)
+    ratio_kitty = calib_teff.y_interp+calib_feh.y_interp
+
+    ratio = {'Garfield':np.ones(len(samples_table)),'Kitty':ratio_kitty}
+    #ratio = {'Garfield':1,'Kitty':1}
+    print(' [INFO] Ratio GARFIELD/KITTY from (Teff,FeH) calibration = %.2f'%(np.median(ratio['Kitty'])))
 
     instrument = dir_root.split('/')[-2]
     ins = instrument.split('_')[0]
@@ -2428,18 +2456,20 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None):
     for kw in ['GARFIELD','KITTY']:
         G = myc.tableXY(calib['%s_FWHM'%(kw)],calib['%s_VSINI'%(kw)],0*calib['%s_VSINI'%(kw)])
         if kw=='GARFIELD': # solar correction
-            G.y = G.y-0.598/(G.x/6.085)**2
+            G.y = np.sqrt(G.y**2-1.20**2)
+            #G.y = G.y-0.598/(G.x/6.085)**2
         elif kw=='KITTY':  # solar correction
-            G.y = G.y-0.708/(G.x/5.895)**2
+            G.y = np.sqrt(G.y**2-1.20**2)
+            #G.y = G.y-0.708/(G.x/5.895)**2
         calib_curve[kw] = G
     calib_curve['G2'] = calib_curve['GARFIELD']
 
-    samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv',index_col=0)
-
-    vmacro = get_vmacro(teff,logg,source='Cretignier+26') #Doyle, Bruntt, or Cretignier
-    vmacro_sun = get_vmacro(5775,4.44,source='Cretignier+26')
+    vmacro = get_vmacro(teff,logg,feh,source='Cretignier+26') #Doyle, Bruntt, or Cretignier
+    vmacro_sun = get_vmacro(5775,4.44,0.00,source='Cretignier+26')
+    vmacro_hd10700 = get_vmacro(5338,4.54,-0.47,source='Cretignier+26')
+    dmacro = {kw:vmacro[kw]-vmacro_hd10700[kw] for kw in vmacro.keys()}
     for kw in vmacro.keys():
-        print(' [INFO] Cretignier+26 vmacro for %s (Teff = %.0f K) = %.1f kms (Sun = %.1f km/s)'%(kw,teff,vmacro[kw],vmacro_sun[kw]))
+        print(' [INFO] Cretignier+26 vmacro for %s (Teff , Logg, FeH) = %.1f kms (Sun = %.1f km/s, TauCeti = %.1f km/s)'%(kw,np.median(vmacro[kw]),vmacro_sun[kw],vmacro_hd10700[kw]))
 
     vsini_cdf = {}
     samples = []
@@ -2464,7 +2494,7 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None):
             saveG = 1-ccf[sub_dico]['ccf_flux'].T
         saveG = saveG - np.min(saveG,axis=1)[:,np.newaxis]
         saveG = saveG/np.max(saveG,axis=1)[:,np.newaxis]
-        fwhmG = []
+        fwhmG_raw = []
         plt.figure()
         for s in saveG:
             c = myc.tableXY(vrad,s,0*s)
@@ -2473,49 +2503,75 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None):
             v2 = c.x[c.x>0][np.argmin(abs(c.y-0.5)[c.x>0])]
             v1 = c.x[c.x<0][np.argmin(abs(c.y-0.5)[c.x<0])]
             fwhm = (v2-v1)/1000
-            fwhmG.append(fwhm)
-        fwhmG = np.array(fwhmG)
+            fwhmG_raw.append(fwhm)
+        fwhmG_raw = np.array(fwhmG_raw)  # TBD this could be removed
+        fwhmG_raw = ccf_values['fwhm'].y #BECAUSE calibration were obtained from the FWHM yarara_ccf fit
+
         kw = mask.upper()
         ins_calib = ins
 
-        fwhmG = np.sqrt(fwhmG**2-ins_res**2+ref_resolution**2)
+        #print(np.round(np.median(fwhmG_raw),3),ins_res,ref_resolution)
+        fwhmG = np.sqrt(fwhmG_raw**2 - ref_resolution**2) # correct the PSF deconvolve FWHM
+        fwhmG = fwhmG * np.random.choice(ratio[mask],1000,replace=False)[:,np.newaxis] #transform Kitty in Garfield or keep Garfield
+        fwhmG = np.sqrt(fwhmG**2 - np.random.choice(dmacro[mask],1000,replace=False)[:,np.newaxis]**2) #correct vmacro toward TauCeti value
+        fwhmG = np.sqrt(fwhmG**2 + ref_resolution**2)
+        #print(np.round(np.median(fwhmG),3),ins_res,ref_resolution)
 
         if ins_calib == 'NEID-HE':
             ins_calib = 'SOPHIE'
 
-        calib_ins = pd.read_csv(root+'/Python/Material_snaky/Table_calib_vsini_%s.csv'%(kw),index_col=0)
+        calib_ins = pd.read_csv(root+'/Python/Material_snaky/Table_calib_vsini_%s.csv'%('GARFIELD'),index_col=0)
         calib_ins = myc.tableXY(calib_ins[ins_calib],calib_ins['HARPN'],0*calib_ins[ins_calib]) #reference HARPN
         calib_ins.order()
-        calib_ins.interpolate(new_grid=fwhmG,replace=False,method='linear')
-        fwhmG_HARPN = calib_ins.y_interp
+        fwhmG_HARPN = []
+        for f in fwhmG:
+            calib_ins.interpolate(new_grid=f,replace=False,method='linear')
+            fwhmG_HARPN.append(calib_ins.y_interp)
+        fwhmG_HARPN = np.array(fwhmG_HARPN)
 
+        #print(np.round(np.median(fwhmG_HARPN),3))
         fwhmG_HARPN[fwhmG_HARPN!=fwhmG_HARPN] = np.min(calib_ins.y) # to avoid crash
-        
-        #print(fwhmG_HARPN)
-        #fwhmG_HARPN = np.sqrt(fwhmG_HARPN**2 - vmacro[mask]**2 + vmacro_sun[mask]**2)
-        #print(fwhmG_HARPN)
 
-        G = calib_curve[kw]
-        G.interpolate(new_grid=fwhmG_HARPN,method='linear',replace=False)
-        V = G.y_interp
+        V = []
+        G = calib_curve['GARFIELD']#[kw]
+        for f in fwhmG_HARPN:
+            G.interpolate(new_grid=f,method='linear',replace=False)
+            V.append(G.y_interp)
+        V = np.array(V)
+
+        if debug:
+            plt.figure()
+            plt.errorbar(ccf_values['rv'].x,fwhmG_raw,yerr=0*fwhmG_raw,marker='.',capsize=0,ls='')
+            plt.errorbar(ccf_values['rv'].x,np.mean(fwhmG,axis=0),yerr=np.std(fwhmG,axis=0),marker='.',capsize=0,ls='')
+            plt.errorbar(ccf_values['rv'].x,np.mean(fwhmG_HARPN,axis=0),yerr=np.std(fwhmG_HARPN,axis=0),marker='.',capsize=0,ls='')
+            plt.errorbar(ccf_values['rv'].x,np.mean(V,axis=0),yerr=np.std(V,axis=0),marker='.',capsize=0,ls='')
 
         plt.figure('vsin3')
-        plt.subplot(3,1,num+1) ; plt.scatter(ccf_values['rv'].x,V,marker='.',color='C%.0f'%(num))
+        plt.subplot(3,1,num+1)
+        plt.errorbar(ccf_values['rv'].x,np.mean(V,axis=0),yerr=np.std(V,axis=0),marker='.',capsize=0,color='C%.0f'%(num),ls='')
         plt.ylabel(r'$v$ $\sin$ $i$ [km/s]')
         plt.tick_params(labelbottom=False,direction='inout',top=True)
         ax = plt.gca()
         ax.twinx()
-        plt.scatter(ccf_values['rv'].x,fwhmG,marker='.',color='C%.0f'%(num))
+        plt.errorbar(ccf_values['rv'].x,fwhmG_raw,yerr=0*fwhmG_raw,marker='.',capsize=0,color='C%.0f'%(num),ls='')
         plt.ylabel('CCF FWHM\n%s [km/s]'%(ins))
-        plt.subplot(3,1,3) ; plt.scatter(ccf_values['rv'].x,V,marker='.')
+        plt.subplot(3,1,3)
+        plt.errorbar(ccf_values['rv'].x,np.mean(V,axis=0),yerr=np.std(V,axis=0),marker='.',capsize=0,color='C%.0f'%(num),ls='')
 
         mean_F = np.nanmedian(fwhmG_HARPN)
-        std_accuracy = (1-np.exp(-abs(teff-5780)/200))*0.1+0.1 # 200 m/s of bias in general, 250 m/s for the Sun
+        std_bias = 0.1 # 100 m/s of bias in general, 200 m/s for the Sun
+        std_accuracy = np.nanmedian(np.std(V,axis=0)) 
+        std_precision = myf.mad(np.median(fwhmG_HARPN,axis=0))
+        std_tot = np.sqrt(std_bias**2+std_accuracy**2+std_precision**2)
+        print('\n [INFO] Mask = %s'%(kw))
+        print(' [INFO] Bias uncertainties = %.0f m/s'%(std_bias*1000))
         print(' [INFO] Accuracy uncertainties = %.0f m/s'%(std_accuracy*1000))
-        print(' [INFO] Precision uncertainties = %.0f m/s'%(myf.mad(fwhmG_HARPN)*1000))
-        std_F = np.sqrt(myf.mad(fwhmG_HARPN)**2 + std_accuracy**2) 
+        print(' [INFO] Precision uncertainties = %.0f m/s'%(std_precision*1000))
+        print(' [INFO] Total uncertainties = %.0f m/s'%(std_tot*1000))
+
         plt.figure('vsini2')
-        G.interpolate(new_grid=np.sort(np.random.randn(99999)*std_F+mean_F),method='linear',replace=False)
+        flat_fwhm = np.ravel(fwhmG_HARPN)
+        G.interpolate(new_grid=flat_fwhm+np.random.randn(len(flat_fwhm))*std_tot,method='linear',replace=False)
         V = G.y_interp
 
         sample = V
@@ -2533,7 +2589,7 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None):
     samples = np.hstack(samples)
     plt.hist(samples,bins=100,density=True,histtype='step',color='k',lw=2)
     plt.title(r'v $\sin$ i = %.2f +/- %.2f km/s'%(np.mean(samples),np.std(samples)))
-    print(' [INFO] v sin i = %.2f +/- %.2f km/s'%(np.mean(samples),np.std(samples)))
+    print('\n [INFO] v sin i = %.2f +/- %.2f km/s'%(np.mean(samples),np.std(samples)))
     plt.savefig(dir_root+'IMAGES/Vsini_CCF.pdf')
 
     plt.figure('vsin3')
