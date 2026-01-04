@@ -233,6 +233,7 @@ def reduce(
         if debug:
             mym.snaky_help()
             print(files,'\n',inss,'\n',jdb,'\n',berv,'\n',flag)
+            print(len(files),len(inss),len(jdb),len(berv),len(flag))
         summary = pd.DataFrame(np.array([files, inss, jdb, berv, flag]).T,columns=['filename','ins','jdb','berv','flag'])
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
 
@@ -292,16 +293,21 @@ def reduce(
 
         print(' [INFO] Number of good spectra = %.0f'%(sum(kept)))
         print(' [INFO] Number of anomalous spectra = %.0f'%(len(kept)-sum(kept)))
-        if sum(kept)==0:
-            print(Fore.YELLOW+' [WARNING] No good spectra (Emergency stop)'+Fore.RESET)
-            print(' [INFO] criterion = ',anomalous)
-            print('\n')
-            force_pre, force_summary, force_rvsys, force_ccf, force_master, force_atmos, force_resolution, force_vsini,force_abs_continuum, force_activity ,force_mhk,force_spectroscopy ,force_cleaning = [False]*13           
+        print(' [INFO] criterion = ',anomalous)
 
         summary['flag1'] = 0
         summary.loc[summary.index[~kept],'flag1'] = 1
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
     qc = mym.check_force_summary(dir_root)
+
+    try:
+        summary = mym.import_summary(dir_root)
+        if np.sum(summary['flag1']==0)==0:
+            print(Fore.YELLOW+' [WARNING] No good spectra (Emergency stop)'+Fore.RESET)
+            print('\n')
+            force_rvsys, force_ccf, force_master, force_atmos, force_resolution, force_vsini,force_abs_continuum, force_activity ,force_mhk,force_spectroscopy ,force_cleaning = [False]*11          
+    except:
+        pass
 
     if force_rvsys:
         summary = mym.import_summary(dir_root)
@@ -313,6 +319,8 @@ def reduce(
             rv_sys1 = mym.yarara_rough_rv_sys(spec,teff=teff,verbose=debug)
             rv_sys.append(rv_sys1)
         rv_sys = np.array(rv_sys)
+
+        rv_sys[abs(rv_sys-np.nanmedian(rv_sys))>50] = np.nan
         rv_sys_std = np.nanstd(rv_sys)
         rv_sys_approx = np.round(np.nanmedian(rv_sys),2)
         print('\n [INFO] Final aproximated RV_sys = %.1f +/- %.1f kms'%(rv_sys_approx,rv_sys_std))
@@ -320,8 +328,14 @@ def reduce(
         if debug:
             mym.yarara_check_rv_sys(spec, 15, rv_sys_approx, dir_root=dir_root)
 
-        anomalous = np.array(summary['anomalous'])
-        spec  = mym.import_spectrum(files[np.argmin(anomalous)],sub_dico=sub_dico)
+        mask = np.ones(len(rv_sys)).astype('bool')
+        if len(rv_sys)>10:
+            mask_outliers = abs(rv_sys-np.nanmedian(rv_sys))/myf.mad(rv_sys)
+            if np.sum(~(mask_outliers>5))!=0:
+                mask = ~(mask_outliers>5)
+        
+        anomalous = np.array(summary['anomalous'])[mask]
+        spec  = mym.import_spectrum(files[mask][np.argmin(anomalous)],sub_dico=sub_dico)
         
         sb_flag2 = False
         if rv_sys_std>10: 
@@ -586,11 +600,7 @@ def reduce(
         master = myc.tableXY(myf.doppler_r(material['wave'],rv_sys*1000)[1],material['reference_spectrum'],0*material['wave'])
         master.interpolate(new_grid=material['wave'],method='linear')
 
-        spectroscopy = {
-            'wave':master.x,
-            'flux':master.y,
-            }
-
+        spectroscopy = {'wave':master.x,'flux':master.y,}
         master = myc.tableXY(myf.doppler_r(material['wave'],rv_sys*1000)[1],material['reference_spectrum']*material['correction_factor'],0*material['wave'])
         master.interpolate(new_grid=material['wave'],method='linear',fill_value=0)
 
@@ -667,7 +677,12 @@ if star=='': #multiprocessing via multiterminal for stars in parallel
     raws = np.sort(np.unique(['/'.join(f.split('/')[:-1])+'/' for f in files]))
     stars = np.array([r.split('/')[-2] for r in raws])
 
-
+    db = pd.read_csv('/Users/cretignier/Documents/Snaky/database/Snaky_processing_db_SOPHIE_1.0.csv',index_col=0)
+    stars = np.array(db.loc[(db['pre']!=db['pre'])&(db['summa']=='XXXX'),'star'])
+    raws = ['/Volumes/MyPassport/SOPHIE/'+s+'/' for s in stars]
+    for s in stars:
+        os.system('rm /Users/cretignier/Documents/Snaky/'+s+'/data/s1d/SOPHIE_1.0/REDUCTION_INFO/force_pre.txt')
+    
     #files = glob.glob('/Users/cretignier/Documents/Snaky/*/data/s1d/'+ins+'/WORKSPACE/RASSINE*.p')
     #raws = [None]*len(files)
     #stars = np.sort(np.unique(np.array([r.split('/')[-6] for r in files])))

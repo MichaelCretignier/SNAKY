@@ -36,7 +36,7 @@ SNAKY — Spectroscopic Novel Analysis Kit of Yarara
 
 """
 
-__version__ = '0.5.0'
+__version__ = '0.5.1'
 
 print(Fore.GREEN+"""\n[INFO SNAKY]
 [INFO USER] SNAKY version = """+__version__ +""" 
@@ -402,64 +402,12 @@ def check_snaky_processing(instrument='*'):
     print(root+'/Snaky/database/Snaky_processing_db_'+instrument+'.csv')
     all_info.to_csv(root+'/Snaky/database/Snaky_processing_db_'+instrument+'.csv')
 
-def create_snaky_rv_db(filename='All_stars', stars=['*']):
-    files = []
-    for s in stars:
-        files.append(glob.glob(root+'/Snaky/'+s+'/data/s1d/*/STAR_INFO/Stellar_info*.p'))
-    files = np.sort(np.hstack(files))
-    files = np.sort(np.unique(files))
-
-    plt.close('all')
-    infos = []
-    star_ref = ''
-    for f in tqdm(files): 
-        info = pd.read_pickle(f)
-        star = f.split('/data')[0].split('/')[-1]
-        instrument = f.split('/STAR_INFO')[0].split('/')[-1]
-        spectro = instrument.split('_')[0]
-        drs = instrument.split('_')[1]
-        pipeline = f.split('/'+star)[0].split('/')[-1]
-        code = star+'_'+spectro+'_'+drs
-
-        if (star!=star_ref):
-            if star_ref!='':
-                plt.legend()
-                plt.savefig(root+'/Snaky/'+star_ref+'/data/s1d/ALLINS_MERGED/RV.png')
-                plt.close('rv')
-            plt.figure('rv')
-            plt.xlabel('Jdb - 2,400,000 [days]')
-            plt.ylabel('RV [km/s]')  
-            star_ref = star
-
-        rv_sys = info['Rv_sys']['SNAKY']
-        summary = pd.read_csv(f.split('STAR_INFO/')[0]+'WORKSPACE/Analyse_summary.csv',index_col=0)
-        if 'ccf_rv_G2' in summary.keys():
-            if 'rv_shift' not in summary.keys():
-                summary['rv_shift'] = 0
-            if spectro[0:4]=='NEID':
-                summary['rv_shift'] = summary['rv_shift']-summary['ccf_rv_mask_telluric_o2']/1000 - 0.740
-
-            jdb = np.array(summary['jdb'])
-            rv = rv_sys+summary['rv_shift']+summary['ccf_rv_G2']/1000
-            rv_std = np.ones(len(rv))*30/1000 #30 m/s SNAKY RV uncertainties
-
-            table = pd.DataFrame(np.array([jdb,rv,rv_std]).T,columns=['jdb','rv','rv_std'])
-            table['code'] = code
-            table['star'] = star
-            table['ins'] = spectro
-            table['drs'] = drs
-            table = table[['code','star','ins','drs','jdb','rv','rv_std']]
-            infos.append(table)
-            plt.errorbar(jdb,rv,yerr=rv_std,color=None,label=instrument,capsize=0,ls='',marker='o')
-    plt.legend()
-    plt.savefig(root+'/Snaky/'+star_ref+'/data/s1d/ALLINS_MERGED/RV.png')
-    infos = pd.concat(infos)
-    infos.to_csv(root+'/Snaky/database/'+filename+'_RV_infos.csv')
-
 
 def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
     os.makedirs(root+'/Snaky/database', exist_ok=True)
     
+    ntot = len(stars)
+
     files = []
     for s in stars:
         files.append(glob.glob(root+'/'+branch+'/'+s+'/data/s1d/*/STAR_INFO/Stellar_info*.p'))
@@ -489,6 +437,8 @@ def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
         rhk = np.round(myf.get_info_lvl2(info,'RHK',pipeline.upper()),2)
         mhk = np.round(myf.get_info_lvl2(info,'MHK',pipeline.upper()),1)
         rv_sys = np.round(myf.get_info_lvl2(info,'Rv_sys',pipeline.upper()),2)
+        sb1 = np.round(myf.get_info_lvl2(info,'SB1','SNAKY'),0)
+        sb2 = np.round(myf.get_info_lvl2(info,'SB2','SNAKY'),0)
 
         fwhm_ins = np.round(myf.get_info_lvl2(info,'FWHM','O2'),2)
         fwhm_ccf1 = np.round(myf.get_info_lvl2(info,'FWHM','G2'),2)
@@ -496,9 +446,16 @@ def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
         fwhm_ccf3 = np.round(myf.get_info_lvl2(info,'FWHM','KITTY'),2)
         vsini = np.round(myf.get_info_lvl2(info,'Vsini',pipeline.upper()),2)
 
-        infos.append([code,star,spectro,drs,pipeline,processing,ra,dec,teff,logg,feh,mhk,rhk,fwhm_ins,fwhm_ccf1,fwhm_ccf2,fwhm_ccf3,vsini])
+        f2 = glob.glob(f.replace('STAR_INFO','WORKSPACE/Analyse_samples.csv*&&').split('&&')[0])
+        mhk_err = np.nan ; rhk_err = np.nan
+        if len(f2):
+            samples = pd.read_csv(f2[0],index_col=0)
+            if 'mhk' in samples.keys():
+                mhk_err = np.std(samples['mhk'])
+                rhk_err = np.std(samples['rhk'])                
+        infos.append([code,star,spectro,drs,pipeline,processing,ra,dec,teff,logg,feh,mhk,mhk_err,rhk,rhk_err,fwhm_ins,fwhm_ccf1,fwhm_ccf2,fwhm_ccf3,vsini,sb1,sb2])
 
-    infos = pd.DataFrame(infos,columns=['code','star','ins','drs','pipeline','yvx','ra','dec','teff','logg','feh','mhk','rhk','fwhm_ins','fwhm_g2','fwhm_garfield','fwhm_kitty','vsini'])
+    infos = pd.DataFrame(infos,columns=['code','star','ins','drs','pipeline','yvx','ra','dec','teff','logg','feh','mhk','mhk_err','rhk','rhk_err','fwhm_ins','fwhm_g2','fwhm_garfield','fwhm_kitty','vsini','sb1','sb2'])
 
     spectro_exist = []
     for f in tqdm(files):
@@ -526,6 +483,133 @@ def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
                 ccf_exist[-1] = 1
     ccf_exist = np.array(ccf_exist)
     infos['IF_CCF'] = ccf_exist
+    infos = infos.reset_index(drop=True)
+
+    nb_processed = len(np.unique(infos['star']))
+    print(infos)
+
+    print('\n [INFO] %.0f datasets'%(len(infos)))
+    print('\n [INFO] Nb unique stars processed = %.0f (%.0f%%)\n'%(nb_processed,100*nb_processed/ntot))
+
+    infos.to_csv(root+'/Snaky/database/'+filename+'_summary_infos.csv')
+
+    return infos
+
+def create_snaky_finch_db(filename='All_stars', stars=['*'], infos=None):
+    if infos is None:
+        infos = create_snaky_db(filename=filename, stars=stars, branch='Snaky')
+    stars = np.sort(np.unique(infos['star']))
+
+    tgrid = 61041+182.5*np.arange(21)
+    infos = []
+    for s in tqdm(stars):
+        if os.path.exists(root+'/Snaky/'+s+'/data/s1d/ALLINS_MERGED/Pmag_FINCH_info.p'):
+            info = pd.read_pickle(root+'/Snaky/'+s+'/data/s1d/ALLINS_MERGED/Pmag_FINCH_info.p')
+            if 'Phase_side' in info.keys():
+                info['Phase_pred_side'] = info['Phase_side']
+            Pmag_model = pd.read_csv(root+'/Snaky/'+s+'/data/s1d/ALLINS_MERGED/Finch_MHK_GP_model.csv',index_col=0)
+            model = myc.tableXY(Pmag_model['jdb'],Pmag_model['proxy'],Pmag_model['proxy_std'])
+            model.interpolate(new_grid=tgrid,method='linear')
+            liste = [s,info['Pmag'],info['Kmag_mean'],info['Kmag_amp'],info['Kmag_pred'],info['Phase_pred'],info['Phase_pred_side']]
+            liste = liste + list(np.round(model.y,1)) + list(np.round(model.yerr,1))
+            infos.append(liste)
+    table = pd.DataFrame(infos,columns=['star','Pmag','Kmean','Kamp','Kpred','Lpred','Lside']+['MHK_%.1f'%(i) for i in np.arange(2026,2036.1,0.5)]+['MHK_err_%.1f'%(i) for i in np.arange(2026,2036.1,0.5)])
+    table.to_csv(root+'/Snaky/database/'+filename+'_FINCH_mag.csv')
+
+    infos2 = []
+    for s in tqdm(stars):
+        if os.path.exists(root+'/Snaky/'+s+'/data/s1d/ALLINS_MERGED/FINCH_MHK.csv'):
+            tab = pd.read_csv(root+'/Snaky/'+s+'/data/s1d/ALLINS_MERGED/FINCH_MHK.csv',index_col=0)
+            tab['star'] = s
+            tab = tab[['star','species','jdb','proxy','proxy_std','qc']]
+            infos2.append(tab)
+    infos2 = pd.concat(infos2)
+    infos2.to_csv(root+'/Snaky/database/PRIVATE_'+filename+'_FINCH.csv')
+
+
+
+def create_snaky_rv_db(filename='All_stars', stars=['*'], infos=None, anonymous=False):
+    if infos is None:
+        infos = create_snaky_db(filename=filename, stars=stars, branch='Snaky')
+    stars = np.sort(np.unique(infos['star']))
+
+    infos = [] ; infos_p = []
+    for s in tqdm(stars):
+        infos2 = []
+        plt.figure('rv')
+        for f in glob.glob(root+'/Snaky/'+s+'/data/s1d/*/STAR_INFO/Stellar_info_*p'): 
+            info = pd.read_pickle(f)
+            star = f.split('/data')[0].split('/')[-1]
+            instrument = f.split('/STAR_INFO')[0].split('/')[-1]
+            spectro = instrument.split('_')[0]
+            drs = instrument.split('_')[1]
+            pipeline = f.split('/'+star)[0].split('/')[-1]
+            code = star+'_'+spectro+'_'+drs
+
+            try:
+                rv_sys = info['Rv_sys']['SNAKY']
+                summary = pd.read_csv(f.split('STAR_INFO/')[0]+'WORKSPACE/Analyse_summary.csv',index_col=0)
+            except:
+                print(' [ERROR] %s has no RV_SYS'%(s))
+                summary = {}
+            
+            if 'ccf_rv_G2' in summary.keys():
+                if 'rv_shift' not in summary.keys():
+                    summary['rv_shift'] = 0
+                if spectro[0:4]=='NEID':
+                    summary['rv_shift'] = summary['rv_shift']-summary['ccf_rv_mask_telluric_o2']/1000 - 0.740
+
+                jdb = np.array(summary['jdb'])
+                rv = rv_sys+summary['rv_shift']+summary['ccf_rv_G2']/1000
+                rv_std = np.ones(len(rv))*30/1000 #30 m/s SNAKY RV uncertainties
+
+                table = pd.DataFrame(np.array([jdb,rv,rv_std]).T,columns=['jdb','rv','rv_std'])
+                table['code'] = code
+                table['star'] = star
+                table['ins'] = spectro
+                table['drs'] = drs
+                table = table[['code','star','ins','drs','jdb','rv','rv_std']]
+                infos2.append(table)
+                plt.errorbar(jdb,rv,yerr=rv_std,color=None,label=instrument,capsize=0,ls='',marker='o',zorder=100)
+
+        if len(infos2):
+            plt.xlabel('Jdb - 2,400,000 [days]')
+            plt.ylabel('RV [km/s]')  
+            plt.legend()
+
+            infos2 = pd.concat(infos2)
+            infos2 = infos2.reset_index(drop=True)
+            infos.append(infos2)
+            
+            if anonymous:
+                japanese_names = ["太郎", "花子", "健", "美咲", "翔", "愛", "直樹", "由美", "大輔", "陽菜", "拓也", "彩", "悠斗", "真央", "和也", "玲奈", "誠", "さくら", "隼人", "結衣", "隆", "千尋", "慎一", "奈々", "智也", "美穂", "剛", "麻衣", "亮", "久美子"]
+                matching = {i:k for i,k in zip(np.unique(infos2['ins']), np.random.choice(japanese_names,len(np.unique(infos2['ins'])),replace=False))}
+                for ins in np.unique(infos2['ins']):
+                    infos2.loc[infos2['ins']==ins,'ins'] = matching[ins]
+
+                infos2['rv'] = infos2['rv']+np.random.randn(len(infos2))*0.03
+                infos2['jdb'] = infos2['jdb']+np.random.randn(len(infos2))*1
+                plt.scatter(infos2['jdb'],infos2['rv'],color='k',zorder=10)
+            infos_p.append(infos2)
+            plt.savefig(root+'/Snaky/'+s+'/data/s1d/ALLINS_MERGED/RV.png')
+            plt.close('rv')
+            
+            infos2[['ins','jdb','rv','rv_std']].to_csv(root+'/Snaky/'+s+'/data/s1d/ALLINS_MERGED/RV_anonymous.csv')
+
+
+    infos_p = pd.concat(infos_p)
+    infos_p = infos_p.reset_index(drop=True)
+    infos_p.to_csv(root+'/Snaky/database/'+filename+'_RV_infos.csv')
+
+    infos = pd.concat(infos)
+    infos = infos.reset_index(drop=True)
+    infos.to_csv(root+'/Snaky/database/PRIVATE_'+filename+'_RV_infos.csv')
+
+def create_snaky_ccf_db(filename='All_stars', stars=['*'], branch='Snaky', infos=None):
+
+    if infos is None:
+        s = create_snaky_db(filename=filename, stars=stars, branch=branch)
+    files = [root+'/'+branch+'/'+i+'/data/s1d/'+j+'_'+k+'/STAR_INFO/Stellar_info*.p' for i,j,k in np.array(infos[['star','ins','drs']])]
 
     vgrid = np.arange(0,150000,538)
     vgrid = np.hstack([-vgrid[::-1],vgrid[1:]])
@@ -551,7 +635,13 @@ def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
             ccf.supress_nan()
             ccf.interpolate(new_grid=vgrid,fill_value=1)
             all_ccf.append(ccf.y)
-    all_ccf = np.array(all_ccf)
+    all_ccf = (np.array(all_ccf)*1e4).astype('int16')
+    np.save(root+'/Snaky/database/'+filename+'_ccf.npy',all_ccf)
+
+def create_snaky_spec_db(filename='All_stars', stars=['*'], branch='Snaky', infos=None):
+    if infos is None:
+        infos = create_snaky_db(filename=filename, stars=stars, branch=branch)
+    files = [root+'/'+branch+'/'+i+'/data/s1d/'+j+'_'+k+'/STAR_INFO/Stellar_info*.p' for i,j,k in np.array(infos[['star','ins','drs']])]
 
     wgrid = np.round(np.arange(3900,6800,0.01),2)
     all_spec = []
@@ -569,21 +659,7 @@ def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
             spec.interpolate(new_grid=wgrid,fill_value=np.nan,method='linear')
             all_spec.append(spec.y)
     all_spec = (np.array(all_spec)*1e4).astype('int16')
-    
-    print(' [INFO] %.0f datasets'%(len(infos)))
-    print(' [INFO] Nb unique stars = %.0f'%(len(np.unique(infos['star']))))
-
-    infos = infos.sort_values(by='code')
-    all_spec = all_spec[infos.index]
-    all_ccf = all_ccf[infos.index]
-    infos = infos.reset_index(drop=True)
-
-    print(infos)
-
-    infos.to_csv(root+'/Snaky/database/'+filename+'_summary_infos.csv')
-    np.save(root+'/Snaky/database/'+filename+'_ccf.npy',all_ccf)
     np.save(root+'/Snaky/database/'+filename+'_spec.npy',all_spec)
-
 
 def plot_starinfo(branch='Snaky', ins='*', xvar='Teff_SNAKY', yvar='FWHM_G2', cvar=None, svar=None):
     all_files = np.sort(glob.glob(root+'/'+branch+'/*/data/s1d/'+ins+'/STAR_INFO/Stellar_info*.p'))
@@ -929,6 +1005,7 @@ def yarara_finch(dir_root, branch='Snaky', proxy_name='MHK',ext='',trend_degree=
         plt.xticks(np.arange(-25,200,25))
         plt.subplots_adjust(hspace=0.35)
         plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'MHK_samples_%.1f_%.1f'%(predict_samples[0],predict_samples[1])+ext+'.pdf')
+
 
     output = [
         FINCH_Pmag,
@@ -1935,7 +2012,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
     ccf_norm = (ccf_power.T/np.percentile(ccf_power,75,axis=0)[:,np.newaxis]).T
     ccf_shifted = ccf_norm.copy()
     rvs = ccf_rv.y
-    rvs = rvs - np.nanmedian(rvs)
+    #rvs = rvs - np.nanmedian(rvs)
     for n,rv in enumerate(rvs):
         if rv==rv:
             profile = myc.tableXY(vrad-rv,ccf_shifted[:,n],0*vrad)
