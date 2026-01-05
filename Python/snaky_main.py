@@ -518,8 +518,8 @@ def create_snaky_finch_db(filename='All_stars', stars=['*'], infos=None):
 
     infos2 = []
     for s in tqdm(stars):
-        if os.path.exists(root+'/Snaky/'+s+'/data/s1d/ALLINS_MERGED/FINCH_MHK.csv'):
-            tab = pd.read_csv(root+'/Snaky/'+s+'/data/s1d/ALLINS_MERGED/FINCH_MHK.csv',index_col=0)
+        if os.path.exists(root+'/Snaky/'+s+'/data/s1d/ALLINS_MERGED/Finch_MHK.csv'):
+            tab = pd.read_csv(root+'/Snaky/'+s+'/data/s1d/ALLINS_MERGED/Finch_MHK.csv',index_col=0)
             tab['star'] = s
             tab = tab[['star','species','jdb','proxy','proxy_std','qc']]
             infos2.append(tab)
@@ -2570,8 +2570,10 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False):
         print(' [INFO] Total uncertainties = %.0f m/s'%(std_tot*1000))
 
         plt.figure('vsini2')
-        flat_fwhm = np.ravel(fwhmG_HARPN)+np.random.randn(len(np.ravel(fwhmG_HARPN)))*std_tot
-        G.interpolate(new_grid=flat_fwhm,method='linear',replace=False)
+        flat_vsini = np.ravel(fwhmG_HARPN)
+        flat_vsini[flat_vsini<np.min(G.x)] = np.min(G.x)
+        flat_vsini = flat_vsini + np.random.randn(len(flat_vsini))*std_tot
+        G.interpolate(new_grid=flat_vsini,method='linear',replace=False)
         V = G.y_interp
 
         sample = V
