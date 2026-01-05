@@ -36,7 +36,7 @@ SNAKY — Spectroscopic Novel Analysis Kit of Yarara
 
 """
 
-__version__ = '0.5.2'
+__version__ = '0.5.3'
 
 print(Fore.GREEN+"""\n[INFO SNAKY]
 [INFO USER] SNAKY version = """+__version__ +""" 
@@ -2570,8 +2570,8 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False):
         print(' [INFO] Total uncertainties = %.0f m/s'%(std_tot*1000))
 
         plt.figure('vsini2')
-        flat_fwhm = np.ravel(fwhmG_HARPN)
-        G.interpolate(new_grid=flat_fwhm+np.random.randn(len(flat_fwhm))*std_tot,method='linear',replace=False)
+        flat_fwhm = np.ravel(fwhmG_HARPN)+np.random.randn(len(np.ravel(fwhmG_HARPN)))*std_tot
+        G.interpolate(new_grid=flat_fwhm,method='linear',replace=False)
         V = G.y_interp
 
         sample = V
@@ -3068,7 +3068,7 @@ def yarara_correct_continuum_absorption(dir_root):
     local.smooth(box_pts=1000,shape='savgol',replace=True)
     correction = local.y_smoothed        
 
-    if ins=='NEID':
+    if ins[0:4]=='NEID': # because S1D from E2DS without flat field
         template_empi = import_stellar_template(teff,logg=logg,feh=feh,model='SNAKY',rv_sys=rv_sys)
         template_empi.interpolate(master.x,method='linear',fill_value=np.nan)
 
@@ -3080,7 +3080,16 @@ def yarara_correct_continuum_absorption(dir_root):
         extra_correction = myf.smooth(ratio,100)
         extra_correction[extra_correction!=extra_correction] = 1
 
-        correction = correction*extra_correction
+        extra_correction2 = np.ones(len(correction))
+        for c in myf.doppler_r(np.array([myv.Ca2K[0],myv.Ca2H[0]]),rv_sys*1000)[0]:
+            mask_line = abs(master.x-c)<2.0
+            mask_chrom = abs(master.x-c)<0.3
+            mask_phot = mask_line&(~mask_chrom)
+            calib = myc.tableXY((master.x-c)[mask_phot],(s1*extra_correction)[mask_phot]/s2[mask_phot])
+            calib.fit_poly(d=9,Draw=False)
+            model = np.polyval(calib.poly_coefficient,(master.x-c)[mask_line])
+            extra_correction2[mask_line] = 1/model
+        correction = correction*extra_correction*extra_correction2
 
     plt.plot(grid,correction,color='orange')
     plt.subplot(2,1,2,sharex=ax,sharey=ax)
