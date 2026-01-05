@@ -2623,7 +2623,10 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
     if (Prot is None):
         try:
             Prot = sinfo['Prot']['FINCH']
-            print(' [INFO] Stellar Prot measured by FINCH found! Prot = %.1f days'%(Prot))
+            if Prot!=0:
+                print(' [INFO] Stellar Prot measured by FINCH found! Prot = %.1f days'%(Prot))
+            else:
+                Prot = sinfo['Prot']['YARARA']
         except:
             pass
     
