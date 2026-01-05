@@ -2538,13 +2538,14 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False):
             G.interpolate(new_grid=f,method='linear',replace=False)
             V.append(G.y_interp)
         V = np.array(V)
+        V[V!=V] = 0.0
 
         if debug:
             plt.figure()
             plt.errorbar(ccf_values['rv'].x,fwhmG_raw,yerr=0*fwhmG_raw,marker='.',capsize=0,ls='')
-            plt.errorbar(ccf_values['rv'].x,np.mean(fwhmG,axis=0),yerr=np.std(fwhmG,axis=0),marker='.',capsize=0,ls='')
-            plt.errorbar(ccf_values['rv'].x,np.mean(fwhmG_HARPN,axis=0),yerr=np.std(fwhmG_HARPN,axis=0),marker='.',capsize=0,ls='')
-            plt.errorbar(ccf_values['rv'].x,np.mean(V,axis=0),yerr=np.std(V,axis=0),marker='.',capsize=0,ls='')
+            plt.errorbar(ccf_values['rv'].x,np.nanmean(fwhmG,axis=0),yerr=np.std(fwhmG,axis=0),marker='.',capsize=0,ls='')
+            plt.errorbar(ccf_values['rv'].x,np.nanmean(fwhmG_HARPN,axis=0),yerr=np.std(fwhmG_HARPN,axis=0),marker='.',capsize=0,ls='')
+            plt.errorbar(ccf_values['rv'].x,np.nanmean(V,axis=0),yerr=np.std(V,axis=0),marker='.',capsize=0,ls='')
 
         plt.figure('vsin3')
         plt.subplot(3,1,num+1)
@@ -2558,10 +2559,9 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False):
         plt.subplot(3,1,3)
         plt.errorbar(ccf_values['rv'].x,np.mean(V,axis=0),yerr=np.std(V,axis=0),marker='.',capsize=0,color='C%.0f'%(num),ls='')
 
-        mean_F = np.nanmedian(fwhmG_HARPN)
         std_bias = 0.1 # 100 m/s of bias in general, 200 m/s for the Sun
-        std_accuracy = np.nanmedian(np.std(V,axis=0)) 
-        std_precision = myf.mad(np.median(fwhmG_HARPN,axis=0))
+        std_accuracy = np.nanmedian(np.nanstd(V,axis=0)) 
+        std_precision = myf.mad(np.nanmedian(fwhmG_HARPN,axis=0))
         std_tot = np.sqrt(std_bias**2+std_accuracy**2+std_precision**2)
         print('\n [INFO] Mask = %s'%(kw))
         print(' [INFO] Bias uncertainties = %.0f m/s'%(std_bias*1000))

@@ -672,16 +672,16 @@ if star=='': #multiprocessing via multiterminal for stars in parallel
     #stars = np.sort(np.unique([f.split('Snaky/')[-1].split('/')[0] for f in files]))
     #raws = [None]*len(stars)
 
-    files = glob.glob('/Volumes/MyPassport/SOPHIE/HD*/*.fits')
+    #files = glob.glob('/Volumes/MyPassport/SOPHIE/HD*/*.fits')
     files = glob.glob('/Volumes/MyPassport/'+ins.split('_')[0]+'/*/*.fits')
     raws = np.sort(np.unique(['/'.join(f.split('/')[:-1])+'/' for f in files]))
     stars = np.array([r.split('/')[-2] for r in raws])
 
-    db = pd.read_csv('/Users/cretignier/Documents/Snaky/database/Snaky_processing_db_SOPHIE_1.0.csv',index_col=0)
-    stars = np.array(db.loc[(db['pre']!=db['pre'])&(db['summa']=='XXXX'),'star'])
-    raws = ['/Volumes/MyPassport/SOPHIE/'+s+'/' for s in stars]
-    for s in stars:
-        os.system('rm /Users/cretignier/Documents/Snaky/'+s+'/data/s1d/SOPHIE_1.0/REDUCTION_INFO/force_pre.txt')
+    #db = pd.read_csv('/Users/cretignier/Documents/Snaky/database/Snaky_processing_db_SOPHIE_1.0.csv',index_col=0)
+    #stars = np.array(db.loc[(db['pre']!=db['pre'])&(db['summa']=='XXXX'),'star'])
+    #raws = ['/Volumes/MyPassport/SOPHIE/'+s+'/' for s in stars]
+    #for s in stars:
+    #    os.system('rm /Users/cretignier/Documents/Snaky/'+s+'/data/s1d/SOPHIE_1.0/REDUCTION_INFO/force_pre.txt')
     
     #files = glob.glob('/Users/cretignier/Documents/Snaky/*/data/s1d/'+ins+'/WORKSPACE/RASSINE*.p')
     #raws = [None]*len(files)
