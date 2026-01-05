@@ -495,6 +495,49 @@ def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
 
     return infos
 
+def compare_snaky_atmos(stars=['*']):
+    all_files = []
+    for s in stars:
+        files = glob.glob(root+'/Snaky/'+s+'/data/s1d/*/WORKSPACE/Analyse_samples.csv')
+        all_files.append(files)
+    all_files = np.hstack(all_files)
+
+    stars = np.sort(np.unique([f.split('/data')[0].split('/')[-1] for f in all_files]))
+
+    for s in tqdm(stars):
+        count = -1
+        files = glob.glob(root+'/Snaky/'+s+'/data/s1d/*/WORKSPACE/Analyse_samples.csv')
+        plt.figure(figsize=(18,6))
+        plt.subplots_adjust(left=0.06,right=0.96,hspace=0.60,top=0.95,bottom=0.15,wspace=0.30)
+        for f in files:
+            ins = f.split('/WORKSPACE')[0].split('/')[-1]
+            code = ins[0]+ins.split('_')[0][-2:]+'_'+ins.split('_')[1]
+            count += 1
+            table = pd.read_csv(f,index_col=0)
+            borders = {'ms':[0,3],'rs':[0,3],'teff':[3000,8000],'logg':[3.5,5.0],'feh':[-1.5,0.5],'vsini':[0,10],'mhk':[-50,200],'rhk':[-6,-4]}
+            variables = ['ms','rs','teff','logg','feh','vsini','mhk','rhk']
+            save = {kw:[] for kw in variables}
+            for j,kw in enumerate(variables):
+                if kw in table.keys():
+                    plt.subplot(2,4,j+1)
+                    plt.boxplot(np.array(table[kw]),positions=[count],showfliers=False,labels=[code],widths=[0.5])
+                    plt.ylabel(kw,fontsize=14)
+                    plt.xticks(rotation=45,ha='right')
+                    save[kw].append(np.array(table[kw]))
+
+        for j,kw in enumerate(variables):
+            plt.subplot(2,4,j+1)
+            plt.boxplot(np.ravel(save[kw]),positions=[count+2],showfliers=False,labels=['ALL'],widths=[0.5],patch_artist=True,boxprops=dict(facecolor='lightsteelblue',edgecolor='black',linewidth=1.))
+            if kw=='teff':
+                plt.title('%s = %.0f +/- %.0f'%(kw,np.median(save[kw]),myf.mad(np.ravel(save[kw]))))
+            else:
+                plt.title('%s = %.2f +/- %.2f'%(kw,np.median(save[kw]),myf.mad(np.ravel(save[kw]))))
+            plt.xticks(rotation=90,ha='center')
+
+            plt.savefig(root+'/Snaky/'+s+'/data/s1d/ALLINS_MERGED/Atmos_all_instrument.pdf')
+        if len(stars)>5:
+            plt.close('all')
+
 def create_snaky_finch_db(filename='All_stars', stars=['*'], infos=None):
     if infos is None:
         infos = create_snaky_db(filename=filename, stars=stars, branch='Snaky')
