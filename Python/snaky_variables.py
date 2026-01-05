@@ -66,19 +66,19 @@ calib_vmacro = [ #teff garfield kitty
     [6750, 9.0, 7.2, 6.6]]
 
 instrument_res_kms = { 
-    'CORALIE98': 5.34,   # R ≈ 56 000
-    'CORALIE07': 5.07,   # R ≈ 59 000
-    'CORALIE14': 5.01,   # R ≈ 60 000
-    'SOPHIE-HE': 7.89,   # R ≈ 38 000 (HE)
-    'SOPHIE': 4.18,      # R ≈ 72 000 (HR)
-    'HARPS15': 3.47,     # R ≈ 87 000
-    'HARPS03': 3.38,     # R ≈ 89 000
-    'NEID-HE': 4.23,     # R ≈ 72 000 (HE)
-    'NEID': 3.15,        # R ≈ 96 000 (HR)
-    'HARPN': 3.13,       # R ≈ 96 000
-    'ESPRESSO': 2.79,    # R ≈ 108 000
-    'ESPRESSO18': 2.79,  # R ≈ 108 000
-    'ESPRESSO19': 2.79,  # R ≈ 108 000
+    'CORALIE98': 5.34,    # R ≈ 56 000
+    'CORALIE07': 5.07,    # R ≈ 59 000
+    'CORALIE14': 5.01,    # R ≈ 60 000
+    'SOPHIE-HE': 7.89,    # R ≈ 38 000 (HE)
+    'SOPHIE': 4.18,       # R ≈ 72 000 (HR)
+    'HARPS15': 3.47,      # R ≈ 86 000
+    'HARPS03': 3.36,      # R ≈ 89 000
+    'NEID-HE': 4.23,      # R ≈ 71 000 (HE)
+    'NEID': 3.19,         # R ≈ 94 000 (HR)
+    'HARPN': 3.13,        # R ≈ 96 000
+    'ESPRESSO': 2.74,     # R ≈ 109 000
+    'ESPRESSO18': 2.74,   # R ≈ 109 000
+    'ESPRESSO19': 2.74,   # R ≈ 109 000
 }
 
 instrument_lat_deg = {
