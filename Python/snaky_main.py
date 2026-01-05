@@ -428,8 +428,8 @@ def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
         processing = 'YV0' #TBD add the info if matching_diff or matching_mad
         code = star+'_'+spectro+'_'+drs+'_'+pipeline
 
-        ra = np.round(myf.get_info_lvl2(info,'RA','SNAKY'),6)
-        dec = np.round(myf.get_info_lvl2(info,'DEC','SNAKY'),6)
+        ra = np.round(myf.get_info_lvl2(info,'Ra','SNAKY'),6)
+        dec = np.round(myf.get_info_lvl2(info,'Dec','SNAKY'),6)
 
         teff = np.round(myf.get_info_lvl2(info,'Teff',pipeline.upper()),0)
         logg = np.round(myf.get_info_lvl2(info,'Log_g',pipeline.upper()),2)
