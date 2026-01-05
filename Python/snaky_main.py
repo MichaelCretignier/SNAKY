@@ -638,12 +638,12 @@ def create_snaky_ccf_db(filename='All_stars', stars=['*'], branch='Snaky', infos
     all_ccf = (np.array(all_ccf)*1e4).astype('int16')
     np.save(root+'/Snaky/database/'+filename+'_ccf.npy',all_ccf)
 
-def create_snaky_spec_db(filename='All_stars', stars=['*'], branch='Snaky', infos=None):
+def create_snaky_spec_db(filename='All_stars', stars=['*'], branch='Snaky', infos=None, wave_min=6100,wave_max=6200):
     if infos is None:
         infos = create_snaky_db(filename=filename, stars=stars, branch=branch)
     files = [root+'/'+branch+'/'+i+'/data/s1d/'+j+'_'+k+'/STAR_INFO/Stellar_info*.p' for i,j,k in np.array(infos[['star','ins','drs']])]
 
-    wgrid = np.round(np.arange(3900,6800,0.01),2)
+    wgrid = np.round(np.arange(wave_min,wave_max,0.01),2)
     all_spec = []
     for n in tqdm(np.arange(len(files))):
         f = files[n]
@@ -659,7 +659,7 @@ def create_snaky_spec_db(filename='All_stars', stars=['*'], branch='Snaky', info
             spec.interpolate(new_grid=wgrid,fill_value=np.nan,method='linear')
             all_spec.append(spec.y)
     all_spec = (np.array(all_spec)*1e4).astype('int16')
-    np.save(root+'/Snaky/database/'+filename+'_spec.npy',all_spec)
+    np.save(root+'/Snaky/database/'+filename+'_spec_%.0f_%.0f.npy'%(wave_min,wave_max),all_spec)
 
 def plot_starinfo(branch='Snaky', ins='*', xvar='Teff_SNAKY', yvar='FWHM_G2', cvar=None, svar=None):
     all_files = np.sort(glob.glob(root+'/'+branch+'/*/data/s1d/'+ins+'/STAR_INFO/Stellar_info*.p'))
