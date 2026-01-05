@@ -1235,7 +1235,7 @@ def get_vmacro(teff,logg,feh,source='Cretignier+26'):
         value = np.round(myf.find_turbulence(teff,logg)[1],3)
         value = (value,value,value)
     elif source=='Cretignier+26': # obtained with GARFIELD on instrument PSF removed
-        vmacro_teff = myc.tableXY([3500,3750,4000,4250,4500,4750,5000,5250,5500,5750,6000,6250,6500],[3.00,3.50,3.90,4.20,4.20,3.90,3.70,3.70,3.90,4.20,4.70,5.80,7.5]) ; vmacro_teff.null()
+        vmacro_teff = myc.tableXY([3500,3750,4000,4250,4500,4750,5000,5250,5500,5750,6000,6250,6500,6750],[3.00,3.50,3.90,4.20,4.20,3.90,3.70,3.70,3.90,4.20,4.70,5.80,7.5,7.5]) ; vmacro_teff.null()
         vmacro_feh = myc.tableXY([-1.0,-0.75,-0.50,-0.25,0.00,0.25],[0.00,0.00,0.00,0.00,0.25,0.60]) ; vmacro_feh.null()
         vmacro_logg = myc.tableXY([3.6, 3.8, 4.0, 4.2, 4.4, 4.6],[1.00,0.75,0.40,0.10,-0.15,-0.25]) ; vmacro_logg.null()
         vmacro_teff.interpolate(new_grid=np.array([teff]),method='linear',replace=False)
