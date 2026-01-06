@@ -262,8 +262,8 @@ def clean_light_dir(dir_root):
         del material['stellar_template']
     pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
 
-def fix_dir_root(instrument='SOPHIE-HE_1.0'):
-    a = glob.glob(root+'/Snaky/*/data/s1d/*/WORKSPACE/Analyse_summary.csv')
+def fix_dir_root(instrument='SOPHIE-HE_1.0',stars='*'):
+    a = glob.glob(root+'/Snaky/*/data/s1d/'+stars+'/WORKSPACE/Analyse_summary.csv')
     for file in a:
         star = file.split('/data')[0].split('/')[-1]
         ins = file.split('/WORKSPACE')[0].split('/')[-1]
@@ -625,7 +625,7 @@ def create_snaky_rv_db(filename='All_stars', stars=['*'], infos=None, anonymous=
             infos.append(infos2)
             
             if anonymous:
-                japanese_names = ["太郎", "花子", "健", "美咲", "翔", "愛", "直樹", "由美", "大輔", "陽菜", "拓也", "彩", "悠斗", "真央", "和也", "玲奈", "誠", "さくら", "隼人", "結衣", "隆", "千尋", "慎一", "奈々", "智也", "美穂", "剛", "麻衣", "亮", "久美子"]
+                japanese_names = ["太郎", "花子", "健", "美咲", "翔", "愛", "直樹", "由美", "大輔", "陽菜", "拓也", "彩", "悠斗", "真央", "和也", "玲奈", "誠", "さくら", "隼人", "結衣", "隆", "千尋", "慎一", "奈々", "智也", "美穂", "剛", "麻衣", "亮", "久美子",'宮崎','なおみ']
                 matching = {i:k for i,k in zip(np.unique(infos2['ins']), np.random.choice(japanese_names,len(np.unique(infos2['ins'])),replace=False))}
                 for ins in np.unique(infos2['ins']):
                     infos2.loc[infos2['ins']==ins,'ins'] = matching[ins]
