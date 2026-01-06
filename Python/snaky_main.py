@@ -263,10 +263,11 @@ def clean_light_dir(dir_root):
     pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
 
 def fix_dir_root(instrument='SOPHIE-HE_1.0',stars='*'):
-    a = glob.glob(root+'/Snaky/*/data/s1d/'+stars+'/WORKSPACE/Analyse_summary.csv')
+    a = glob.glob(root+'/Snaky/'+stars+'/data/s1d/*/WORKSPACE/Analyse_summary.csv')
     for file in a:
         star = file.split('/data')[0].split('/')[-1]
-        ins = file.split('/WORKSPACE')[0].split('/')[-1]
+        dir_root = file.split('WORKSPACE')[0]
+        ins = dir_root.split('/')[-2]
         summary = pd.read_csv(file,index_col=0)
         dace_file = file.replace('WORKSPACE/Analyse_summary.csv','DACE_TABLE/Dace_extracted_table.csv')
         dace = pd.read_csv(dace_file,index_col=0)
@@ -275,8 +276,8 @@ def fix_dir_root(instrument='SOPHIE-HE_1.0',stars='*'):
         if (sum(mask)!=0)&(ins!=instrument):
             print(Fore.YELLOW+' [WARNING] Some spectra with the wrong instrument found for %s'%(star)+Fore.RESET)
             create_snaky_dir(star,instrument)
+            pickle.dump(import_star_info(dir_root),open(dir_root.replace(ins,instrument)+'/STAR_INFO/Stellar_info_'+star+'.p','wb'))
             os.system('touch '+root+'/Snaky/'+star+'/data/s1d/'+instrument+'/REDUCTION_INFO/force_pre.txt')
-
             all_files = []
             for f in np.array(summary.loc[mask,'filename']):
                 b = pd.read_pickle(f)
