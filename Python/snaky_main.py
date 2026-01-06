@@ -273,37 +273,46 @@ def fix_dir_root(instrument='SOPHIE-HE_1.0',stars='*'):
         dace = pd.read_csv(dace_file,index_col=0)
         mask = (np.array(summary['ins'])==instrument)
 
+        if os.path.exists(dace['fileroot'][0]):
+            raw_visible = True
+        else:
+            raw_visible = False
+            print(Fore.YELLOW+' [INFO] The path root of the RAW is not more visible'+Fore.RESET)
+            
         if (sum(mask)!=0)&(ins!=instrument):
             print(Fore.YELLOW+' [WARNING] Some spectra with the wrong instrument found for %s'%(star)+Fore.RESET)
             create_snaky_dir(star,instrument)
             pickle.dump(import_star_info(dir_root),open(dir_root.replace(ins,instrument)+'/STAR_INFO/Stellar_info_'+star+'.p','wb'))
             os.system('touch '+root+'/Snaky/'+star+'/data/s1d/'+instrument+'/REDUCTION_INFO/force_pre.txt')
-            all_files = []
-            for f in np.array(summary.loc[mask,'filename']):
-                b = pd.read_pickle(f)
-                arc = b['parameters']['arcfiles']
-                for ar in arc:
-                    os.system('mv '+ar+' '+ar.replace('/'+ins+'/','/'+instrument+'/'))
-                    all_files.append(ar)
-                arc2 = [n.replace('/'+ins+'/','/'+instrument+'/') for n in arc]
-                b['parameters']['arcfiles'] = arc2
-                pickle.dump(b,open(f.replace('/'+ins+'/','/'+instrument+'/'),'wb'))
+            
+            if raw_visible:
+                all_files = []
+                for f in np.array(summary.loc[mask,'filename']):
+                    b = pd.read_pickle(f)
+                    arc = b['parameters']['arcfiles']
+                    for ar in arc:
+                        os.system('mv '+ar+' '+ar.replace('/'+ins+'/','/'+instrument+'/'))
+                        all_files.append(ar)
+                    arc2 = [n.replace('/'+ins+'/','/'+instrument+'/') for n in arc]
+                    b['parameters']['arcfiles'] = arc2
+                    pickle.dump(b,open(f.replace('/'+ins+'/','/'+instrument+'/'),'wb'))
 
-            mask_dace = np.in1d(dace['fileroot'],np.array(all_files))
+                mask_dace = np.in1d(dace['fileroot'],np.array(all_files))
+
+                new_dace = dace.loc[mask_dace].reset_index(drop=True)
+                new_dace['ins'] = instrument
+                new_dace['fileroot'] = np.array([n.replace('/'+ins+'/','/'+instrument+'/') for n in new_dace['fileroot']])
+                new_dace.to_csv(dace_file.replace('/'+ins+'/','/'+instrument+'/'))
+                
+                old_dace = dace.loc[~mask_dace].reset_index(drop=True)
+                old_dace.to_csv(dace_file)
 
             new_summary = summary.loc[mask].reset_index(drop=True)
             new_summary['filename'] = np.array([n.replace('/'+ins+'/','/'+instrument+'/') for n in new_summary['filename']])
             new_summary.to_csv(file.replace('/'+ins+'/','/'+instrument+'/'))
 
-            new_dace = dace.loc[mask_dace].reset_index(drop=True)
-            new_dace['ins'] = instrument
-            new_dace['fileroot'] = np.array([n.replace('/'+ins+'/','/'+instrument+'/') for n in new_dace['fileroot']])
-            new_dace.to_csv(dace_file.replace('/'+ins+'/','/'+instrument+'/'))
-
             old_summary = summary.loc[~mask].reset_index(drop=True)
             old_summary.to_csv(file)
-            old_dace = dace.loc[~mask_dace].reset_index(drop=True)
-            old_dace.to_csv(dace_file)
 
             rassine_files = glob.glob(file.replace('Analyse_summary.csv','RASSINE*.p'))
             for k in np.setdiff1d(rassine_files,np.array(old_summary['filename'])):
