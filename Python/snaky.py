@@ -118,6 +118,7 @@ def reduce(
         force_magcycle = False,
         force_cleaning = False,
         force_reset = False,
+        force_format = False,
         automatic_db = False,
         chunck = 0,
         ):
@@ -139,6 +140,19 @@ def reduce(
         os.system('rm -f '+dir_root+'/WARNING/*.png')
         os.system('rm -f '+dir_root+'/STAR_INFO/*')
         os.system('rm -f '+dir_root+'/CCF_MASK/*.fits')
+
+    if force_format:
+        print(' [INFO] Formatting SNAKY with basic minimal information...')
+        dace_table = mym.import_dace_table(dir_root)
+        files = np.array(dace_table['fileroot'])
+        sinfo = mym.import_star_info(dir_root)
+        query = mym.extract_header(files, ins, debug=debug, dec=None, ra=None)
+        dace_table['RA'] = query['RA']
+        dace_table['DEC'] = query['DEC']
+        dace_table.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
+        sinfo['Ra']['fixed'] = np.median(query['RA'])
+        sinfo['Dec']['fixed'] = np.median(query['DEC'])
+        pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
     if automatic_db:
         print(' [INFO] Automatic sequence build...')
@@ -185,6 +199,7 @@ def reduce(
 
     #read fits files an create spectra normalised
     files = np.sort(glob.glob(dir_raw+'*.fits'))
+
     if force_pre:
         if ins[0:6]=='SOPHIE':
             for f in files:
@@ -633,7 +648,12 @@ def reduce(
         except:
             pass
     qc = mym.check_force_magcycle(dir_root)
-    
+
+    try:
+        mym.compare_snaky_atmos(stars=[star])
+    except:
+        pass
+
     time_end = time.time()
     duration = np.round((time_end-time_start)/60,2)
     tag_duration = str(int(duration//1))+'m'+str(int((duration%1)*60))+'s'
@@ -659,6 +679,7 @@ force_spectroscopy = bool(np.sum(steps==12))
 force_magcycle = bool(np.sum(steps==13))
 force_cleaning = bool(np.sum(steps==14))
 force_reset = bool(np.sum(steps==666))
+force_format = bool(np.sum(steps==777))
 
 if (len(steps)==1)&(np.sum(steps==0)):
     star, ins = mym.create_snaky_dir(star,ins)
@@ -722,6 +743,7 @@ if star=='': #multiprocessing via multiterminal for stars in parallel
                 force_magcycle = force_magcycle,      
                 force_cleaning = force_cleaning,
                 force_reset = force_reset,
+                force_format = force_format,
                 automatic_db = automatic_db,
                 chunck = chunck,
                 )
@@ -754,6 +776,7 @@ else: #single star launch
         force_magcycle = force_magcycle,             #13
         force_cleaning = force_cleaning,             #14
         force_reset = force_reset,                   #666
+        force_format = force_format,                 #777
         automatic_db = automatic_db,
         chunck = chunck,
         )

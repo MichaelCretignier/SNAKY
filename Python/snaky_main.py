@@ -278,7 +278,7 @@ def fix_dir_root(instrument='SOPHIE-HE_1.0',stars='*'):
         else:
             raw_visible = False
             print(Fore.YELLOW+' [INFO] The path root of the RAW is not more visible'+Fore.RESET)
-            
+
         if (sum(mask)!=0)&(ins!=instrument):
             print(Fore.YELLOW+' [WARNING] Some spectra with the wrong instrument found for %s'%(star)+Fore.RESET)
             create_snaky_dir(star,instrument)
@@ -1299,6 +1299,7 @@ def get_vmacro(teff,logg,feh,source='Cretignier+26'):
     value = {'G2':value[0],'Garfield':value[1],'Kitty':value[2]}
     return value
 
+    
 def extract_header(files,instru,debug=False,ra=None,dec=None):
     instrument = instru.split('_')[0]
     ins = instrument[0:5]
@@ -1376,7 +1377,9 @@ def extract_header(files,instru,debug=False,ra=None,dec=None):
     berv = get_berv(ra_deg, dec_deg, obstime_utc, instrument).value
     summary['rjd'] = summary['rjd'].astype('float') - 2400000
     summary['berv_computed'] = np.round(berv,4)
+
     return summary
+
 
 def rassine_normalise(spec, min_radius=4.0, max_radius=76.0):
     spec.fit_rassine(min_radius, max_radius, 12.4, tag='%.0f'%(np.random.randint(1,10000)))
@@ -2206,6 +2209,10 @@ def import_stellar_template(teff,feh=0.0,logg=4.5,model='ATLAS',rv_sys=0.0):
     template.rv_shift(rv=rv_sys)
 
     return template
+
+def import_dace_table(dir_root):
+    dace = pd.read_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv',index_col=0)
+    return dace
 
 def import_star_info(dir_root):
     star = dir_root.split('/data')[0].split('/')[-1]
