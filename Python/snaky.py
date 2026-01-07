@@ -142,17 +142,18 @@ def reduce(
         os.system('rm -f '+dir_root+'/CCF_MASK/*.fits')
 
     if force_format:
-        print(' [INFO] Formatting SNAKY with basic minimal information...')
-        dace_table = mym.import_dace_table(dir_root)
-        files = np.array(dace_table['fileroot'])
-        sinfo = mym.import_star_info(dir_root)
-        query = mym.extract_header(files, ins, debug=debug, dec=None, ra=None)
-        dace_table['RA'] = query['RA']
-        dace_table['DEC'] = query['DEC']
-        dace_table.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
-        sinfo['Ra']['fixed'] = np.median(query['RA'])
-        sinfo['Dec']['fixed'] = np.median(query['DEC'])
-        pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+        if star.split('_')[0]!='Sun':
+            print(' [INFO] Formatting SNAKY with basic minimal information...')
+            dace_table = mym.import_dace_table(dir_root)
+            files = np.array(dace_table['fileroot'])
+            sinfo = mym.import_star_info(dir_root)
+            query = mym.extract_header(files, ins, debug=debug, dec=None, ra=None)
+            dace_table['RA'] = query['RA']
+            dace_table['DEC'] = query['DEC']
+            dace_table.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
+            sinfo['Ra']['fixed'] = np.median(query['RA'])
+            sinfo['Dec']['fixed'] = np.median(query['DEC'])
+            pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
     if automatic_db:
         print(' [INFO] Automatic sequence build...')
