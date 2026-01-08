@@ -184,8 +184,15 @@ def reduce(
             summary['snr'] = summary['snr_computed']
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
         sinfo = mym.import_star_info(dir_root)
-        ra = mym.ra_to_deg(sinfo['Ra']['fixed'].replace(' ',''))
-        dec = mym.dec_to_deg(sinfo['Dec']['fixed'].replace(' ',''))
+        if 'DRS' in sinfo['Ra'].keys():
+            sinfo['Ra']['fixed'] = sinfo['Ra']['DRS']
+            sinfo['Dec']['fixed'] = sinfo['Dec']['DRS']
+            pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+            ra = sinfo['Ra']['DRS']
+            dec = sinfo['Dec']['DRS']
+        else:
+            ra = mym.ra_to_deg(sinfo['Ra']['fixed'].replace(' ',''))
+            dec = mym.dec_to_deg(sinfo['Dec']['fixed'].replace(' ',''))
         dace_summary = pd.read_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv',index_col=0)
         dace_summary['RA'] = np.round(ra,6) ; dace_summary['DEC'] = np.round(dec,6)
         dace_summary.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')

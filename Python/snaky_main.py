@@ -36,7 +36,7 @@ SNAKY — Spectroscopic Novel Analysis Kit of Yarara
 
 """
 
-__version__ = '0.5.4'
+__version__ = '0.5.5'
 
 print(Fore.GREEN+"""\n[INFO SNAKY]
 [INFO USER] SNAKY version = """+__version__ +""" 
@@ -2761,8 +2761,8 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
 
     pby,pbx = np.histogram(sample_prot90,bins=np.linspace(0,100,100),density=True)
     pbx = 0.5*(pbx[1:]+pbx[0:-1])
-    plt.fill_between(pbx,pby,alpha=0.2,color='C2')
-    plt.plot(pbx,pby,color='C2')
+    plt.fill_between(pbx,pby,alpha=0.2,color='C1')
+    plt.plot(pbx,pby,color='C1')
     plt.axvline(x=p90m[0],ls=':',color='k')
 
     plt.xlim(0,100)
@@ -2782,14 +2782,23 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
         pbx = 0.5*(pbx[1:]+pbx[0:-1])
         plt.fill_between(pbx,pby,alpha=0.2,color='k')
         plt.plot(pbx,pby,color='k')
-
-    if Prot is not None:
-        plt.axvline(x=Prot,color='k',ls='-',label=r'$P_{rot}$=%.1f days'%(Prot))
+        plt.axvline(x=Prot,color='k',ls=':',label=r'$P_{rot}$=%.1f days'%(Prot))
         plt.legend()
+
     plt.xlim(0,100)
     plt.ylim(0,None)
     plt.xlabel(r'$P_{rot}$ [days]')
     plt.tick_params(top=True,bottom=True,direction='inout')
+
+    if Prot is not None:
+        plt.subplot(1,4,2)
+        sample_veq = vsun*sample_Rs/(sample_prot_known/psun)
+        pby,pbx = np.histogram(sample_veq,bins=np.arange(0,vmax_veq,vmax_veq/200),density=True)
+        pbx = 0.5*(pbx[1:]+pbx[0:-1])
+        plt.fill_between(pbx,pby,alpha=0.2,color='k')
+        plt.plot(pbx,pby,color='k')
+        plt.axvline(np.median(sample_veq),color='k',label='v=%.1f km/s'%(np.median(sample_veq)),ls=':')
+        plt.legend()
 
     sample_sininc = np.ravel((sample_vsini/vsun)*(sample_prot/psun)/sample_Rs)
     
@@ -2807,15 +2816,28 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
     plt.legend(loc=2)
 
     if Prot is not None:
-        #k_corr = 0.98382 # correction for using vsun = 1.89 instead of 1.83
-        sample_sininc = np.ravel((sample_vsini/vsun)*(sample_prot_known/psun)/sample_Rs)#*k_corr
-        f_bad = 100*np.sum(sample_sininc>1)/len(sample_sininc)
-        print(' [INFO] Bad fraction not in [0,1] = %.1f %%'%(f_bad))
-
+        result = myf.posterior_sin_i_from_samples(sample_veq,
+                                 sample_vsini,
+                                 Ndraw=200000,
+                                 Npost=20000,
+                                 vsini_sigma_override=None,
+                                 rng_seed=0,
+                                 plot=False)
+        sample_sininc = result['sin_i_post']
         iby,ibx = np.histogram(sample_sininc,bins=np.arange(0,1,0.01),density=True)
         ibx = 0.5*(ibx[1:]+ibx[0:-1])
         iby = iby/np.sum(iby)
-        plt.fill_between(ibx,iby,alpha=0.2,color=None)#,label='Measured = [%.0f-%.0f]'%(Ii,Is))
+        plt.fill_between(ibx,iby,alpha=0.2,color='g')
+        plt.plot(ibx,iby,color='g',label='Posterior (isotropic)')
+        
+        sample_sininc2 = np.ravel((sample_vsini/vsun)*(sample_prot_known/psun)/sample_Rs)
+        f_bad = 100*np.sum(sample_sininc>1)/len(sample_sininc)
+        print(' [INFO] Bad fraction not in [0,1] = %.1f %%'%(f_bad))
+
+        iby,ibx = np.histogram(sample_sininc2,bins=np.arange(0,1,0.01),density=True)
+        ibx = 0.5*(ibx[1:]+ibx[0:-1])
+        iby = iby/np.sum(iby)
+        plt.fill_between(ibx,iby,alpha=0.2,color='k')#,label='Measured = [%.0f-%.0f]'%(Ii,Is))
         plt.plot(ibx,iby,color='k')
 
     I = np.arcsin(np.nanpercentile(sample_sininc,50))*180/np.pi

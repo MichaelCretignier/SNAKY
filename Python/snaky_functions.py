@@ -13,6 +13,7 @@ import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
+from scipy.stats import norm
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 import astropy.time as Time
@@ -716,6 +717,116 @@ def doppler_r(lamb,v):
     else:
         return lambo, lambs
 #
+
+def posterior_sin_i_from_samples(samples_v,
+                                 samples_vsini,
+                                 Ndraw=200000,
+                                 Npost=20000,
+                                 vsini_sigma_override=None,
+                                 rng_seed=0,
+                                 plot=True):
+    
+    rng = np.random.default_rng(rng_seed)
+
+    samples_v = np.asarray(samples_v)
+    samples_vsini = np.asarray(samples_vsini)
+    if samples_v.size == 0 or samples_vsini.size == 0:
+        raise ValueError("samples_v and samples_vsini must be non-empty arrays")
+
+    # --- fast Gaussian approx for vsini posterior ---
+    vsini_mu = np.median(samples_vsini)
+    # robust sigma: half of the (84-16) percentile interval
+    vsini_sigma = 0.5 * (np.percentile(samples_vsini, 84) - np.percentile(samples_vsini, 16))
+    if vsini_sigma <= 0 or np.isnan(vsini_sigma):
+        vsini_sigma = np.std(samples_vsini, ddof=1)
+        if vsini_sigma <= 0 or np.isnan(vsini_sigma):
+            vsini_sigma = 1e-6
+    if vsini_sigma_override is not None:
+        vsini_sigma = float(vsini_sigma_override)
+
+    # --- draw prior samples: isotropic => cos_i ~ Uniform(0,1) ---
+    cos_i_draws = rng.random(Ndraw)           # shape (Ndraw,)
+    sin_i_draws = np.sqrt(np.maximum(0.0, 1.0 - cos_i_draws**2))
+    i_draws = np.arcsin(sin_i_draws)          # equivalent to arccos(cos_i_draws)
+
+    # --- draw v for each draw by random choice (vectorized) ---
+    v_choice = rng.choice(samples_v, size=Ndraw, replace=True)
+
+    # --- predicted vsini for each draw ---
+    u_pred = v_choice * sin_i_draws           # vectorized
+
+    # --- compute weights = likelihood p(vsini_obs | u_pred) using Gaussian approx ---
+    # We treat samples_vsini as draws from the measurement posterior and approximate it as N(mu, sigma)
+    # Evaluate p(vsini_mu | u_pred, sigma) -> likelihood of the 'observed' distribution at predicted u
+    # (equivalent to Masuda's L_u evaluated at u_pred)
+    weights = norm.pdf(vsini_mu, loc=u_pred, scale=vsini_sigma)
+
+    # numerical safety & normalize
+    weights = np.asarray(weights, dtype=float)
+    weights += 1e-300
+    weights_sum = weights.sum()
+    if weights_sum == 0 or not np.isfinite(weights_sum):
+        raise RuntimeError("All weights are zero or non-finite; check inputs or increase Ndraw")
+    weights /= weights_sum
+
+    # Effective sample size diagnostic
+    ESS = 1.0 / np.sum(weights**2)
+
+    # --- resample posterior i according to weights ---
+    idx = rng.choice(Ndraw, size=Npost, replace=True, p=weights)
+    sin_i_post = sin_i_draws[idx]
+    i_post = i_draws[idx]
+    i_post_deg = np.degrees(i_post)
+
+    result = {
+        'sin_i_post': sin_i_post,
+        'i_post_deg': i_post_deg,
+        'weights': weights,
+        'ESS': ESS,
+        'i_draws': i_draws,
+        'sin_i_draws': sin_i_draws,
+        'u_pred': u_pred,
+        'vsini_mu': vsini_mu,
+        'vsini_sigma': vsini_sigma
+    }
+
+    if plot:
+        bins_sini=50
+        bins_i=50
+        sin_i = result['sin_i_post']
+        i_deg = result['i_post_deg']
+
+        fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+
+        # --- sin i posterior ---
+        axes[0].hist(sin_i, bins=bins_sini, density=True,
+                    histtype='step', linewidth=2)
+        axes[0].set_xlabel(r'$\sin i$')
+        axes[0].set_ylabel(r'$p(\sin i \mid D)$')
+        axes[0].set_xlim(0, 1)
+
+        # summary lines
+        axes[0].axvline(np.median(sin_i), ls='--')
+        lo, hi = np.percentile(sin_i, [16, 84])
+        axes[0].axvspan(lo, hi, alpha=0.2)
+
+        # --- i posterior ---
+        axes[1].hist(i_deg, bins=bins_i, density=True,
+                    histtype='step', linewidth=2)
+        axes[1].set_xlabel(r'$i$ [deg]')
+        axes[1].set_ylabel(r'$p(i \mid D)$')
+        axes[1].set_xlim(0, 90)
+
+        # summary lines
+        axes[1].axvline(np.median(i_deg), ls='--')
+        lo, hi = np.percentile(i_deg, [16, 84])
+        axes[1].axvspan(lo, hi, alpha=0.2)
+
+        plt.tight_layout()
+        plt.show()
+
+    return result
+
 
 def only_axis(color=None,lw=2,ax=None,side='all',ls='-'):
     plt.tick_params(left=False,bottom=False,labelleft=False,labelbottom=False)  
