@@ -2829,6 +2829,7 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
         iby = iby/np.sum(iby)
         plt.fill_between(ibx,iby,alpha=0.2,color='g')
         plt.plot(ibx,iby,color='g',label='Posterior (isotropic)')
+        plt.legend()
 
         sample_sininc2 = np.ravel((sample_vsini/vsun)*(sample_prot_known/psun)/sample_Rs)
         f_bad = 100*np.sum(sample_sininc>1)/len(sample_sininc)
