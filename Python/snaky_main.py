@@ -2819,7 +2819,7 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
         result = myf.posterior_sin_i_from_samples(sample_veq,
                                  sample_vsini,
                                  Ndraw=200000,
-                                 Npost=20000,
+                                 Npost=99999,
                                  vsini_sigma_override=None,
                                  rng_seed=0,
                                  plot=False)
@@ -2829,7 +2829,7 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
         iby = iby/np.sum(iby)
         plt.fill_between(ibx,iby,alpha=0.2,color='g')
         plt.plot(ibx,iby,color='g',label='Posterior (isotropic)')
-        
+
         sample_sininc2 = np.ravel((sample_vsini/vsun)*(sample_prot_known/psun)/sample_Rs)
         f_bad = 100*np.sum(sample_sininc>1)/len(sample_sininc)
         print(' [INFO] Bad fraction not in [0,1] = %.1f %%'%(f_bad))
