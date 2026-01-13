@@ -284,6 +284,8 @@ def reduce(
             'Vmacro':{'fixed':1.0},
             'stellar_template':{'fixed':'MARCS_T5750_g4.5'},
             'Vsini':{'fixed':2.0},
+            'Sini':{'fixed':1.0},
+            'Inc':{'fixed':90},
             'RHK':{'fixed':-5.00},
             'MHK':{'fixed':0.0},
             'Prot':{'fixed':25.0},
