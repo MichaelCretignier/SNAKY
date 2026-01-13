@@ -31,7 +31,7 @@ delete_old = False
 instrument = None
 output_directory = None
 products = ['s1d']
-external_drive = True
+external_drive = 0
 
 disk_out,computer,entry2 = ('/hpcstorage/cretigni','lesta0','3')
 disk_out,computer,entry2 = ('/srv/scratch/cretigni','bonsai0','1')
@@ -46,11 +46,15 @@ if len(sys.argv)>1:
         elif j[0] == '-o':
             output_directory = j[1]
         elif j[0] == '-H':
-            external_drive = bool(int(j[1]))
+            external_drive = int(j[1])
 
-if (os.path.exists('/Volumes/MyPassport/Yarara'))&external_drive:
+if (os.path.exists('/Volumes/MyPassport/Snaky'))&(external_drive==1):
     root = '/Volumes/MyPassport'
-    print(Fore.RED +'[INFO] You are downloading the data on the external HD (YOUR PAST YOU)',Fore.RESET+'')
+    print(Fore.RED +'[INFO] You are downloading the data on the external HD[WD] (YOUR PAST YOU)',Fore.RESET+'')
+
+if (os.path.exists('/Volumes/MyPirisi/Snaky'))&(external_drive==2):
+    root = '/Volumes/MyPirisi'
+    print(Fore.RED +'[INFO] You are downloading the data on the external HD[Pirisi] (YOUR PAST YOU)',Fore.RESET+'')
 
 
 def test_ssh_login(entry1):
@@ -74,6 +78,8 @@ def test_ssh_login(entry1):
 
 #path = 'cretigni@login01.astro.unige.ch:/home/astro/cretigni'
 #path = 'cretigni@login01.astro.unige.ch:/hpcstorage/cretigni'
+
+print('[INFO] Saving directory: %s'%(root))
 
 def ossystem(line,nb_try=3):
     a=3072

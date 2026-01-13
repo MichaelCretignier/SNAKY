@@ -2488,7 +2488,7 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False):
     calib_feh.interpolate(new_grid=feh,method='linear',replace=False)
     ratio_kitty = calib_teff.y_interp+calib_feh.y_interp
 
-    ratio = {'Garfield':np.ones(len(samples_table)),'Kitty':ratio_kitty}
+    ratio = {'G2':np.ones(len(samples_table)),'Garfield':np.ones(len(samples_table)),'Kitty':ratio_kitty}
     #ratio = {'Garfield':1,'Kitty':1}
     print(' [INFO] Ratio GARFIELD/KITTY from (Teff,FeH) calibration = %.2f'%(np.median(ratio['Kitty'])))
 
@@ -2816,10 +2816,10 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
     plt.legend(loc=2)
 
     if Prot is not None:
-        result = myf.posterior_sin_i_from_samples(sample_veq,
+        result = myf.posterior_sin_i_from_samples(sample_veq, #Masuda+20 2001.04973
                                  sample_vsini,
                                  Ndraw=200000,
-                                 Npost=99999,
+                                 Npost=399999,
                                  vsini_sigma_override=None,
                                  rng_seed=0,
                                  plot=False)
@@ -2869,6 +2869,30 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
         samples_table['prot'] = sample_prot
     samples_table['sini'] = np.random.choice(sample_sininc,99999)
     samples_table.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv')
+
+    if Prot is not None:
+        plt.figure(figsize=(8,8))
+        plt.xlim(-1.5,1.5) ; plt.ylim(-1.5,1.5)
+        iby,ibx = np.histogram(np.arcsin(samples_table['sini'])*180/np.pi,bins=np.arange(0,180,1),density=True)
+        ibx = 0.5*(ibx[1:]+ibx[0:-1])
+        iby = iby/np.sum(iby)
+
+        theta = ibx*np.pi/180 ; r = 1.0 + 10 * iby
+        X = r * np.cos(theta) ; Y = r * np.sin(theta)
+        plt.plot(X, Y, '-k')
+
+        sinc = np.random.choice(samples_table['sini'],10000)
+        r = np.random.randn(10000)*0.03+1
+        plt.scatter(np.sqrt(1-sinc**2)*r,sinc*r,color='k',marker='.',alpha=0.01,s=20)
+        for perc,lw in zip([16,50,84],[1,2,1]):
+            x = np.sqrt(1-np.nanpercentile(sinc,perc)**2)
+            y = np.nanpercentile(sinc,perc)
+            plt.plot([0,x],[0,y],color='k',lw=lw,ls=['-','-.'][int(lw==1)])
+            plt.text(x*1.1,y*1.1,'%.0f°'%(np.arcsin(y)*180/np.pi))
+        plt.plot(np.cos(np.linspace(0,2*np.pi,100)),np.sin(np.linspace(0,2*np.pi,100)),color='k')
+        plt.plot([0,0],[-1,1],color='k',alpha=0.3,lw=1,ls='--')
+        plt.savefig(dir_root+'IMAGES/Stellar_inclination.pdf')
+
 
 def yarara_activity_index(files, rv_sys, shift_rv, material=None, sub_dico='matching_diff'):
 
