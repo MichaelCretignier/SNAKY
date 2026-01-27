@@ -1028,6 +1028,8 @@ class tableXY(object):
                     print(' [INFO] Using Gaussian profile (GND=2) for the fit')
                 self.warning_multipeak = 0
                 try:
+                    Rcorr = 1-np.std(ccf_profile.res)/np.std(ccf_profile.y)
+                    self.ccf_Rcorr = Rcorr
                     res = tableXY(ccf_profile.x,ccf_profile.res)
                     res.find_min(sort=True)
                     contrast2 = -res.y_min[0]
@@ -1059,7 +1061,8 @@ class tableXY(object):
                         amp_err = 0.0
 
                     plt.axvline(x=ccf_profile.params['cen'].value,color='r',alpha=0.3)
-                    plt.title('Beta = %.2f \n C = %.2f +/- %.2f [%%] \n FWHM = %.2f +/- %.2f [km/s] \n RV = %.2f +/- %.2f [m/s]'%(
+                    plt.title('R = %.2f | Beta = %.2f \n C = %.2f +/- %.2f [%%] \n FWHM = %.2f +/- %.2f [km/s] \n RV = %.2f +/- %.2f [m/s]'%(
+                        Rcorr,
                         self.params_beta,
                         100*(-ccf_profile.params['amp'].value/ccf_profile.params['offset'].value),
                         amp_err,

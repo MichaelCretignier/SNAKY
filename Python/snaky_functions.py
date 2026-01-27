@@ -75,9 +75,9 @@ def find_turbulence(teff, logg):
 
     return vmic,vmac
 
-def find_stellar_mass_radius_MS(Teff, logg, samples=99999):
-    samples_T = np.random.randn(samples)*75+Teff
-    samples_g = np.random.randn(samples)*0.07+logg
+def find_stellar_mass_radius_MS(Teff, logg, samples=99999, dTeff=75, dlogg=0.07):
+    samples_T = np.random.randn(samples)*dTeff+Teff
+    samples_g = np.random.randn(samples)*dlogg+logg
 
     samples_m = (samples_T/5772)**(4/3)*(10**(samples_g-4.437))**(-1/3)
     mass = np.median(samples_m)

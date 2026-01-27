@@ -70,7 +70,10 @@ instrument_res_kms = {
     'CORALIE07': 5.07,    # R ≈ 59 000
     'CORALIE14': 5.01,    # R ≈ 60 000
     'SOPHIE-HE': 7.89,    # R ≈ 38 000 (HE)
+    #'FEROS': 6.15,       # R ≈ 48 000
+    #'FIES': 5.25,        # R ≈ 57 000
     'SOPHIE': 4.18,       # R ≈ 72 000 (HR)
+    #'UVES': 3.50,        # R ≈ 85 000
     'HARPS15': 3.47,      # R ≈ 86 000
     'HARPS03': 3.36,      # R ≈ 89 000
     'NEID-HE': 4.23,      # R ≈ 71 000 (HE)
