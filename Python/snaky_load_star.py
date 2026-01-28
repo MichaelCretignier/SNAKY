@@ -33,12 +33,13 @@ output_directory = None
 products = ['s1d']
 external_drive = 0
 instrumet = None
+light = 1
 
 disk_out,computer,entry2 = ('/hpcstorage/cretigni','lesta0','3')
 disk_out,computer,entry2 = ('/srv/scratch/cretigni','bonsai0','1')
 
 if len(sys.argv)>1:
-    optlist,args =  getopt.getopt(sys.argv[1:],'s:d:o:H:i:')
+    optlist,args =  getopt.getopt(sys.argv[1:],'s:d:o:H:i:l:')
     for j in optlist:
         if j[0] == '-s':
             stars = j[1].split(',')      
@@ -50,6 +51,8 @@ if len(sys.argv)>1:
             external_drive = int(j[1])
         elif j[0] == '-i':
             instrument = j[1]
+        elif j[0] == '-l':
+            light = int(j[1])
 
 if (os.path.exists('/Volumes/MyPassport/Snaky'))&(external_drive==1):
     root = '/Volumes/MyPassport'
@@ -108,5 +111,8 @@ print('[INFO] Login selection = login0%s -> bonsai0%s'%(entry1,entry2))
 for star in stars:
     time.sleep(3)
     os.system('cd '+root+'/Snaky')
-    code = ossystem('rsync -av --progress --exclude=RASSINE_Stacked*.p -e "ssh -A cretigni@login0'+entry1 +'.astro.unige.ch ssh" cretigni@'+computer+entry2 +':'+disk_out+'/Snaky/%s '%(star)+root+'/Snaky')
+    if light==1:
+        code = ossystem('rsync -av --progress --exclude=RASSINE_Stacked*.p -e "ssh -A cretigni@login0'+entry1 +'.astro.unige.ch ssh" cretigni@'+computer+entry2 +':'+disk_out+'/Snaky/%s '%(star)+root+'/Snaky')
+    else:
+        code = ossystem('rsync -av --progress -e "ssh -A cretigni@login0'+entry1 +'.astro.unige.ch ssh" cretigni@'+computer+entry2 +':'+disk_out+'/Snaky/%s '%(star)+root+'/Snaky')
     print(code)

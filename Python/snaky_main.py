@@ -36,7 +36,7 @@ SNAKY — Spectroscopic Novel Analysis Kit of Yarara
 
 """
 
-__version__ = '0.5.5'
+__version__ = '0.6.0'
 
 print(Fore.GREEN+"""\n[INFO SNAKY]
 [INFO USER] SNAKY version = """+__version__ +""" 
@@ -1440,6 +1440,7 @@ def yarara_flux_density(files,sub_dico='matching_diff'):
     all_flux_density = []
     count = -1
     warning = 0
+    plt.figure('flux_density',figsize=(7,7))
     for j in tqdm(files):
         count+=1
         spec = import_spectrum(j,sub_dico=sub_dico)
@@ -1449,13 +1450,21 @@ def yarara_flux_density(files,sub_dico='matching_diff'):
         used = np.round(len(flux_norm)*100/225000,1)
         if used<95:
             warning = 1
+            plt.figure('warning')
             print(Fore.YELLOW+'\n [WARNING] Only %.1f%% of spectra used. Holes detected! Results may be inaccurate.'%(used)+Fore.RESET)
             plt.plot(spec.x,spec.y+count)
+            plt.figure('flux_density')
         ha,hb = np.histogram(flux_norm,bins=100,density=True)
         hb = 0.5*(hb[1:]+hb[:-1])
         ha = np.nancumsum(ha)
         ha /= np.nanmax(ha)
         metric = hb[myf.find_nearest(ha,np.array([0.05,0.10,0.15,0.20,0.25]))[0]]
+        plt.plot(hb,ha,color='C0',alpha=0.7)
+        plt.scatter(metric,np.array([0.05,0.10,0.15,0.20,0.25]),marker='.',color='k',alpha=0.4)
+        plt.grid()
+        plt.xlim(0,1)
+        plt.ylim(0,1)
+
         all_flux_density.append(metric)
 
     all_flux_density = np.array(all_flux_density)
@@ -1470,6 +1479,11 @@ def yarara_flux_density(files,sub_dico='matching_diff'):
     output = model.predict(all_flux_density[:,np.newaxis].T)
     Teff_rough_est = int(np.round(output[0,0],0)) # not better than +/- 300K
     FeH_rough_est = np.round(output[0,1],3) # not better than +/- 0.15 dex
+
+    plt.scatter(all_flux_density,np.array([0.05,0.10,0.15,0.20,0.25]),zorder=10,color='k',alpha=1.0,label='Teff=%.0f +/- 300 K \n FeH = %.2f +/- 0.15 dex'%(Teff_rough_est,FeH_rough_est))
+    plt.legend(loc=2)
+    plt.xlabel('Flux normalised')
+    plt.ylabel('CDF')
 
     print(' [INFO] Rough Teff estimation %.0f +/- 300 K'%(Teff_rough_est))
     print(' [INFO] Rough FeH estimation %.2f +/- ?? dex'%(FeH_rough_est))
@@ -3359,7 +3373,7 @@ def yarara_instrumental_resolution(dir_root, files, shift_rv, berv, sub_dico='ma
     if (sub_dico=='matching_diff')&(sum(missing_values)!=0):
         berv_computed = yarara_measure_berv(dir_root,files[missing_values],sub_dico='matching_diff')
         berv[missing_values] = berv_computed
-
+        
     berv_mad = myf.mad(berv)
 
     if berv_mad>3:
@@ -3412,7 +3426,7 @@ def yarara_instrumental_resolution(dir_root, files, shift_rv, berv, sub_dico='ma
     fwhm_ins[fwhm_ins<1] = np.nan
     fwhm_ins[fwhm_ins>10] = np.nan
 
-    return fwhm_ins
+    return fwhm_ins, berv
 
 mhk_c1 = -4.04840205e+01        #calibration with RHK DRS
 mhk_c2 = 3927259.0994665725

@@ -20,7 +20,8 @@ SNAKY — Spectroscopic Novel Analysis Kit of Yarara
 
 Sequence:
 
-force_reset = force_reset,                   #-1. Remove figures and subproducts
+force_reset = force_reset,                   #666.Remove figures and subproducts
+
 force_pre = force_pre,                       #1.  Read the spectrum in fits
 force_summary = force_summary,               #2.  Extract header information
 force_rvsys = force_rvsys,                   #3.  Compute the systemic RV
@@ -355,7 +356,9 @@ def reduce(
     if force_rvsys: #3
         summary = mym.import_summary(dir_root)
         teff,feh,fluxD,warning_hole = mym.yarara_flux_density(files)
+        plt.savefig(dir_root+'IMAGES/Teff_approximated.png')
         if warning_hole:
+            plt.figure('warning')
             plt.savefig(dir_root+'WARNING/WARNING_Flux_density.png')
             plt.close()
         
@@ -401,7 +404,7 @@ def reduce(
             rv_sys=0
         if fwhm>300:
             fwhm=300 
-        if teff>7500:
+        if teff>8500:
             fwhm=200
 
         sinfo = mym.import_star_info(dir_root)
@@ -551,8 +554,10 @@ def reduce(
         except:
             files = summary['filename']
         berv = np.array(summary.loc[np.in1d(summary['filename'],files),'berv'])
-        fwhm_ins = mym.yarara_instrumental_resolution(dir_root, files, np.zeros(len(berv)), berv)
+        fwhm_ins, berv_output = mym.yarara_instrumental_resolution(dir_root, files, np.zeros(len(berv)), berv.copy())
         summary = mym.import_summary(dir_root) # to reload updated table
+        if np.sum(berv!=berv_output)!=0:
+            summary.loc[np.in1d(np.array(summary['filename']),files),'berv_computed'] = berv_output
         output = np.array([files,fwhm_ins]).T
         if ins[0:6]=='SOPHIE':
             newins = np.array([[ins.replace('-HE',''),ins.replace('-HE','').replace('_','-HE_')][int(i>5)] for i in fwhm_ins])
