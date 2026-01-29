@@ -30,8 +30,6 @@ michael.cretignier@physics.ox.ac.uk
 You can try with your own main Python environment since there are only
 a few libraries used. Otherwise:
 
-# Installation
-
 Python environment (Conda install)
 
 ```
