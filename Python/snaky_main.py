@@ -1461,10 +1461,6 @@ def yarara_flux_density(files,sub_dico='matching_diff'):
         metric = hb[myf.find_nearest(ha,np.array([0.05,0.10,0.15,0.20,0.25]))[0]]
         plt.plot(hb,ha,color='C0',alpha=0.7)
         plt.scatter(metric,np.array([0.05,0.10,0.15,0.20,0.25]),marker='.',color='k',alpha=0.4)
-        plt.grid()
-        plt.xlim(0,1)
-        plt.ylim(0,1)
-
         all_flux_density.append(metric)
 
     all_flux_density = np.array(all_flux_density)
@@ -1484,6 +1480,9 @@ def yarara_flux_density(files,sub_dico='matching_diff'):
     plt.legend(loc=2)
     plt.xlabel('Flux normalised')
     plt.ylabel('CDF')
+    plt.grid()
+    plt.xlim(0,1)
+    plt.ylim(0,1)
 
     print(' [INFO] Rough Teff estimation %.0f +/- 300 K'%(Teff_rough_est))
     print(' [INFO] Rough FeH estimation %.2f +/- ?? dex'%(FeH_rough_est))
