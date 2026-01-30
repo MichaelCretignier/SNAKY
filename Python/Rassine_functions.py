@@ -75,6 +75,9 @@ else:
 # FUNCTIONS (alphabetic ordered)
 # =============================================================================
 
+def print_code_line(text):
+    print(Fore.GREEN + ' [CODE LINE] ' + text + Fore.RESET + '')
+
 def ccf(wave,spec1,spec2,extended=1500):
     """
     CCF for a equidistant grid in log wavelength spec1 = spectrum, spec2 =  binary mask, mask_telluric = binary mask
@@ -1370,9 +1373,10 @@ def preprocess_prematch_stellar_frame(files_to_process, rv=0, dlambda=None, wave
         i = -1
         print('Loading the data, wait... \n') 
         nb_total = len(files_to_process)
+        step = int(np.min([250,nb_total/10]))
         for j in files_to_process:
             i+=1
-            if not (i%250):
+            if not (i%step):
                 print(' [INFO] Number of files processed : %s/%.0f (%.1f %%)'%(str(i).zfill(len(str(nb_total))),nb_total,100*i/nb_total))
             f = open_pickle(j)  
 

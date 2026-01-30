@@ -2479,19 +2479,24 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
         norm_mean = np.array(means[['teff','feh','logg']])
         norm_std = np.array(stds[['teff','feh','logg']])
 
-        if sinfo['Teff']['FluxD']>6500: #outside calibration range
-            print(Fore.YELLOW + '\n [WARNING] The temperature is outside the calibration range. XGB skipped.'+Fore.RESET)
-            teff = int(sinfo['Teff']['FluxD'])
+        output = output*norm_std+norm_mean
+        teff,feh,logg = output.values[0]
+        teff_rough = sinfo['Teff']['FluxD']
+
+        if (sinfo['Teff']['FluxD']>6500)|(abs(teff-teff_rough)>300): #outside calibration range
+            if abs(teff-teff_rough)>300:
+                print(Fore.YELLOW + '\n [WARNING] Too much difference (dT=%.0fK) in Teff (%.0fK) with FluxD (%.0fK). XGB skipped.'%(abs(teff-teff_rough),teff,teff_rough)+Fore.RESET)
+            else:
+                print(Fore.YELLOW + '\n [WARNING] The temperature is outside the calibration range. XGB skipped.'+Fore.RESET)
+            teff = int(teff_rough)
             feh = 0
             logg = 4.0
         elif sinfo['Teff']['FluxD']<4000: #outside calibration range
             print(Fore.YELLOW + '\n [WARNING] The temperature is outside the calibration range. XGB skipped.'+Fore.RESET)
-            teff = int(sinfo['Teff']['FluxD'])
+            teff = int(teff_rough)
             feh = 0
             logg = 5.0
         else:
-            output = output*norm_std+norm_mean
-            teff,feh,logg = output.values[0]
             teff = int(teff)
             feh = np.round(feh,3)
             logg = np.round(logg,3)
@@ -3002,7 +3007,7 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
         plt.savefig(dir_root+'IMAGES/Stellar_inclination.pdf')
 
 
-def yarara_activity_index(files, rv_sys, shift_rv, material=None, sub_dico='matching_diff'):
+def yarara_activity_index(files, rv_sys, shift_rv, fwhm=6.0, material=None, sub_dico='matching_diff'):
 
     myf.print_box('\n---- RECIPE : ACTIVITY PROXIES EXTRACTION ----\n')
 
@@ -3026,6 +3031,7 @@ def yarara_activity_index(files, rv_sys, shift_rv, material=None, sub_dico='matc
     all_proxies = [Ca2H, Ca2K, Ca1, Mg1a, Mg1b, Mg1c, NaDl, NaDr, NaDC, Ha, Hb, Hc, Hd, Heps, He1D3]
     
     grid, flux, err_flux = import_sts(files, rv_shift=shift_rv, err=False, sub_dico=sub_dico)
+    dgrid = np.mean(np.diff(grid))
 
     all_prox_names = np.array(all_proxies)[:,4]
     proxy_found = ((np.array(all_proxies)[:,0]-np.nanmin(grid))>0)&((np.nanmax(grid))>0)
@@ -3081,14 +3087,21 @@ def yarara_activity_index(files, rv_sys, shift_rv, material=None, sub_dico='matc
         if norm_proxy:
             proxy /= norm_proxy
             proxy_std /= norm_proxy      
-            return proxy, proxy_std, l, r
+            return proxy, proxy_std, c, l, r
         else:
-            return 0*proxy, 0*proxy_std, l, r
+            return 0*proxy, 0*proxy_std, c, l, r
 
     save = {'null':0}
     mask_activity = np.zeros(len(grid))
     for p in all_proxies:
-        proxy, proxy_std, l, r= extract_proxy(p)
+        proxy, proxy_std, c, l, r= extract_proxy(p)
+        fwhm_line = r - l
+        fwhm_wave = 1.5*fwhm*grid[c]/3e5
+        fwhm_sampling = int(fwhm_wave/dgrid) 
+        if fwhm_line<fwhm_sampling:
+            vel_extension = int(0.5*(fwhm_sampling-fwhm_line))
+            r = r+vel_extension
+            l = l-vel_extension
         mask_activity[l:r] = 1    
         save[p[4]] = proxy
         save[p[4]+'_std'] = proxy_std

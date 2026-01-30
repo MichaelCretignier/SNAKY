@@ -596,10 +596,11 @@ def reduce(
         material = mym.import_material(dir_root)
         sinfo = mym.import_star_info(dir_root)
         rv_sys = sinfo['Rv_sys']['SNAKY']
+        fwhm = sinfo['FWHM']['fixed']
         kept = np.array(1-summary['flag1'])*np.array(1-summary['flag2'])
         files = np.array(summary.loc[kept==1,'filename'])
         ccf_output = mym.import_ccf(dir_root,'G2')
-        tab_proxies, CT, mask_activity = mym.yarara_activity_index(ccf_output['filename'], rv_sys, ccf_output['rv'].y, material=material)
+        tab_proxies, CT, mask_activity = mym.yarara_activity_index(ccf_output['filename'], rv_sys, ccf_output['rv'].y, material=material, fwhm=fwhm)
         material['activity_proxies'] = mask_activity
         pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
 
