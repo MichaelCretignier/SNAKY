@@ -2561,7 +2561,7 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
     return teff,feh,logg,M,R,BV,vmicro,vmacro
 
 
-def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False):
+def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False, std_bias_kms = 0.1):
 
     myf.print_box('\n---- RECIPE : VSINI EXTRACTION ----\n')
 
@@ -2731,7 +2731,7 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False):
         plt.subplot(3,1,3)
         plt.errorbar(ccf_values['rv'].x,np.mean(V,axis=0),yerr=np.std(V,axis=0),marker='.',capsize=0,color='C%.0f'%(num),ls='')
 
-        std_bias = 0.1 # 100 m/s of bias in general, 200 m/s for the Sun
+        std_bias = std_bias_kms # 100m/s bias uncertainty is a good guess
         std_accuracy = np.nanmedian(np.nanstd(V,axis=0)) 
         std_precision = myf.mad(np.nanmedian(fwhmG_HARPN,axis=0))
         std_tot = np.sqrt(std_bias**2+std_accuracy**2+std_precision**2)
@@ -2752,7 +2752,7 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False):
         sample = sample[sample>=0]
         samples.append(sample)
         plt.hist(sample,bins=100,density=True,histtype='step')
-        plt.hist(sample,bins=100,density=True,alpha=0.4,color='C%.0f'%(num),label=mask)
+        plt.hist(sample,bins=100,density=True,alpha=0.4,color='C%.0f'%(num),label=mask+' : \nv sin i = %.2f +/- %.2f km/s'%(np.mean(sample),np.std(sample)))
         plt.xlabel(r'v $\sin$ i [km/s]')
         plt.figure('dust')
         infos = plt.hist(sample,bins=100,density=True,histtype='step',cumulative=True)
@@ -2803,6 +2803,8 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
                 Prot = sinfo['Prot']['YARARA']
         except:
             pass
+    else:
+        print(' [INFO] Stellar Prot provided by user! Prot = %.1f days'%(Prot))
     
     if (Prot!=Prot)|(Prot==0): #np.nan or null
         Prot = None
@@ -2825,6 +2827,7 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
         np.nanpercentile(sample_prot90,84)-np.nanpercentile(sample_prot90,50),
         np.nanpercentile(sample_prot90,50)-np.nanpercentile(sample_prot90,16)]
 
+    print(' [INFO] ')
     print(' [INFO] Prot (if i=90) estimated = %.2f [%.2f - %.2f] days '%(p90m[0],p90m[0]-p90m[1],p90m[0]+p90m[2]))
 
     rm = [

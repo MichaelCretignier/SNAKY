@@ -577,7 +577,7 @@ def reduce(
 
     if force_vsini: #8
         sinfo = mym.import_star_info(dir_root)
-        vsini = mym.yarara_vcat(dir_root, sub_dico=sub_dico, debug=debug) 
+        vsini = mym.yarara_vcat(dir_root, sub_dico=sub_dico, debug=debug, std_bias_kms=0.1) 
         mym.yarara_vsini(dir_root, Prot=Prot, Rs=Rs)
         sinfo = myf.update_info_lvl2(sinfo,'Vsini','SNAKY',np.round(np.nanmean(vsini),2))
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
