@@ -24,6 +24,7 @@ from scipy.signal import savgol_filter
 from tqdm import tqdm
 
 import snaky_variables as myv
+import functools
 
 try:
     np.warnings.filterwarnings('ignore', category=RuntimeWarning)
@@ -53,6 +54,17 @@ cwd = os.getcwd()
 root = '/'.join(cwd.split('/')[:-1])
 
 # statistical
+
+def time_step(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        result = func(*args, **kwargs)
+        end = time.perf_counter()
+        elapsed = end - start
+        print(f"[TIME] {func.__name__}: {elapsed:.3f} s")
+        return result
+    return wrapper
 
 def find_turbulence(teff, logg):
     """From Bruntt+10 """
@@ -895,3 +907,5 @@ def observatory(instrument='HARPS'):
         obs_loc = EarthLocation(lat=19.8261*u.deg, lon=-155.4700*u.deg, height=4145)
     
     return obs_loc
+
+

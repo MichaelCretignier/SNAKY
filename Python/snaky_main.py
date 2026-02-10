@@ -1322,6 +1322,7 @@ def dec_to_deg(dec):
     else:
         return np.nan
 
+#@myf.time_step
 def get_vmacro(teff,logg,feh,source='Cretignier+26'):
     """This is the gaussian width (not FWHM) for a Gaussian macroturbulence approximation"""
     if source=='Doyle+14': #only valid between teff = [5200-6400], logg = [4.0-4.6]
@@ -1436,7 +1437,7 @@ def rassine_normalise(spec, min_radius=4.0, max_radius=76.0):
     spec.fit_rassine(min_radius, max_radius, 12.4, tag='%.0f'%(np.random.randint(1,10000)))
     return spec
 
-def yarara_flux_density(files,sub_dico='matching_diff'):
+def yarara_flux_density(files,sub_dico='matching_diff',smooth=11):
     all_flux_density = []
     count = -1
     warning = 0
@@ -1444,10 +1445,13 @@ def yarara_flux_density(files,sub_dico='matching_diff'):
     for j in tqdm(files):
         count+=1
         spec = import_spectrum(j,sub_dico=sub_dico)
+        if smooth!=1:
+            spec.smooth(box_pts=smooth,shape='savgol')
         mask = (spec.x<6250)&(spec.x>4000)
         flux_norm = spec.y[mask]
         flux_norm = flux_norm[flux_norm>0.01]
         used = np.round(len(flux_norm)*100/225000,1)
+        print(used)
         if used<95:
             warning = 1
             plt.figure('warning')

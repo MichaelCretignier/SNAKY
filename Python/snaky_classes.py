@@ -903,8 +903,9 @@ class tableXY(object):
             plt.title('One component detected!')
             print(' [INFO] Only one component detected')
         plt.subplots_adjust(hspace=0.35)
-        return condition
-
+        ret
+    
+    #@myf.time_step
     def ccf(self, mask2, rv_sys=0, rv_range=15, weighted=True, ccf_oversampling=1, wave_min=None, wave_max=None, norm=True, Plot=True, pow_weight=2, fit_gaussian=True, return_mask=False, static=''):
 
         grid = np.round(self.x.copy(),4) # for 0.01 sampling
