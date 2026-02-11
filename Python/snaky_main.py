@@ -1451,7 +1451,6 @@ def yarara_flux_density(files,sub_dico='matching_diff',smooth=11):
         flux_norm = spec.y[mask]
         flux_norm = flux_norm[flux_norm>0.01]
         used = np.round(len(flux_norm)*100/225000,1)
-        print(used)
         if used<95:
             warning = 1
             plt.figure('warning')

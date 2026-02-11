@@ -24,7 +24,9 @@ from scipy.signal import savgol_filter
 from tqdm import tqdm
 
 import snaky_variables as myv
+import psutil
 import functools
+from colorama import Fore
 
 try:
     np.warnings.filterwarnings('ignore', category=RuntimeWarning)
@@ -65,6 +67,13 @@ def time_step(func):
         print(f"[TIME] {func.__name__}: {elapsed:.3f} s")
         return result
     return wrapper
+
+def print_ram(step=''):
+    process = psutil.Process(os.getpid())
+    mem_usage = process.memory_info().rss / (1024 * 1024)/1000  # Conversion en Mo
+
+    print(Fore.CYAN +" [COMP] RAM used now (%s) : %.2f Go\n"%(step,mem_usage),Fore.RESET+'')
+
 
 def find_turbulence(teff, logg):
     """From Bruntt+10 """

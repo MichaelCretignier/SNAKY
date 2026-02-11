@@ -11,6 +11,8 @@ import os
 import glob as glob
 import sys
 import time
+import tracemalloc
+import psutil
 
 from colorama import Fore
 
@@ -94,6 +96,51 @@ steps = np.arange(begin,end+1,1).astype('int')
 if begin==99:
     automatic_db = False
 
+# =============================================================================
+# MEMORY AND TIME MONITORING
+# =============================================================================
+
+tracemalloc.start()
+top_stats = []
+memory_history = [[-99.9,0,0,0]]
+begin = time.time()
+time_step = {'begin':begin}
+timestamp_reduction = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
+
+debug_mode = 0
+
+def monitor_ram(stage=0):
+    snapshot = tracemalloc.take_snapshot()
+    top_stats.append(snapshot.statistics('traceback'))
+    mem = tracemalloc.get_traced_memory()
+    memory_history.append([stage]+[np.round(i/1e9,4) for i in mem]+[psutil.virtual_memory().percent])
+    print(Fore.CYAN + '\n [INFO] RAM [Gb] allocated now and peak value : ',memory_history[-1],Fore.RESET+'')
+    tracemalloc.clear_traces()
+
+def write_progress(stage, step, time_step, savefile=None):
+
+    #monitoring memory
+    monitor_ram(stage=stage)
+    myf.print_ram(step=step+'='+str(stage))
+
+    now = time.time()
+    time_step[step] = now 
+
+    table_time = pd.DataFrame(time_step.values(),index=time_step.keys(),columns=['time_abs'])
+    dt = np.hstack([0,np.diff(table_time['time_abs'])])
+    table_time['time_step_min'] = dt
+    table_time['frac_time']=100*table_time['time_step_min']/np.sum(table_time['time_step_min'])
+    table_time['time_step_min'] /= 60 #convert in minutes
+    table_time['stage'] = np.array(memory_history)[:,0]
+    table_time['RAM_gb'] = np.array(memory_history)[:,1]
+    table_time['RAM_gb_peak'] = np.array(memory_history)[:,2]
+    table_time['RAM_filled'] = np.array(memory_history)[:,3]
+
+    table_time[['time_step_min','frac_time','RAM_gb','RAM_gb_peak']] = np.round(table_time[['time_step_min','frac_time','RAM_gb','RAM_gb_peak']],2)
+
+    if savefile is not None:
+        table_time.to_csv(savefile)
+
 #### main reduction
 
 class SnakyError(Exception):
@@ -135,7 +182,9 @@ def reduce(
     dir_root = root+'/Snaky/'+star+'/data/s1d/'+ins+'/'
     if dir_raw is None:
         dir_raw = dir_root+'RAW/'
-    
+
+    filename_time = dir_root + '/REDUCTION_INFO/Time_informations_reduction_snaky_%s.csv'%(timestamp_reduction)
+
     print(Fore.CYAN+" [INFO] (root directory) dir_root = '"+dir_root+"' \n"+Fore.RESET)
 
     star, ins = mym.create_snaky_dir(star,ins)
@@ -224,6 +273,8 @@ def reduce(
             summary.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
             dace_exists = True
 
+    write_progress(0, 'init', time_step, savefile=filename_time)
+
     if force_pre: #1
         if ins[0:6]=='SOPHIE':
             for f in files:
@@ -240,6 +291,7 @@ def reduce(
         else:
             for f,w0,dw in zip(files,cval1,cdelta1):
                 mym.read_static(f,dir_root,w0,dw,force=force_pre)
+        write_progress(1, 'pre', time_step, savefile=filename_time)
     qc = mym.check_force_pre(dir_root)
 
     #extract time information from headers
@@ -342,6 +394,7 @@ def reduce(
         summary['flag1'] = 0
         summary.loc[summary.index[~kept],'flag1'] = 1
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
+        write_progress(2, 'summary', time_step, savefile=filename_time)
     qc = mym.check_force_summary(dir_root)
 
     try:
@@ -442,6 +495,7 @@ def reduce(
             print(Fore.YELLOW+' [EMERGENCY STOP] Spectroscopy binary detected'+Fore.RESET)
             print('\n')
             #force_pre, force_summary, force_rvsys, force_ccf, force_master, force_atmos, force_resolution, force_vsini,force_abs_continuum, force_activity ,force_mhk, force_spectroscopy, force_magcycle, force_cleaning = [False]*14   
+        write_progress(3, 'rv_sys', time_step, savefile=filename_time)
     qc = mym.check_force_rvsys(dir_root)
 
     try:
@@ -494,6 +548,7 @@ def reduce(
                 print('\n')
                 #force_pre, force_summary, force_rvsys, force_ccf, force_master, force_atmos, force_resolution, force_vsini,force_abs_continuum, force_activity ,force_mhk, force_spectroscopy, force_magcycle, force_cleaning = [False]*14   
             pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+        write_progress(4, 'ccf', time_step, savefile=filename_time)
     qc = mym.check_force_ccf(dir_root)
 
     if force_master: #5
@@ -510,6 +565,7 @@ def reduce(
         material = {'wave':master.x,'reference_spectrum':master.y}
         pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
         #sinfo = yarara_check_rv_sys_wrapper(dir_root,master,0) #check if on 0
+        write_progress(5, 'master', time_step, savefile=filename_time)
     qc = mym.check_force_master(dir_root)
 
     if force_atmos: #6
@@ -544,6 +600,7 @@ def reduce(
         sinfo = myf.update_info_lvl2(sinfo,'stellar_template','SNAKY',suffixe)
 
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+        write_progress(6, 'atmos', time_step, savefile=filename_time)
     qc = mym.check_force_atmos(dir_root)
 
     if force_resolution: #7
@@ -573,6 +630,7 @@ def reduce(
         sinfo = myf.update_info_lvl2(sinfo,'FWHM','O2',ins_res)
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
+        write_progress(7, 'resolution', time_step, savefile=filename_time)
     qc = mym.check_force_resolution(dir_root)
 
     if force_vsini: #8
@@ -581,6 +639,7 @@ def reduce(
         mym.yarara_vsini(dir_root, Prot=Prot, Rs=Rs)
         sinfo = myf.update_info_lvl2(sinfo,'Vsini','SNAKY',np.round(np.nanmean(vsini),2))
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+        write_progress(8, 'vsini', time_step, savefile=filename_time)
     qc = mym.check_force_vsini(dir_root)
 
     if force_abs_continuum: #9
@@ -589,6 +648,7 @@ def reduce(
         material['stellar_template'] = template_flux
         material['correction_factor'] = correction
         pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
+        write_progress(9, 'abs_continuum', time_step, savefile=filename_time)
     qc = mym.check_force_abs_continuum(dir_root)
 
     if force_activity: #10
@@ -612,6 +672,7 @@ def reduce(
                 del summary[kw]
         summary = pd.merge(summary,tab_proxies,on='filename',how='left')
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
+        write_progress(10, 'activity', time_step, savefile=filename_time)
     qc = mym.check_force_activity(dir_root)
 
     if force_mhk: #11
@@ -648,6 +709,7 @@ def reduce(
 
         mym.plot_mhk(dir_root)
         mym.create_finch_db(dir_root=dir_root)
+        write_progress(11, 'mhk', time_step, savefile=filename_time)
     qc = mym.check_force_mhk(dir_root)
 
     if force_spectroscopy: #12
@@ -669,6 +731,7 @@ def reduce(
                 del extracted['fixed']
                 spectroscopy[kw] = extracted
         pickle.dump(spectroscopy,open(dir_root+'WORKSPACE/Analyse_spectroscopy.p','wb'))
+        write_progress(12, 'spectroscopy', time_step, savefile=filename_time)
     qc = mym.check_force_spectroscopy(dir_root)
 
     if force_magcycle: #13
@@ -689,6 +752,7 @@ def reduce(
             finch_output = mym.yarara_finch(dir_root, rm_source=['DACE','Yu+23'], offset_instrument='yes', automatic_fit=True, ext='_free_model', predict_samples=[2026,2036])
         except:
             pass
+        write_progress(13, 'mag_cycle', time_step, savefile=filename_time)
     qc = mym.check_force_magcycle(dir_root)
 
     try:
