@@ -16,7 +16,7 @@ SNAKY is **NOT** an RV pipeline aiming at EPRV precision like YARARA.
 
 ## Release Date (Soon...!)
 
-The code is missing some important tables that prevent it from running, the code is planned to be released in a few weeks.
+The code is missing some important tables that prevent it from running, the code is planned to be released in a few weeks/months.
 Thank for your patience.
 
 ## Contact Me
@@ -30,7 +30,7 @@ michael.cretignier@physics.ox.ac.uk
 You can try with your own main Python environment since there are only
 a few libraries used. Otherwise:
 
-Python environment (Conda install)
+[Mac M4 Chip] Python environment (Conda install) (Python 3.13.5)
 
 ```
 [TERMINAL] 
