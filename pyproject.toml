@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools", "wheel"] # setuptools and wheel are necessary for the build
+
+[project]
+name = "snaky"
+version = "1.0.0"
+description = "A package to extract the stellar atmospheric parameters from high-resolution spectra"
+authors = [
+    {name = "Michael Cretignier", email = "michael.cretignier@physics.ox.ac.uk"}
+]
+readme = "README.md"
+license = {text = "MIT"}
+
+requires-python = "==3.12.5" 
+
+dependencies = [
+
+    # ===============================
+    # Python 3.12.5 environment
+    # ===============================
+    "pandas==2.3.2; python_version >= '3.12'",
+    "numpy==1.26.4; python_version >= '3.12'",
+    "astropy==7.1.0; python_version >= '3.12'",
+    "scipy==1.16.2; python_version >= '3.12'",
+    "matplotlib==3.10.6; python_version >= '3.12'",
+    "ipython==9.5.0; python_version >= '3.12'",
+    "colorama==0.4.6; python_version >= '3.12'",
+    "PyQt5==5.15; python_version >= '3.12'",
+
+    # ===============================
+    # Python 3.8.8 environment
+    # ===============================
+    "pandas==1.4.1; python_version < '3.9'",
+    "numpy==1.23.5; python_version < '3.9'",
+    "astropy==5.2.2; python_version < '3.9'",
+    "scipy==1.8; python_version < '3.9'",
+    "matplotlib==3.5; python_version < '3.9'",
+    "ipython==7.22.0; python_version < '3.9'",
+    "colorama==0.4.4; python_version < '3.9'",
+    "PyQt5==5.15; python_version < '3.9'"
+]
+
+[project.urls]
+Source = "https://github.com/MichaelCretignier/SNAKY"
+
+[project.scripts] # Define scripts here if you have any
+
+[project.optional-dependencies] # Define optional dependencies here if you have any

@@ -1,4 +1,4 @@
-# SNAKY (a Spectrocopic Novel Analysis Kit of Yarara)
+# SNAKY (a Spectrocopic Novel Analysis Kit of Yarara) v1.0.0
 
 <p align="center">
   <img src="logo.png" alt="Project logo" width="400">
@@ -55,7 +55,7 @@ pip install -r requirements_3.13.5.txt
 
 ```
 [TERMINAL] 
-cd ../SNAKY/Python \
+cd ../SNAKY/src_snaky \
 python snaky_compiler.py
 ```
 
