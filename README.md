@@ -61,25 +61,27 @@ python snaky_compile.py
 
 ## Tutorial
 
-*First enter into your local `SNAKY` directory*
+*First enter into your local `SNAKY/` directory:*
 
 ```bash
 [TERMINAL] 
 cd ../SNAKY/Python
 ```
 
-*Launch an IPython shell*
+*Launch an IPython shell:*
 
 ```bash
 [TERMINAL] 
 ipython
 ```
 
-To run SNAKY, you just need to specify:
+To run SNAKY on your spectra, you just need to specify:
 
 1) The output directory
 2) The list of spectra you want to process
-3) The starname and the instrument:
+3) The starname and the instrument
+
+This information has to be provided as:
 
 ```python
 [IPYTHON] 
@@ -111,7 +113,7 @@ job.compute_ccf()
 job.compute_master()
 job.compute_atmos()
 job.compute_resolution()
-job.compute_vsini(Prot=None, Rs=None) #if Prot and Rs are not provided 
+job.compute_vsini(Prot=None, Rs=None) #if Prot and Rs are known by the user
 job.compute_abs_continuum()
 job.compute_activity()
 job.compute_mhk()
@@ -120,7 +122,7 @@ job.compute_mag_cycle()
 job.cleaning()
 ```
 
-Since all the previous lines can be called all in once using: 
+All the previous lines can be called all in once using: 
 
 ```python
 import src_snaky.run as mrun

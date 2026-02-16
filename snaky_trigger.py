@@ -67,9 +67,8 @@ if begin==99:
     automatic_db = False
 
 
-import src_snaky.run as mrun
+import src_snaky.run as snaky
 
-job_id = np.random.choice(np.arange(0,9999,1))
 job = mrun.run(job_id=0)
 job.set_output_dir('/Users/cretignier/Desktop/test/')
 
@@ -101,20 +100,20 @@ job.cleaning()
 
 # all this sequence is identical to 
 
-import src_snaky.run as mrun
+import src_snaky.run as snaky
 
 steps = np.arange(0,14,1).astype('int') # the full sequence
 
-job = mrun.run(job_id=0)
+job = snaky.run(job_id=0)
 job.set_output_dir('/Users/cretignier/Desktop/test/')
 job.set_dataset('HD12345','HARPN_3.0.1',files)
 job.reduce(steps, automatic_db=True) #automatic_db will automatically skip the steps already done in case of rerun
 
 #
 
-import src_snaky.run as mrun
+import src_snaky.run as snaky
 
-job = mrun.run(job_id=0)
+job = snaky.run(job_id=0)
 job.set_output_dir('/Users/cretignier/Desktop/test/')
 job.set_dataset('HD12345','HARPN_3.0.1',files)
 
