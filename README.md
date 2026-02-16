@@ -61,21 +61,25 @@ python snaky_compile.py
 
 ## Tutorial
 
-*first enter into your local Snaky directory*
+*First enter into your local `SNAKY` directory*
 
 ```bash
 [TERMINAL] 
 cd ../SNAKY/Python
 ```
 
-*Launch an iPython shell*
+*Launch an IPython shell*
 
 ```bash
 [TERMINAL] 
 ipython
 ```
 
-*Create SNAKY directory tree with a STARNAME and INSTRUMENT (SPECTRO_DRS name)*
+To run SNAKY, you just need to specify:
+
+1) The output directory
+2) The list of spectra you want to process
+3) The starname and the instrument:
 
 ```python
 [IPYTHON] 
