@@ -32,7 +32,7 @@ a few libraries used. Otherwise:
 
 [Mac M4 Chip] Python environment (Conda install) (Python 3.13.5)
 
-```
+```bash
 [TERMINAL] 
 conda create -n snaky python=3.13.5 
 conda activate snaky 
@@ -41,7 +41,7 @@ pip install -r requirements_3.13.5.txt
 
 Python environment (Venv install)
 
-```
+```bash
 [TERMINAL] 
 python3 -m venv snaky 
 source snaky/bin/activate 
@@ -53,7 +53,7 @@ pip install -r requirements_3.13.5.txt
 
 *SNAKY contains a table too heavy for GitHub that need first to be merged back using the compiler function*
 
-```
+```bash
 [TERMINAL] 
 cd ../SNAKY/src_snaky \
 python snaky_compile.py
@@ -63,7 +63,7 @@ python snaky_compile.py
 
 *first enter into your local Snaky directory*
 
-```
+```bash
 [TERMINAL] 
 cd ../SNAKY/Python
 ```
@@ -77,26 +77,30 @@ ipython
 
 *Create SNAKY directory tree with a STARNAME and INSTRUMENT (SPECTRO_DRS name)*
 
-```ipython
+```python
 [IPYTHON] 
 import src_snaky.run as mrun
 
-job_id = np.random.choice(np.arange(0,9999,1))
 job = mrun.run(job_id=0)
 job.set_output_dir('/Users/cretignier/Desktop/test/')
 
-#files = glob.glob('/Users/cretignier/Documents/Python/SNAKY/Snaky_data/MY_STAR/data/s1d/HARPN_3.0.1/RAW'+'/*.fits')
-#job.set_dataset('HD12345','HARPN_3.0.1',files)
+files = glob.glob('/Users/cretignier/Documents/Python/SNAKY/Snaky_data/MY_STAR/data/s1d/HARPN_3.0.1/RAW'+'/*.fits')
+job.set_dataset('HD12345','HARPN_3.0.1',files)
+```
 
-files = glob.glob('/Users/cretignier/Documents/Yarara/HD128621/data/s1d/HARPS15_3.3.6/WORKSPACE/RASSINE_*.p')
-job.set_dataset('HD128621','HARPS15_3.3.6',files2)
+We then initialized SNAKY which will create the directory tree + normalise the spectra with RASSINE:
 
+```python
 #initialization
 job.init_workspace()
 job.preprocess()
 job.set_summary()
 job.check_spectra()
+```
 
+Now the data preprocessed, we can finally launch the SNAKY pipeline: 
+
+```python
 #pipeline
 job.compute_rv_sys()
 job.compute_ccf()
@@ -110,11 +114,20 @@ job.compute_mhk()
 job.compute_spectroscopy()
 job.compute_mag_cycle()
 job.cleaning()
-
 ```
 
-Since all the sequence is common for all the stars, this sequence was also reduced in: 
+Since all the previous lines can be called all in once using: 
 
+```python
+import src_snaky.run as mrun
+
+steps = np.arange(0,14,1).astype('int') # the full sequence
+
+job = mrun.run(job_id=0)
+job.set_output_dir('/Users/cretignier/Desktop/test/')
+job.set_dataset('HD12345','HARPN_3.0.1',files)
+job.reduce(steps, automatic_db=True) #automatic_db will automatically skip the steps already done in case of rerun
+```
 
 
 # Your favourite instrument missing?
