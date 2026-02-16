@@ -123,9 +123,11 @@ job.compute_mag_cycle()
 job.cleaning()
 ```
 
-All the previous lines can be called all in once: 
+All the previous lines can be called shortly: 
 
 ```python
+
+import src_snaky.run as snaky
 
 job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
@@ -148,6 +150,8 @@ import src_snaky.run as snaky
 
 job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
+
+files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
 job.set_dataset('HD666','HARPN_3.0.1',files)
 
 # let's mimic a crash at step 3
