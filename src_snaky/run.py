@@ -31,12 +31,13 @@ timestamp_reduction = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
 debug_mode = 0
 
 def monitor_ram(stage=0):
-    snapshot = tracemalloc.take_snapshot()
-    top_stats.append(snapshot.statistics('traceback'))
     mem = tracemalloc.get_traced_memory()
-    memory_history.append([stage]+[np.round(i/1e9,4) for i in mem]+[psutil.virtual_memory().percent])
-    print(Fore.CYAN + '\n [INFO] RAM [Gb] allocated now and peak value : ',memory_history[-1],Fore.RESET+'')
-    tracemalloc.clear_traces()
+    memory_history.append(
+        [stage] + [np.round(i/1e9,4) for i in mem] + [psutil.virtual_memory().percent]
+    )
+    print(Fore.CYAN + 
+          f"\n [INFO] RAM [Gb] current / peak: {memory_history[-1]}" + 
+          Fore.RESET)
 
 def write_progress(stage, step, time_step, savefile=None):
 
@@ -71,12 +72,7 @@ class start():
     def __init__(self, job_id=0):
         self.sy_output_dir = myv.WORKSPACE+'/'
         self.sy_job_id = job_id
-        #if job_id!=0:
-        #    for ccf_mask in ['G2','Garfield','Kitty','Magicat']:
-        #        time.sleep(np.random.randint(0,5)) #to avoid conflicts in case of parallel runs
-        #        os.system('cp '+myv.MATERIAL_DIR+'/MASK_CCF/CCF_'+ccf_mask+'.fits '+myv.MATERIAL_DIR+'/MASK_CCF/CCF_'+ccf_mask+'_N%.0f.fits'%(job_id))
-        #        print(' [INFO] CCF mask %s for job_id = %.0f copied!'%(ccf_mask,job_id))
-    
+
     def set_output_dir(self,outputdir):
         self.sy_output_dir = outputdir
 
@@ -114,9 +110,6 @@ class start():
         dir_root = self.sy_dir_root
        
         print(Fore.CYAN+" [INFO] (root directory) dir_root = '"+dir_root+"' \n"+Fore.RESET)
-        #if self.sy_job_id!=0:
-        #    for ccf_mask in ['G2','Garfield','Kitty','Magicat']:
-        #        os.system('mv '+myv.MATERIAL_DIR+'/MASK_CCF/CCF_'+ccf_mask+'_N%.0f.fits'%(self.sy_job_id)+' '+dir_root+'CCF_MASK/')
 
         self.sy_files = files
         self.sy_sub_dico = sub_dico
@@ -639,25 +632,28 @@ class start():
 
 
     def reduce(self,
-            steps,
+            begin=1,
+            end=14,
             automatic_db = True,
             debug = False, 
             Prot = None,
             Rs = None,
             ):
         
+        if end<begin:
+            end=begin
 
+        steps = np.arange(begin,end+1,1).astype('int')
 
         star = self.sy_starname
         ins = self.sy_instrument
-        dir_root = self.sy_self.dir_root
+        dir_root = self.sy_dir_root
 
         myf.print_box('\n---- Launching reduction %s with instrument %s  ----\n'%(star,ins))
         time_start = time.time()
         
         filename_time = dir_root + '/REDUCTION_INFO/Time_informations_reduction_snaky_%s.csv'%(timestamp_reduction)
 
-        force_init = bool(np.sum(steps==0))
         force_pre = bool(np.sum(steps==1))
         force_summary = bool(np.sum(steps==2))
         force_rvsys = bool(np.sum(steps==3))
@@ -672,8 +668,6 @@ class start():
         force_spectroscopy = bool(np.sum(steps==12))
         force_magcycle = bool(np.sum(steps==13))
         force_cleaning = bool(np.sum(steps==14))
-        force_reset = bool(np.sum(steps==666))
-        force_format = bool(np.sum(steps==777))
 
         if automatic_db:
             print(' [INFO] Automatic sequence build...')
@@ -691,6 +685,7 @@ class start():
             force_spectroscopy = bool(1-mym.check_force_spectroscopy(dir_root))&force_spectroscopy
             force_magcycle = bool(1-mym.check_force_magcycle(dir_root))&force_magcycle
             print(' [INFO] Automatic sequence done!\n')
+            print(' [INFO] Reduction launched, wait...\n')
 
         write_progress(0, 'init', time_step, savefile=filename_time)
 
@@ -702,7 +697,7 @@ class start():
 
         if force_summary: #2
             if not self.sy_yarara_db:
-                self.init_summary()
+                self.set_summary()
 
         try:
             mym.check_and_update_path(dir_root)

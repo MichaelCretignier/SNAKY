@@ -123,20 +123,40 @@ job.compute_mag_cycle()
 job.cleaning()
 ```
 
-All the previous lines can be called all in once. Let's first erase the previous reduction with `.reset()` and then launch the shortchut: 
+All the previous lines can be called all in once: 
 
 ```python
-#clean the previous reduction
-job.reset()
+
+job = snaky.start()
+job.set_output_dir('/Users/cretignier/Desktop/test/')
+
+files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
+job.set_dataset('HD99999','HARPN_3.0.1',files) #fictive name to mimic a new dataset
+
+job.reduce(begin=1,end=14)
+```
+
+As a bonus, the `.reduce()` also monitor the RAM and execution time.
+But not only! 
+
+`.reduce()` also allows to start from a crashing point:
+
+
+```python
 
 import src_snaky.run as snaky
 
 job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
-job.set_dataset('HD12345','HARPN_3.0.1',files)
+job.set_dataset('HD666','HARPN_3.0.1',files)
 
-steps = np.arange(0,14,1).astype('int') # the full sequence
-job.reduce(steps)
+# let's mimic a crash at step 3
+job.reduce(begin=1,end=3)
+
+# let's rerun the sequence from the start with automatic_db
+# automatic_db will automatically skip the steps already done
+job.reduce(begin=1,end=14, automatic_db=True) 
+
 ```
 
 

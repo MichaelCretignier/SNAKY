@@ -21,10 +21,8 @@ force_spectroscopy = force_spectroscopy,     #12. Compute the master spectrum SR
 force_cleaning = force_cleaning,             #13. Clean subproducts
 
 """
-
 import getopt
 import sys
-import numpy as np
 
 ins = 'SOPHIE_0.5'
 star = ''
@@ -59,20 +57,13 @@ if len(sys.argv)>1:
         elif j[0] == '-R':
             Rs = float(j[1])
 
-if end<begin:
-    end=begin
-
-steps = np.arange(begin,end+1,1).astype('int')
-if begin==99:
-    automatic_db = False
-
 
 import src_snaky.run as snaky
 
 job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
 
-#files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
+files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
 #job.set_dataset('HD12345','HARPN_3.0.1',files)
 
 files = glob.glob('/Users/cretignier/Documents/Yarara/HD128621/data/s1d/HARPS15_3.3.6/WORKSPACE/RASSINE_*.p')
@@ -98,16 +89,17 @@ job.compute_spectroscopy()
 job.compute_mag_cycle()
 job.cleaning()
 
-# all this sequence is identical to 
+# all this sequence is identical 
 
 import src_snaky.run as snaky
 
-steps = np.arange(0,14,1).astype('int') # the full sequence
-
 job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
-job.set_dataset('HD12345','HARPN_3.0.1',files)
-job.reduce(steps, automatic_db=True) #automatic_db will automatically skip the steps already done in case of rerun
+
+files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
+job.set_dataset('HD99999','HARPN_3.0.1',files) 
+
+job.reduce(begin=1,end=14)
 
 #
 
@@ -117,9 +109,10 @@ job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
 job.set_dataset('HD12345','HARPN_3.0.1',files)
 
-steps = np.arange(0,3,1).astype('int') # to mimic a crash during step 4
-job.reduce(steps)
+# let's mimic a crash at step 3
+job.reduce(begin=1,end=3)
 
-steps2 = np.arange(0,14,1).astype('int') # let's rerun the full sequence
-job.reduce(steps2, automatic_db=True) #automatic_db will automatically skip the steps already done in case of rerun
+# let's rerun the sequence from the start with automatic_db
+# automatic_db will automatically skip the steps already done
+job.reduce(begin=1,end=14, automatic_db=True) 
 
