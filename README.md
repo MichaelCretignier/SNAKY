@@ -33,7 +33,6 @@ a few libraries used. Otherwise:
 [Mac M4 Chip] Python environment (Conda install) (Python 3.13.5)
 
 ```bash
-[TERMINAL] 
 conda create -n snaky python=3.13.5 
 conda activate snaky 
 pip install -r requirements_3.13.5.txt
@@ -42,7 +41,6 @@ pip install -r requirements_3.13.5.txt
 Python environment (Venv install)
 
 ```bash
-[TERMINAL] 
 python3 -m venv snaky 
 source snaky/bin/activate 
 pip install --upgrade pip 
@@ -101,7 +99,7 @@ job.set_summary()    # Create the summary table
 job.check_spectra()  # Quality flag control on the spectra
 ```
 
-*Now the data preprocessed, we can finally launch the SNAKY pipeline: *
+*Now the data preprocessed, we can finally launch the SNAKY pipeline:*
 
 ```python
 #pipeline
@@ -118,9 +116,9 @@ job.compute_spectroscopy()
 job.compute_mag_cycle()
 job.cleaning()
 ```
-*You can check the figures created in `...IMAGES/`*
-*Then, let's erase our work for now:*
-**WARNING**
+*You can check the figures created in the output directory `...IMAGES/`* \
+*For now, let's erase our work:*\
+**WARNING**\
 Never put any important files in your output_directory!
 SNAKY can erase everything located in the output_dir!
 
