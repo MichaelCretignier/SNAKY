@@ -156,11 +156,11 @@ files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
 job.set_dataset('HD666','HARPN_3.0.1',files)
 
 # let's mimic a crash at step 3
-job.reduce(begin=1,end=3)
+job.reduce(begin=1, end=3)
 
-# let's rerun the sequence from the start with automatic_db
+# let's rerun the sequence from the start with automatic_db (already True by default)
 # automatic_db will automatically skip the steps already done
-job.reduce(begin=1,end=14, automatic_db=True) 
+job.reduce(begin=1, end=14, automatic_db=True)
 
 ```
 
