@@ -126,7 +126,7 @@ job.cleaning()
 All the previous lines can be called shortly: 
 
 ```python
-
+#Shortest call
 import src_snaky.run as snaky
 
 job = snaky.start()
@@ -146,6 +146,7 @@ But not only!
 
 ```python
 
+#Example of crash
 import src_snaky.run as snaky
 
 job = snaky.start()
