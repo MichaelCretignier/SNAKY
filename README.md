@@ -77,7 +77,7 @@ ipython
 
 To run SNAKY on your spectra, you just need to specify:
 
-1) The output directory
+1) The output directory (a new directory, see the warning below)
 2) The list of spectra you want to process
 3) The starname and the instrument
 
@@ -121,12 +121,16 @@ job.compute_mhk()
 job.compute_spectroscopy()
 job.compute_mag_cycle()
 job.cleaning()
+```
 
-#let's erase our work for now
+Let's erase our work for now:
+**WARNING**
+Never put any important files in your output_directory!
+SNAKY can erase everything located in the output_dir!
+
+```python
 
 job.reset() 
-# [WARNING] never put any important files in your output_directory!
-# SNAKY can erase everything located in the output_dir
 
 ```
 
