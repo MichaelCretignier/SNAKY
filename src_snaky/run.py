@@ -640,6 +640,53 @@ class start():
             Rs = None,
             ):
         
+        """
+        Processing Sequence
+        -------------------
+
+        1.  preprocessing
+            Read the input spectrum (FITS format) and initialize the reduction with RASSINE
+
+        2.  set_summary
+            Extract and store relevant header metadata.
+
+        3.  compute_rvsys
+            Estimate the systemic radial velocity (RV).
+
+        4.  compute_ccf
+            Compute radial velocities using the Cross-Correlation Function (CCF).
+
+        5.  compute_master
+            Build the master spectrum from individual exposures.
+
+        6.  compute_resolution
+            Estimate the instrumental resolution (using step 02 calibration).
+
+        7.  compute_atmos
+            Derive stellar atmospheric parameters (Teff, logg, [Fe/H]).
+
+        8.  compute_vsini
+            Estimate the projected rotational velocity (v sin i).
+
+        9.  compute_abs_continuum
+            Apply absolute continuum correction (blue region normalization).
+
+        10. compute_activity
+            Compute chromospheric activity indicators.
+
+        11. compute_mhk
+            Compute the MHK magnetic activity index.
+
+        12. compute_spectroscopy
+            Generate the final master spectrum (SRF product).
+
+        13. compute_magcycle
+            Perform FINCH magnetic cycle analysis.
+
+        14. compute_cleaning
+            Remove intermediate products and finalize outputs.
+        """
+
         if end<begin:
             end=begin
 

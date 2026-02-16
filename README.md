@@ -92,7 +92,7 @@ job.set_output_dir('/Users/cretignier/Desktop/test/')
 
 # let's use the SNAKY test dataset
 files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
-job.set_dataset('HD12345','HARPN_3.0.1',files)
+job.set_dataset('HD12345', 'HARPN_3.0.1', files)
 ```
 
 We then initialized SNAKY which will create the directory tree + normalise the spectra with RASSINE:
@@ -136,6 +136,7 @@ files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
 job.set_dataset('HD99999','HARPN_3.0.1',files) #fictive name to mimic a new dataset
 
 job.reduce(begin=1,end=14)
+# check the sequence number with job.reduce?
 ```
 
 As a bonus, the `.reduce()` also monitor the RAM and execution time.

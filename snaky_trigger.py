@@ -1,26 +1,7 @@
 """
-
 SNAKY — Spectroscopic Novel Analysis Kit of Yarara
-
-Sequence:
-
-force_reset = force_reset,                   #666.Remove figures and subproducts
-
-force_pre = force_pre,                       #1.  Read the spectrum in fits
-force_summary = force_summary,               #2.  Extract header information
-force_rvsys = force_rvsys,                   #3.  Compute the systemic RV
-force_ccf = force_ccf,                       #4.  Compute the RVs
-force_master = force_master,                 #5.  Create the master
-force_resolution = force_resolution,         #6.  Compute the instrumental resolution with 02
-force_atmos = force_atmos,                   #7.  Compute the atmospheric parameters
-force_vsini = force_vsini,                   #8.  Compute the vsini
-force_abs_continuum = force_abs_continuum,   #9.  Correct the blue continuum
-force_activity = force_activity,             #10. Compute chromospheric activity index
-force_mhk = force_mhk,                       #11. Compute the MHK activity index
-force_spectroscopy = force_spectroscopy,     #12. Compute the master spectrum SRF
-force_cleaning = force_cleaning,             #13. Clean subproducts
-
 """
+
 import getopt
 import sys
 
@@ -97,11 +78,10 @@ job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
 
 files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
-job.set_dataset('HD99999','HARPN_3.0.1',files) 
+job.set_dataset('HD99999','HARPN_3.0.1',files) #fictive name to mimic a new dataset
 
 job.reduce(begin=1,end=14)
-
-#
+# check the sequence number with job.reduce?
 
 import src_snaky.run as snaky
 
