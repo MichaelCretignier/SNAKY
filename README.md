@@ -96,10 +96,10 @@ We then initialized SNAKY which will create the directory tree + normalise the s
 
 ```python
 #initialization
-job.init_workspace()
-job.preprocess()
-job.set_summary()
-job.check_spectra()
+job.init_workspace() # Create tree directies
+job.preprocess()     # Run RASSINE to normalise spectra
+job.set_summary()    # Create the summary table
+job.check_spectra()  # Quality flag control on the spectra
 ```
 
 Now the data preprocessed, we can finally launch the SNAKY pipeline: 
