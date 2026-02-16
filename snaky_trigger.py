@@ -48,7 +48,7 @@ files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
 #job.set_dataset('HD12345','HARPN_3.0.1',files)
 
 files = glob.glob('/Users/cretignier/Documents/Yarara/HD128621/data/s1d/HARPS15_3.3.6/WORKSPACE/RASSINE_*.p')
-job.set_dataset('HD128621','HARPS15_3.3.6',files2)
+job.set_dataset('HD128621','HARPS15_3.3.6',files)
 
 #initialization
 job.init_workspace()
@@ -87,7 +87,9 @@ import src_snaky.run as snaky
 
 job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
-job.set_dataset('HD12345','HARPN_3.0.1',files)
+
+files = glob.glob('/Users/cretignier/Documents/Yarara/HD128621/data/s1d/HARPS15_3.3.6/WORKSPACE/RASSINE_*.p')
+job.set_dataset('HD128621','HARPS15_3.3.6',files)
 
 # let's mimic a crash at step 3
 job.reduce(begin=1,end=3)

@@ -21,48 +21,6 @@ from . import snaky_main as mym
 # MEMORY AND TIME MONITORING
 # =============================================================================
 
-tracemalloc.start()
-top_stats = []
-memory_history = [[-99.9,0,0,0]]
-begin = time.time()
-time_step = {'begin':begin}
-timestamp_reduction = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
-
-debug_mode = 0
-
-def monitor_ram(stage=0):
-    mem = tracemalloc.get_traced_memory()
-    memory_history.append(
-        [stage] + [np.round(i/1e9,4) for i in mem] + [psutil.virtual_memory().percent]
-    )
-    print(Fore.CYAN + 
-          f"\n [INFO] RAM [Gb] current / peak: {memory_history[-1]}" + 
-          Fore.RESET)
-
-def write_progress(stage, step, time_step, savefile=None):
-
-    #monitoring memory
-    monitor_ram(stage=stage)
-    myf.print_ram(step=step+'='+str(stage))
-
-    now = time.time()
-    time_step[step] = now 
-
-    table_time = pd.DataFrame(time_step.values(),index=time_step.keys(),columns=['time_abs'])
-    dt = np.hstack([0,np.diff(table_time['time_abs'])])
-    table_time['time_step_min'] = dt
-    table_time['frac_time']=100*table_time['time_step_min']/np.sum(table_time['time_step_min'])
-    table_time['time_step_min'] /= 60 #convert in minutes
-    table_time['stage'] = np.array(memory_history)[:,0]
-    table_time['RAM_gb'] = np.array(memory_history)[:,1]
-    table_time['RAM_gb_peak'] = np.array(memory_history)[:,2]
-    table_time['RAM_filled'] = np.array(memory_history)[:,3]
-
-    table_time[['time_step_min','frac_time','RAM_gb','RAM_gb_peak']] = np.round(table_time[['time_step_min','frac_time','RAM_gb','RAM_gb_peak']],2)
-
-    if savefile is not None:
-        table_time.to_csv(savefile)
-
 #### main reduction
 
 class SnakyError(Exception):
@@ -630,6 +588,48 @@ class start():
         os.system('rm -f '+self.sy_dir_root+'/STAR_INFO/*')
         os.system('rm -f '+self.sy_dir_root+'/CCF_MASK/*.fits')
 
+    def monitor_ram(self,stage=0):
+        current, peak = tracemalloc.get_traced_memory()
+        process = psutil.Process(os.getpid())
+        rss = process.memory_info().rss / 1e9
+
+        self.memory_history.append([
+            stage,
+            round(current/1e9,4),
+            round(peak/1e9,4),
+            round(rss,4)
+        ])
+
+        print(Fore.CYAN +
+            f"\n [INFO] RAM [Gb] python current/peak: "
+            f"{current/1e9:.4f} / {peak/1e9:.4f} | "
+            f"total process: {rss:.4f}" +
+            Fore.RESET)
+
+    def write_progress(self,stage, step, savefile=None):
+
+        #monitoring memory
+        self.monitor_ram(stage=stage)
+        myf.print_ram(step=step+'='+str(stage))
+
+        now = time.time()
+        self.time_step[step] = now 
+
+        table_time = pd.DataFrame(self.time_step.values(),index=self.time_step.keys(),columns=['time_abs'])
+        dt = np.hstack([0,np.diff(table_time['time_abs'])])
+        table_time['time_step_min'] = dt
+        table_time['frac_time']=100*table_time['time_step_min']/np.sum(table_time['time_step_min'])
+        table_time['time_step_min'] /= 60 #convert in minutes
+
+        table_time['stage'] = np.array(self.memory_history)[:,0]
+        table_time['RAM_gb'] = np.array(self.memory_history)[:,1]
+        table_time['RAM_peak_gb'] = np.array(self.memory_history)[:,2]
+        table_time['RAM_all_gb'] = np.array(self.memory_history)[:,3]
+
+        table_time[['time_step_min','frac_time','RAM_gb','RAM_peak_gb','RAM_all_gb']] = np.round(table_time[['time_step_min','frac_time','RAM_gb','RAM_peak_gb','RAM_all_gb']],2)
+
+        if savefile is not None:
+            table_time.to_csv(savefile)
 
     def reduce(self,
             begin=1,
@@ -692,6 +692,13 @@ class start():
 
         steps = np.arange(begin,end+1,1).astype('int')
 
+        tracemalloc.start()
+        top_stats = []
+        self.memory_history = [[-99.9,0,0,0]]
+        begin = time.time()
+        self.time_step = {'begin':begin}
+        timestamp_reduction = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
+
         star = self.sy_starname
         ins = self.sy_instrument
         dir_root = self.sy_dir_root
@@ -734,17 +741,15 @@ class start():
             print(' [INFO] Automatic sequence done!\n')
             print(' [INFO] Reduction launched, wait...\n')
 
-        write_progress(0, 'init', time_step, savefile=filename_time)
-
+        self.write_progress(0, 'init', savefile=filename_time)
         if force_pre: #1
-            if not self.sy_rassine_db:
-                self.preprocess()
-            write_progress(1, 'pre', time_step, savefile=filename_time)
+            self.init_workspace()
+            self.preprocess()
+            self.write_progress(1, 'pre', savefile=filename_time)
         qc = mym.check_force_pre(dir_root)
 
         if force_summary: #2
-            if not self.sy_yarara_db:
-                self.set_summary()
+            self.set_summary()
 
         try:
             mym.check_and_update_path(dir_root)
@@ -755,12 +760,12 @@ class start():
 
         if force_summary: #2
             self.check_spectra()
-            write_progress(2, 'summary', time_step, savefile=filename_time)
+            self.write_progress(2, 'summary', savefile=filename_time)
         qc = mym.check_force_summary(dir_root)
 
         if force_rvsys: #3
             self.compute_rv_sys()
-            write_progress(3, 'rv_sys', time_step, savefile=filename_time)
+            self.write_progress(3, 'rv_sys', savefile=filename_time)
         qc = mym.check_force_rvsys(dir_root)
 
         try:
@@ -774,17 +779,17 @@ class start():
 
         if force_ccf: #4
             self.compute_ccf()
-            write_progress(4, 'ccf', time_step, savefile=filename_time)
+            self.write_progress(4, 'ccf', savefile=filename_time)
         qc = mym.check_force_ccf(dir_root)
 
         if force_master: #5
             self.compute_master()
-            write_progress(5, 'master', time_step, savefile=filename_time)
+            self.write_progress(5, 'master', savefile=filename_time)
         qc = mym.check_force_master(dir_root)
 
         if force_atmos: #6
             self.compute_atmos()
-            write_progress(6, 'atmos', time_step, savefile=filename_time)
+            self.write_progress(6, 'atmos', savefile=filename_time)
         qc = mym.check_force_atmos(dir_root)
 
         if self.sy_sub_dico != 'matching_diff':
@@ -792,37 +797,37 @@ class start():
 
         if force_resolution: #7
             self.compute_resolution()
-            write_progress(7, 'resolution', time_step, savefile=filename_time)
+            self.write_progress(7, 'resolution', savefile=filename_time)
         qc = mym.check_force_resolution(dir_root)
 
         if force_vsini: #8
             self.compute_vsini()
-            write_progress(8, 'vsini', time_step, savefile=filename_time)
+            self.write_progress(8, 'vsini', savefile=filename_time)
         qc = mym.check_force_vsini(dir_root)
 
         if force_abs_continuum: #9
             self.compute_abs_continuum()
-            write_progress(9, 'abs_continuum', time_step, savefile=filename_time)
+            self.write_progress(9, 'abs_continuum', savefile=filename_time)
         qc = mym.check_force_abs_continuum(dir_root)
 
         if force_activity: #10
             self.compute_activity()
-            write_progress(10, 'activity', time_step, savefile=filename_time)
+            self.write_progress(10, 'activity',savefile=filename_time)
         qc = mym.check_force_activity(dir_root)
 
         if force_mhk: #11
             self.compute_mhk()
-            write_progress(11, 'mhk', time_step, savefile=filename_time)
+            self.write_progress(11, 'mhk', savefile=filename_time)
         qc = mym.check_force_mhk(dir_root)
 
         if force_spectroscopy: #12
             self.compute_spectroscopy()
-            write_progress(12, 'spectroscopy', time_step, savefile=filename_time)
+            self.write_progress(12, 'spectroscopy', savefile=filename_time)
         qc = mym.check_force_spectroscopy(dir_root)
 
         if force_magcycle: #13
             self.compute_mag_cycle()
-            write_progress(13, 'mag_cycle', time_step, savefile=filename_time)
+            self.write_progress(13, 'mag_cycle', savefile=filename_time)
         qc = mym.check_force_magcycle(dir_root)
 
         try:

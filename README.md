@@ -139,11 +139,11 @@ job.reduce(begin=1,end=14)
 # check the sequence number with job.reduce?
 ```
 
-As a bonus, the `.reduce()` also monitor the RAM and execution time.
-But not only! 
+See that color list printed at the start? 
+It indicates the steps done and not. 
+Since we changed the starname, the pipeline consider this star was never processed.
 
-`.reduce()` also allows to start from a crashing point:
-
+Because of that, `.reduce()` also allows to restart from a crash point automatically:
 
 ```python
 
@@ -156,8 +156,8 @@ job.set_output_dir('/Users/cretignier/Desktop/test/')
 files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
 job.set_dataset('HD666','HARPN_3.0.1',files)
 
-# let's mimic a crash at step 3
-job.reduce(begin=1, end=3)
+# let's mimic a crash at step of the atmospheric parameters (step=7)
+job.reduce(begin=1, end=6)
 
 # let's rerun the sequence from the start with automatic_db (already True by default)
 # automatic_db will automatically skip the steps already done
@@ -165,6 +165,7 @@ job.reduce(begin=1, end=14, automatic_db=True)
 
 ```
 
+You noticed but, the `.reduce()` also monitor the RAM and execution time as a bonus!
 
 # Your favourite instrument missing?
 
