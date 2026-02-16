@@ -54,8 +54,7 @@ pip install -r requirements_3.13.5.txt
 *SNAKY contains a table too heavy for GitHub that need first to be merged back using the compiler function*
 
 ```bash
-[TERMINAL] 
-cd ../SNAKY/src_snaky \
+cd ../SNAKY/src_snaky 
 python snaky_compile.py
 ```
 
@@ -64,14 +63,12 @@ python snaky_compile.py
 *First enter into your local `SNAKY/` directory:*
 
 ```bash
-[TERMINAL] 
 cd .../GitHub/SNAKY/
 ```
 
 *Launch an IPython shell:*
 
 ```bash
-[TERMINAL] 
 ipython
 ```
 
@@ -84,7 +81,6 @@ ipython
 *This information has to be provided as:*
 
 ```python
-[IPYTHON] 
 import src_snaky.run as snaky
 
 job = snaky.start()
