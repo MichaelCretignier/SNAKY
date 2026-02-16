@@ -65,7 +65,7 @@ python snaky_compile.py
 
 ```bash
 [TERMINAL] 
-cd ../SNAKY/Python
+cd ./GitHub/SNAKY/
 ```
 
 *Launch an IPython shell:*
