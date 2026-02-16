@@ -128,7 +128,7 @@ job.reset()
 
 ```
 
-All the previous lines can be called shortly: 
+*Let's start again, all the previous lines can be called shortly using the `.reduce()` method:* 
 
 ```python
 #Shortest call
