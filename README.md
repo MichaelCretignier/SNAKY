@@ -75,13 +75,13 @@ cd .../GitHub/SNAKY/
 ipython
 ```
 
-To run SNAKY on your spectra, you just need to specify:
+*To run SNAKY on your spectra, you just need to specify:*
 
 1) The output directory (a new directory, see the warning below)
 2) The list of spectra you want to process
 3) The starname and the instrument
 
-This information has to be provided as:
+*This information has to be provided as:*
 
 ```python
 [IPYTHON] 
@@ -95,7 +95,7 @@ files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
 job.set_dataset('HD12345', 'HARPN_3.0.1', files)
 ```
 
-We then initialized SNAKY which will create the directory tree + normalise the spectra with RASSINE:
+*We then initialized SNAKY which will create the directory tree + normalise the spectra with RASSINE:*
 
 ```python
 #initialization
@@ -105,7 +105,7 @@ job.set_summary()    # Create the summary table
 job.check_spectra()  # Quality flag control on the spectra
 ```
 
-Now the data preprocessed, we can finally launch the SNAKY pipeline: 
+*Now the data preprocessed, we can finally launch the SNAKY pipeline: *
 
 ```python
 #pipeline
@@ -122,8 +122,8 @@ job.compute_spectroscopy()
 job.compute_mag_cycle()
 job.cleaning()
 ```
-
-Let's erase our work for now:
+*You can check the figures created in `...IMAGES/`*
+*Then, let's erase our work for now:*
 **WARNING**
 Never put any important files in your output_directory!
 SNAKY can erase everything located in the output_dir!
