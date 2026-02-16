@@ -969,7 +969,6 @@ class tableXY(object):
                 if save_if_missing:
                     ccf_pipeline = fits.open(MATERIAL_DIR+'/MASK_CCF/'+static.split('/')[-1])
                     ccf_pipeline[0].data[:,0] = np.log10(myf.doppler_r(10**ccf_pipeline[0].data[:,0],rv_sys)[0])
-                    print(static)
                     ccf_pipeline.writeto(static)
             else:
                 log_grid_mask, log_mask = fits.open(static)[0].data.T

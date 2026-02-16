@@ -123,9 +123,12 @@ job.compute_mag_cycle()
 job.cleaning()
 ```
 
-All the previous lines can be called all in once using: 
+All the previous lines can be called all in once. Let's first erase the previous reduction with `.reset()` and then launch the shortchut: 
 
 ```python
+#clean the previous reduction
+job.reset()
+
 import src_snaky.run as snaky
 
 job = snaky.start()
@@ -133,7 +136,7 @@ job.set_output_dir('/Users/cretignier/Desktop/test/')
 job.set_dataset('HD12345','HARPN_3.0.1',files)
 
 steps = np.arange(0,14,1).astype('int') # the full sequence
-job.reduce(steps, automatic_db=True) #automatic_db will automatically skip the steps already done in case of rerun
+job.reduce(steps)
 ```
 
 
