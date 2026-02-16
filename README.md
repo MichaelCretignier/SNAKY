@@ -121,6 +121,13 @@ job.compute_mhk()
 job.compute_spectroscopy()
 job.compute_mag_cycle()
 job.cleaning()
+
+#let's erase our work for now
+
+job.reset() 
+# [WARNING] never put any important files in your output_directory!
+# SNAKY can erase everything located in the output_dir
+
 ```
 
 All the previous lines can be called shortly: 
