@@ -85,12 +85,13 @@ This information has to be provided as:
 
 ```python
 [IPYTHON] 
-import src_snaky.run as mrun
+import src_snaky.run as snaky
 
-job = mrun.run(job_id=0)
+job = snaky.run(job_id=0)
 job.set_output_dir('/Users/cretignier/Desktop/test/')
 
-files = glob.glob('/Users/cretignier/Documents/Python/SNAKY/Snaky_data/MY_STAR/data/s1d/HARPN_3.0.1/RAW'+'/*.fits')
+# let's use the SNAKY test dataset
+files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
 job.set_dataset('HD12345','HARPN_3.0.1',files)
 ```
 
