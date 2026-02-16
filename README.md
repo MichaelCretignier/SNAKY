@@ -65,7 +65,7 @@ python snaky_compile.py
 
 ```bash
 [TERMINAL] 
-cd ./GitHub/SNAKY/
+cd .../GitHub/SNAKY/
 ```
 
 *Launch an IPython shell:*
@@ -87,7 +87,7 @@ This information has to be provided as:
 [IPYTHON] 
 import src_snaky.run as snaky
 
-job = snaky.run(job_id=0)
+job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
 
 # let's use the SNAKY test dataset
@@ -126,13 +126,13 @@ job.cleaning()
 All the previous lines can be called all in once using: 
 
 ```python
-import src_snaky.run as mrun
+import src_snaky.run as snaky
 
-steps = np.arange(0,14,1).astype('int') # the full sequence
-
-job = mrun.run(job_id=0)
+job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
 job.set_dataset('HD12345','HARPN_3.0.1',files)
+
+steps = np.arange(0,14,1).astype('int') # the full sequence
 job.reduce(steps, automatic_db=True) #automatic_db will automatically skip the steps already done in case of rerun
 ```
 

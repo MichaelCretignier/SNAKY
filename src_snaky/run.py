@@ -67,7 +67,7 @@ def write_progress(stage, step, time_step, savefile=None):
 class SnakyError(Exception):
     pass
 
-class run():
+class start():
     def __init__(self, job_id=0):
         self.sy_output_dir = myv.WORKSPACE+'/'
         self.sy_job_id = job_id

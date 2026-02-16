@@ -69,10 +69,7 @@ if begin==99:
 
 import src_snaky.run as snaky
 
-job = mrun.run(job_id=0)
-job.set_output_dir('/Users/cretignier/Desktop/test/')
-
-job = snaky.run(job_id=0)
+job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
 
 #files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
@@ -107,7 +104,7 @@ import src_snaky.run as snaky
 
 steps = np.arange(0,14,1).astype('int') # the full sequence
 
-job = snaky.run(job_id=0)
+job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
 job.set_dataset('HD12345','HARPN_3.0.1',files)
 job.reduce(steps, automatic_db=True) #automatic_db will automatically skip the steps already done in case of rerun
@@ -116,7 +113,7 @@ job.reduce(steps, automatic_db=True) #automatic_db will automatically skip the s
 
 import src_snaky.run as snaky
 
-job = snaky.run(job_id=0)
+job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
 job.set_dataset('HD12345','HARPN_3.0.1',files)
 
