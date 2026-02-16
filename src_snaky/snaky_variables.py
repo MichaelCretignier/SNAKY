@@ -11,6 +11,7 @@ Created on Mon Oct 28 15:43:11 2019
 from pathlib import Path
 
 ROOT_DIR = str(Path(__file__).resolve().parent.parent)
+SRC_DIR = str(Path(__file__).resolve().parent)
 MATERIAL_DIR = ROOT_DIR + "/Material_snaky"
 WORKSPACE = ROOT_DIR + "/Snaky_data"
 
@@ -200,3 +201,36 @@ rassine_continuum = [3805.95, 3811.49, 3844.77, 3851.95, 3863.23, 3867.51, 3874.
        6625.95, 6627.04, 6636.57, 6645.26, 6650.81, 6655.69, 6661.48,
        6691.82, 6695.45, 6710.89, 6727.3 , 6732.46, 6752.27, 6768.15,
        6771.9 , 6779.42, 6802.37, 6813.26, 6822.73, 6826.18, 6831.  ]
+
+star_info = {
+    'Name':'STAR',
+    'Ra':{'fixed':0.0},
+    'Dec':{'fixed':0.0},
+    'FluxD':{'fixed':0.0},
+    'Teff':{'fixed':5775},
+    'FeH':{'fixed':0.0},
+    'FWHM':{'fixed':6.0},
+    'Rv_sys':{'fixed':0.0},
+    'Contrast':{'fixed':0.4},
+    'CCF_beta':{'fixed':2.0},
+    'SB1':{'fixed':0.0},
+    'SB2':{'fixed':0.0},
+    'EW':{'fixed':0.0},
+    'Mstar':{'fixed':1.0},
+    'Rstar':{'fixed':1.0},
+    'Teff':{'fixed':5775},
+    'Log_g':{'fixed':4.44},
+    'FeH':{'fixed':0.0},
+    'BV':{'fixed':0.66},
+    'Vmicro':{'fixed':1.0},
+    'Vmacro':{'fixed':1.0},
+    'stellar_template':{'fixed':'MARCS_T5750_g4.5'},
+    'Vsini':{'fixed':2.0},
+    'Sini':{'fixed':1.0},
+    'Inc':{'fixed':90},
+    'RHK':{'fixed':-5.00},
+    'MHK':{'fixed':0.0},
+    'Prot':{'fixed':25.0},
+    'Pmag':{'fixed':11.0},
+    }
+

@@ -1,8 +1,5 @@
 import getopt
 import datetime
-from . import snaky_variables as myv
-from . import snaky_functions as myf
-from . import snaky_classes as myc
 import pandas as pd
 import numpy as np 
 import matplotlib.pylab as plt
@@ -14,14 +11,18 @@ import glob as glob
 import time
 import sys
 
-sys.path.append(myv.ROOT_DIR.replace('SNAKY','FINCH')) #Until FINCH is pip installable
-
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation
 import astropy.units as u
 from sklearn.neighbors import KNeighborsRegressor #saved in the pickle calibration file
 from colorama import Fore
 from scipy.stats import gaussian_kde
+
+from . import snaky_variables as myv
+from . import snaky_functions as myf
+from . import snaky_classes as myc
+
+sys.path.append(myv.ROOT_DIR.replace('SNAKY','FINCH')) #Until FINCH is pip installable
 
 try:
     import finch as Finch
@@ -39,15 +40,15 @@ SNAKY — Spectroscopic Novel Analysis Kit of Yarara
 
 """
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 print(Fore.GREEN+"""\n[INFO SNAKY]
 [INFO USER] SNAKY version = """+__version__ +""" 
 [INFO USER] READ ME CAREFULLY 
-[INFO USER] Vsini is still in validation and can't be used except for solar analogs ([5600 - 5800])
-[INFO USER] Continuum normalisation made by RASSINE explained in Cretignier et al. 2020b
-[INFO USER] Atmospheric parameters were explained in Cretignier et al. 2024a
-[INFO USER] The MHK activity index was explained in Cretignier et al. 2024b
+[INFO USER] Vsini only validated for solar analogs
+[INFO USER] Continuum normalisation by RASSINE (see Cretignier et al. 2020b)
+[INFO USER] Atmospheric parameters see Cretignier et al. 2024a
+[INFO USER] The MHK activity index see Cretignier et al. 2024b
 [INFO USER] An issue or an upgrade? Contact me at:  michael.cretignier@physics.ox.ac.uk
       """+Fore.RESET)
 
@@ -226,12 +227,16 @@ def check_force_magcycle(dir_root):
 
 #
 
-def create_snaky_dir(star,ins):
+def create_snaky_dir(output_dir,star,ins):
+    """
+    starname: string, name of the star without space(e.g. HD12345)
+    ins: string, name of the instrument and DRS version (e.g. ESPRESSO_3.3.1, HARPS_3.5)
+    """
     
-    if not os.path.exists(root+'/Snaky/'+star+'/data/s1d/ALLINS_MERGED'):
-        os.makedirs(root+'/Snaky/'+star+'/data/s1d/ALLINS_MERGED', exist_ok=True)
+    if not os.path.exists(output_dir+'/Snaky/'+star+'/data/s1d/ALLINS_MERGED'):
+        os.makedirs(output_dir+'/Snaky/'+star+'/data/s1d/ALLINS_MERGED', exist_ok=True)
 
-    if os.path.exists(root+'/Snaky/'+star+'/data/s1d/'+ins+'/WORKSPACE'):
+    if os.path.exists(output_dir+'/Snaky/'+star+'/data/s1d/'+ins+'/WORKSPACE'):
         print(' [INFO] SNAKY directory found!\n')
         return star, ins
     else:
@@ -242,18 +247,16 @@ def create_snaky_dir(star,ins):
 
         if len(ins.split('_'))!=2:
             print(Fore.YELLOW + '\n [WARNING] The specified instrument (%s) is wrong'%(ins)+Fore.RESET)
-            print(Fore.YELLOW + ' [WARNING] The format should follow: SPECTRO_DRS (ESPRES'
-            '_3.3.1, HARPS_3.5)'+Fore.RESET)
+            print(Fore.YELLOW + ' [WARNING] The format should follow: SPECTRO_DRS (ESPRESSO_3.3.1, HARPS_3.5)'+Fore.RESET)
         if len(ins.split('_'))==1:
             ins = ins+'_1.0'
             print(Fore.YELLOW + ' [WARNING] The instrument DRS version was set to 1.0 (%s)'%(ins)+Fore.RESET)
 
         directories = ['RAW','IMAGES','WORKSPACE','EXPORT','CCF_MASK','DACE_TABLE','DETECTION_LIMIT','FILM','KEPLERIAN','KITCAT','MASTER','PCA','REDUCTION_INFO','TEMP','STAR_INFO','WARNING']
+        print(' [INFO] Star and instrument defined as %s and %s'%(star,ins))
         for d in directories:
-            base = root+'/Snaky/'+star+'/data/s1d/'+ins+'/'+d
+            base = output_dir+'/Snaky/'+star+'/data/s1d/'+ins+'/'+d
             os.makedirs(base, exist_ok=True)
-        print(Fore.GREEN +'\n [SNAKY ADVICE] Put the %s spectra you want to process in:'%(ins)+Fore.RESET)
-        print(Fore.GREEN +' [SNAKY ADVICE] '+root+'/Snaky/'+star+'/data/s1d/'+ins+'/RAW'+Fore.RESET)
         return star, ins
 
 def clean_light_dir(dir_root):
@@ -1553,10 +1556,7 @@ def yarara_check_rv_sys(spec, fwhm, rv_sys_approx, ccf_tag, dir_root=None):
     rv_sys_fit = rv_sys_approx*1000 # Update 28.08.24
     rv_sys_est1 = rv_sys_fit/1000
 
-    if ccf_tag==0:
-        spec.ccf(mask, weighted=True, rv_range=rv_range*1.5,rv_sys=rv_sys_fit)
-    else:
-        spec.ccf(mask, weighted=True, rv_range=rv_range*1.5, rv_sys=rv_sys_fit, static=dir_root+'CCF_MASK/CCF_Magicat_N%.0f.fits'%(ccf_tag))
+    spec.ccf(mask, weighted=True, rv_range=rv_range*1.5, rv_sys=rv_sys_fit, static=dir_root+'CCF_MASK/CCF_Magicat.fits')
 
     rv_sys_fit += spec.ccf_params['cen'].value
     
@@ -1575,10 +1575,7 @@ def yarara_check_rv_sys(spec, fwhm, rv_sys_approx, ccf_tag, dir_root=None):
             print(' [INFO] Second attempt to fit a CCF with standard HARPS DRS mask')
             mask = np.genfromtxt(MATERIAL_DIR+'/MASK_CCF/%s.txt'%(mask_harps))
             mask = np.array([0.5*(mask[:,0]+mask[:,1]),mask[:,2]]).T 
-            if ccf_tag==0:
-                spec.ccf(mask, weighted=True, rv_range=rv_range*1.5,rv_sys=rv_sys_est1*1000)
-            else:
-                spec.ccf(mask, weighted=True, rv_range=rv_range*1.5, rv_sys=rv_sys_est1*1000, static=dir_root+'CCF_MASK/CCF_'+mask_harps+'_N%.0f.fits'%(ccf_tag))
+            spec.ccf(mask, weighted=True, rv_range=rv_range*1.5, rv_sys=rv_sys_est1*1000, static=dir_root+'CCF_MASK/CCF_'+mask_harps+'.fits')
             rv_sys_fit = rv_sys_est1*1000 + spec.ccf_params['cen'].value
             rv_sys_fit = np.round(rv_sys_fit/1000,2)
             rv_sys_est3 = rv_sys_fit
@@ -1695,14 +1692,8 @@ def yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag=0):
     print('\n [INFO] Best FWHM detected is %.2f km/s'%(fwhm))
     print('\n [INFO] Best RV_SYS detected is %.1f km/s \n'%(rv_sys))
     SB1 = int(np.sum(kept[:,-1])!=0)
-
-    if ccf_tag!=0:
-        os.system('rm -f '+dir_root+'/CCF_MASK/*.fits')
     
     sinfo = yarara_check_rv_sys(spec, fwhm, rv_sys, ccf_tag, dir_root=dir_root)
-    
-    if ccf_tag!=0:
-        os.system('rm -f '+dir_root+'/CCF_MASK/*.fits')
 
     if fwhm<50:
         pass#yarara_check_fwhm()
@@ -1815,17 +1806,8 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
     print(' [INFO] Percentage of the spectrum used : %.1f [%%] (%.0f)'%(100*sum(used_region)/len(grid),len(grid)))
     time.sleep(1)
 
-    if ccf_tag!=0:
-        check_file1 = os.path.exists(dir_root+'CCF_MASK/CCF_'+mask_name.split('.')[0]+'.fits')
-        check_file2 = os.path.exists(MATERIAL_DIR+'/MASK_CCF/CCF_'+mask_name.split('.')[0]+'_N%.0f.fits'%(ccf_tag))
-        if (not check_file1)&(check_file2):
-            print('\n [INFO] CCF mask found : %s'%(MATERIAL_DIR+'/MASK_CCF/CCF_'+mask_name.split('.')[0]+'_N%.0f.fits'%(ccf_tag)))
-            ccf_pipeline = fits.open(MATERIAL_DIR+'/MASK_CCF/CCF_'+mask_name.split('.')[0]+'_N%.0f.fits'%(ccf_tag))
-            ccf_pipeline[0].data[:,0] = np.log10(myf.doppler_r(10**ccf_pipeline[0].data[:,0],rv_sys)[0])
-            ccf_pipeline.writeto(dir_root+'CCF_MASK/CCF_'+mask_name.split('.')[0]+'.fits')
-
     if not os.path.exists(dir_root+'CCF_MASK/CCF_'+mask_name.split('.')[0]+'.fits'):
-        print('\n [INFO] CCF mask reduced for the first time, wait for the static mask producing... \n')
+        print('\n [INFO] CCF mask reduced for the first time, wait for the static mask production... \n')
         time.sleep(1)
         mask_wave = np.log10(mask[:,0])
         mask_contrast = mask[:,1]*weighted + (1-weighted)
@@ -2378,7 +2360,7 @@ def yarara_iron_lines(dir_root, master, fwhm, rv_sys=0.0):
         
         mask1 = np.genfromtxt(MATERIAL_DIR+'/MASK_CCF/FeIU.txt')
         mask11 = np.array([0.5*(mask1[:,0]+mask1[:,1]),mask1[:,2]]).T
-        master.ccf(mask11, weighted=False, rv_range=rv_range,rv_sys=rv_sys*1000,fit_gaussian=False)
+        master.ccf(mask11, weighted=False, rv_range=rv_range,rv_sys=rv_sys*1000,fit_gaussian=False, save_if_missing=False)
 
         master.ccf_profile.smooth(box_pts=10,replace=False,shape='rectangular')
         master.ccf_profile.y /= np.max(master.ccf_profile.smoothed.y)
@@ -2397,7 +2379,7 @@ def yarara_iron_lines(dir_root, master, fwhm, rv_sys=0.0):
         Contrast['FeIU']=np.round(contrast1,5)
         EW['FeIU'] = np.round(ew1,1)
 
-        plt.figure('All_profiles',figsize=(12,12))
+        plt.figure('All_profiles',figsize=(9,12))
         plt.subplot(4,4,1)
         plt.scatter(master.ccf_profile.x/1000,master.ccf_profile.y,color='k',s=5)
         plt.fill_between(grid/1000,master.ccf_profile.y_interp,1,color='g',alpha=0.2,label='%.2f'%(contrast1))
@@ -2413,7 +2395,7 @@ def yarara_iron_lines(dir_root, master, fwhm, rv_sys=0.0):
             mask2 = np.genfromtxt(MATERIAL_DIR+'/MASK_CCF/%s.txt'%(species))
             mask22 = np.array([0.5*(mask2[:,0]+mask2[:,1]),mask2[:,2]]).T
             non_zero = np.sum([master.y[myf.find_nearest(master.x,w1)[0][0]] for w1 in myf.doppler_r(mask22[:,0],rv_sys*1000)[1]])
-            master.ccf(mask22, weighted=False, rv_range=rv_range,rv_sys=rv_sys*1000,fit_gaussian=False)
+            master.ccf(mask22, weighted=False, rv_range=rv_range,rv_sys=rv_sys*1000,fit_gaussian=False, save_if_missing=False)
             if non_zero!=0:
                 master.ccf_profile.smooth(box_pts=10,replace=False,shape='rectangular')
                 master.ccf_profile.y /= np.max(master.ccf_profile.smoothed.y)
@@ -2444,7 +2426,7 @@ def yarara_iron_lines(dir_root, master, fwhm, rv_sys=0.0):
             plt.title(species)
             plt.ylim(0.0,1.1)
             plt.xlim(-rv_range,rv_range)
-        plt.subplots_adjust(hspace=0.35,wspace=0.35,top=0.95,left=0.07,right=0.96)
+        plt.subplots_adjust(hspace=0.35,wspace=0.35,top=0.95,left=0.07,right=0.96,bottom=0.13)
         plt.savefig(dir_root+'IMAGES/Atmos_all.pdf')
     return Contrast, EW
 
@@ -2560,7 +2542,7 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
         fwhm = xlim/3
         plt.axes([0,0,1,0.1])
         plt.axis('off')
-        plt.text(0.5,0.5,'FWHM = %.2f km/s | RV_sys = %.1f km/s\n'%(fwhm,rv_sys)+r'$T_{eff}$'+' = %.0f +/- 70 K  |  logg = %.2f +/- 0.07 dex  |  [Fe/H] = %.2f +/- 0.07 dex\n Ms = %.2f +/- %.2f |  Rs = %.2f +/- %.2f'%(teff,logg,feh, M, dM, R, dR),ha='center',va='center',fontsize=15)
+        plt.text(0.5,0.5,'FWHM = %.2f km/s | RV_sys = %.1f km/s\n'%(fwhm,rv_sys)+r'$T_{eff}$'+' = %.0f +/- 70 K  |  logg = %.2f +/- 0.07 dex  |  [Fe/H] = %.2f +/- 0.07 dex\n Ms = %.2f +/- %.2f |  Rs = %.2f +/- %.2f'%(teff,logg,feh, M, dM, R, dR),ha='center',va='center',fontsize=12)
         plt.savefig(dir_root+'IMAGES/Atmos_all.pdf')
 
 

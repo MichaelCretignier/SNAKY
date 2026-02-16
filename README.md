@@ -1,4 +1,4 @@
-# SNAKY (a Spectrocopic Novel Analysis Kit of Yarara) v1.0.0
+# SNAKY (a Spectrocopic Novel Analysis Kit of Yarara) v1.0.1
 
 <p align="center">
   <img src="logo.png" alt="Project logo" width="400">
@@ -56,7 +56,7 @@ pip install -r requirements_3.13.5.txt
 ```
 [TERMINAL] 
 cd ../SNAKY/src_snaky \
-python snaky_compiler.py
+python snaky_compile.py
 ```
 
 ## Tutorial
@@ -70,31 +70,52 @@ cd ../SNAKY/Python
 
 *Launch an iPython shell*
 
-```
+```bash
 [TERMINAL] 
 ipython
 ```
 
 *Create SNAKY directory tree with a STARNAME and INSTRUMENT (SPECTRO_DRS name)*
 
-```
+```ipython
 [IPYTHON] 
-run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 0 -e 0
+import src_snaky.run as mrun
+
+job_id = np.random.choice(np.arange(0,9999,1))
+job = mrun.run(job_id=0)
+job.set_output_dir('/Users/cretignier/Desktop/test/')
+
+#files = glob.glob('/Users/cretignier/Documents/Python/SNAKY/Snaky_data/MY_STAR/data/s1d/HARPN_3.0.1/RAW'+'/*.fits')
+#job.set_dataset('HD12345','HARPN_3.0.1',files)
+
+files = glob.glob('/Users/cretignier/Documents/Yarara/HD128621/data/s1d/HARPS15_3.3.6/WORKSPACE/RASSINE_*.p')
+job.set_dataset('HD128621','HARPS15_3.3.6',files2)
+
+#initialization
+job.init_workspace()
+job.preprocess()
+job.set_summary()
+job.check_spectra()
+
+#pipeline
+job.compute_rv_sys()
+job.compute_ccf()
+job.compute_master()
+job.compute_atmos()
+job.compute_resolution()
+job.compute_vsini(Prot=None, Rs=None) #if Prot and Rs are not provided 
+job.compute_abs_continuum()
+job.compute_activity()
+job.compute_mhk()
+job.compute_spectroscopy()
+job.compute_mag_cycle()
+job.cleaning()
+
 ```
 
-*Put the spectra in the specified directory (follow Snaky instruction) and then process the spectra*
+Since all the sequence is common for all the stars, this sequence was also reduced in: 
 
-```
-[IPYTHON] 
-run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 1 -e 12
-```
 
-*Once satisfied by the output, erase the optional subproducts to reduce size directory*
-
-```
-[IPYTHON] 
-run snaky.py -s MY_STAR -i HARPN_3.0.1 -b 13 -e 13
-```
 
 # Your favourite instrument missing?
 

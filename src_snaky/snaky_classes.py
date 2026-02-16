@@ -19,6 +19,8 @@ import matplotlib.cm as cmx
 
 from . import snaky_functions as myf
 from . import snaky_variables as myv
+from .Rassine import main as rassine_main
+
 from astropy.io import fits
 
 try:
@@ -722,13 +724,22 @@ class tableXY(object):
         if tag!='':
             tag = '_'+tag
         df = pd.DataFrame({'wave':self.x,'flux':self.y,'flux_err':self.yerr})
-        df.to_csv(cwd+'/temp/spectrum_to_normalise%s.csv'%(tag))
-        os.system('python Rassine.py -s %s -r %.1f -R %.1f -p %.2f -a 0 -F 6.00'%(cwd+'/temp/spectrum_to_normalise%s.csv'%(tag),par_R,par_Rmax,par_stretching))
-        os.system('rm '+cwd+'/temp/spectrum_to_normalise%s.csv'%(tag))
-        rassine_file = pd.read_pickle(cwd+'/temp/RASSINE_spectrum_to_normalise%s.p'%(tag))
+        df.to_csv(myv.SRC_DIR+'/temp/spectrum_to_normalise%s.csv'%(tag))
+        
+        rassine_main([
+            '-s', myv.SRC_DIR + f'/temp/spectrum_to_normalise{tag}.csv',
+            '-r', str(par_R),
+            '-R', str(par_Rmax),
+            '-p', str(par_stretching),
+            '-a', '0',
+            '-F', '6.0'
+        ])
+
+        os.system('rm '+myv.SRC_DIR+'/temp/spectrum_to_normalise%s.csv'%(tag))
+        rassine_file = pd.read_pickle(myv.SRC_DIR+'/temp/RASSINE_spectrum_to_normalise%s.p'%(tag))
         self.rassine_continuum = tableXY(rassine_file['wave'],rassine_file['output']['continuum_linear'])
         self.rassine_output = rassine_file['output']
-        os.system('rm '+cwd+'/temp/RASSINE_spectrum_to_normalise%s.p'%(tag))
+        os.system('rm '+myv.SRC_DIR+'/temp/RASSINE_spectrum_to_normalise%s.p'%(tag))
 
     def fit_multi_sb(self):
 
@@ -905,7 +916,7 @@ class tableXY(object):
         ret
     
     #@myf.time_step
-    def ccf(self, mask2, rv_sys=0, rv_range=15, weighted=True, ccf_oversampling=1, wave_min=None, wave_max=None, norm=True, Plot=True, pow_weight=2, fit_gaussian=True, return_mask=False, static=''):
+    def ccf(self, mask2, rv_sys=0, rv_range=15, weighted=True, ccf_oversampling=1, wave_min=None, wave_max=None, norm=True, Plot=True, pow_weight=2, fit_gaussian=True, return_mask=False, static='', save_if_missing=True):
 
         grid = np.round(self.x.copy(),4) # for 0.01 sampling
         flux = self.y[:,np.newaxis].T.copy()
@@ -944,7 +955,7 @@ class tableXY(object):
             used_region = (np.sum(used_region,axis=0)!=0).astype('bool')
             print('\n [INFO] Percentage of the spectrum used : %.1f [%%] \n'%(100*sum(used_region)/len(grid)))
 
-            if static=='':
+            if not os.path.exists(static):
                 mask_wave = np.log10(mask[:,0])
                 mask_contrast = mask[:,1]*weighted + (1-weighted)
 
@@ -954,13 +965,13 @@ class tableXY(object):
                 match = myf.identify_nearest(mask_wave,log_grid_mask)
                 for j in np.arange(-5,6,1):
                     log_mask[match+j] = (mask_contrast)**pow_weight
-            else:
-                check_file1 = os.path.exists(static)
-                check_file2 = os.path.exists(MATERIAL_DIR+'/MASK_CCF/'+static.split('/')[-1])
-                if (not check_file1)&(check_file2):
+
+                if save_if_missing:
                     ccf_pipeline = fits.open(MATERIAL_DIR+'/MASK_CCF/'+static.split('/')[-1])
                     ccf_pipeline[0].data[:,0] = np.log10(myf.doppler_r(10**ccf_pipeline[0].data[:,0],rv_sys)[0])
+                    print(static)
                     ccf_pipeline.writeto(static)
+            else:
                 log_grid_mask, log_mask = fits.open(static)[0].data.T
 
             all_flux = []
