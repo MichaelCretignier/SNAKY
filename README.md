@@ -151,10 +151,9 @@ job.reduce(begin=1,end=14)
 ```
 
 See that color list printed at the start? 
-It indicates the steps done and not. 
-Since we changed the starname, the pipeline consider this star was never processed.
+It indicates the steps done or not by SNAKY. 
 
-Because of that, `.reduce()` also allows to restart from a crash point automatically:
+Because of that, `.reduce()` can also restart from a crash point automatically:
 
 ```python
 
