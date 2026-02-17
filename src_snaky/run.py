@@ -639,7 +639,7 @@ class start():
             f"total process: {rss:.4f}" +
             Fore.RESET)
 
-    def write_progress(self,stage, step, savefile=None):
+    def write_progress(self, stage, step, savefile=None):
 
         #monitoring memory
         self.monitor_ram(stage=stage)
@@ -660,6 +660,14 @@ class start():
         table_time['RAM_all_gb'] = np.array(self.memory_history)[:,3]
 
         table_time[['time_step_min','frac_time','RAM_gb','RAM_peak_gb','RAM_all_gb']] = np.round(table_time[['time_step_min','frac_time','RAM_gb','RAM_peak_gb','RAM_all_gb']],2)
+
+        if step=='end':
+            print('\n',table_time[['time_step_min','frac_time','stage','RAM_peak_gb','RAM_all_gb']],'\n')
+            time_start = table_time.loc['begin']['time_abs']
+            time_end = table_time.loc['end']['time_abs']
+            duration = np.round((time_end-time_start)/60,2)
+            tag_duration = str(int(duration//1))+'m'+str(int((duration%1)*60))+'s'
+            print(Fore.CYAN+"\n [INFO] Processing achieved in "+tag_duration+"' \n"+Fore.RESET)
 
         if savefile is not None:
             table_time.to_csv(savefile)
@@ -872,10 +880,9 @@ class start():
         except:
             pass
 
-        time_end = time.time()
-        duration = np.round((time_end-time_start)/60,2)
-        tag_duration = str(int(duration//1))+'m'+str(int((duration%1)*60))+'s'
-        print(Fore.CYAN+"\n [INFO] Processing achieved in "+tag_duration+" of dir_root = '"+dir_root+"' \n"+Fore.RESET)
+        self.write_progress(14, 'end', savefile=filename_time)
+
+        print(Fore.CYAN+"\n [INFO] dir_root = '"+dir_root+"' \n"+Fore.RESET)
 
         if force_cleaning: #14
             self.cleaning()

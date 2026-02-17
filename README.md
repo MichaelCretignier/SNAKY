@@ -243,6 +243,10 @@ and modify the `extract_header()` function too.
 
 If only e2ds spectra exist and not s1d, follow NEID example.
 
-## ⑨ 
+## ⑨ BENCHMARK
+
+| VERSION        | DATASET1      | DATASET2      |
+|---------------|--------------|--------------|
+| SNAKY (1.0.1) | 02 min 01 s  | 02 min 01 s  |
 
 
