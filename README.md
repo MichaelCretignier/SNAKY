@@ -249,7 +249,7 @@ If only e2ds spectra exist and not s1d, follow NEID example.
 
 ## ⑨ BENCHMARK
 
-| VERSION        | DATASET1 (5)    | DATASET2 (6)     |
+| VERSION        | [DATASET1](#-tutorial)    | [DATASET2](#-launching-a-rassine-dataset)     |
 |---------------|--------------|--------------|
 | SNAKY (1.0.1) | 02 min 51 s  | 02 min 01 s  |
 
