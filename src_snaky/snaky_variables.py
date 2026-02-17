@@ -14,7 +14,8 @@ ROOT_DIR = str(Path(__file__).resolve().parent.parent)
 SRC_DIR = str(Path(__file__).resolve().parent)
 MATERIAL_DIR = ROOT_DIR + "/Material_snaky"
 WORKSPACE = ROOT_DIR + "/Snaky_data"
-TEST_DATASET = ROOT_DIR + "/Snaky_data/MY_STAR/data/s1d/"
+TEST_DATASET1 = ROOT_DIR + "/Snaky_data/MY_STAR/data/s1d/"
+TEST_DATASET2 = ROOT_DIR + "/Snaky_data/RASSINE_STAR/data/s1d/"
 
 # =============================================================================
 # ACTIVITY PROXY
