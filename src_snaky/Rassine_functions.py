@@ -13,6 +13,7 @@ import platform
 
 import matplotlib
 
+# RASSINE GUI no more used in SNAKY
 #if platform.system()=='Linux':
 #    matplotlib.use('Agg',force=True)
 #else:
