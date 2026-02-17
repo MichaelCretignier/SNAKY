@@ -153,7 +153,7 @@ job.reset(suppression='all')
 
 ```
 
-### Simplified call (.reduce)
+### Simplified Call (.reduce)
 
 *Let's start again, all the previous lines can be called shortly using the `.reduce()` method:* 
 
@@ -175,7 +175,9 @@ job.reduce(begin=1, end=14) # check the sequence number with: job.reduce?
 
 You noticed but, the `.reduce()` also monitor the RAM and execution time as a bonus, before to save it in `REDUCTION_INFO/` for [benchmark](#flag3) purpose. Also, did you see that yellow color list printed at the start? This is the trigger. It indicates the SNAKY steps done or missing. 
 
-Because of that, `.reduce()` can also restart from a crash point automatically:
+### Automatic Restart from the Last Completed Step
+
+Because of the trigger, `.reduce()` can also restart from a crash point automatically:
 
 ```python
 
@@ -201,7 +203,7 @@ job.reduce(begin=1, end=14, automatic_db=True)
 # See? The first stages have been skipped.
 # If you want to force the rerun of a specific step, disable the automatic_db option
 
-# For instance SNAKY can compute the inclination angle if Prot is specified manually
+# For instance SNAKY can compute the stellar inclination angle if Prot is specified manually
 job.reduce(begin=8, end=8, automatic_db=False, Prot=50, Rs=1.0)
 
 
