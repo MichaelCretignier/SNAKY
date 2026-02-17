@@ -193,6 +193,7 @@ Because of the trigger, `.reduce()` can also restart from a crash point automati
 import src_snaky.run as snaky
 
 files = snaky.glob.glob(snaky.myv.TEST_DATASET1 + 'HARPN_3.0.1/RAW/*.fits')
+#output_dir = '/Users/cretignier/Desktop/'
 
 job = snaky.start()
 job.set_output_dir(output_dir)
@@ -231,6 +232,7 @@ job.reduce(begin=8, end=8, automatic_db=False, Prot=50, Rs=1.0)
 import src_snaky.run as snaky
 
 files = snaky.glob.glob(snaky.myv.TEST_DATASET2+'HARPS15_3.3.6/RAW/RASSINE*.p')
+#output_dir = '/Users/cretignier/Desktop/'
 
 job = snaky.start()
 job.set_output_dir(output_dir)
