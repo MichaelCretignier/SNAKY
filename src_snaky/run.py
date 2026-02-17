@@ -588,6 +588,7 @@ class start():
             os.system('rm -f '+self.sy_dir_root+'/WORKSPACE/Analyse_*')
             os.system('rm -f '+self.sy_dir_root+'/WARNING/*.png')
             os.system('rm -f '+self.sy_dir_root+'/STAR_INFO/*')
+            os.system('rm -f '+self.sy_dir_root+'/REDUCTION_INFO/*')
             os.system('rm -f '+self.sy_dir_root+'/CCF_MASK/*.fits')
             if supression=='all':
                 os.system('rm -f '+self.sy_dir_root+'/WORKSPACE/RASSINE*')
@@ -595,11 +596,11 @@ class start():
             self.warning_printed = 0
             print(' [INFO] Reduction reset, you can now relaunch the reduction.')
         else:
-            print(Fore.YELLOW+' [WARNING] Resetting the reduction will erase all the products in:\n') 
-            liste = ['IMAGES/*','WORKSPACE/Analyse*','WARNING/*','STAR_INFO/*','CCF_MASK/*.fits']
-            if supression!='all':
+            print(Fore.YELLOW+'\n [WARNING] Resetting the reduction will erase all the products in:\n') 
+            liste = ['IMAGES/*','WORKSPACE/Analyse*','WARNING/*','STAR_INFO/*','REDUCTION_INFO/*','CCF_MASK/*.fits']
+            if supression=='all':
                 liste.append('WORKSPACE/RASSINE*')
-                liste.append('/DACE_TABLE/*.csv')
+                liste.append('DACE_TABLE/*.csv')
             for j in liste:
                 print(' • '+j) 
             print('\n [WARNING] If you want to reset, please run .reset() again.'+Fore.RESET)
@@ -818,7 +819,7 @@ class start():
         qc = mym.check_force_resolution(dir_root)
 
         if force_vsini: #8
-            self.compute_vsini()
+            self.compute_vsini(Prot=Prot, Rs=Rs)
             self.write_progress(8, 'vsini', savefile=filename_time)
         qc = mym.check_force_vsini(dir_root)
 

@@ -164,18 +164,19 @@ files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
 
 job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
-job.set_dataset('HD666','HARPN_3.0.1',files) #new name to mimic a new dataset
+job.set_dataset('HD66666','HARPN_3.0.1',files) #new name to mimic a new dataset
 
 # let's mimic a crash at step of the atmospheric parameters (step=7)
 
-job.reduce(begin=1, end=6)
+job.reduce(begin=1, end=6) # No the pipeline stopped at stage 6!
 
 # let's rerun the sequence from the start with automatic_db (automatic_db = True by default)
 # automatic_db will automatically skip the steps already done
 
 job.reduce(begin=1, end=14, automatic_db=True)
 
-#if you want to force the rerun of a specific step, disable the automatic_db option
+# See? The first stages have been skipped.
+# If you want to force the rerun of a specific step, disable the automatic_db option
 
 job.reduce(begin=8, end=8, automatic_db=False, Prot=50, Rs=1.0)
 
