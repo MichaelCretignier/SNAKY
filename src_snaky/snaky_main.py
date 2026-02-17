@@ -303,7 +303,7 @@ def fix_dir_root(instrument='SOPHIE-HE_1.0',stars='*'):
                     b['parameters']['arcfiles'] = arc2
                     pickle.dump(b,open(f.replace('/'+ins+'/','/'+instrument+'/'),'wb'))
 
-                mask_dace = np.in1d(dace['fileroot'],np.array(all_files))
+                mask_dace = myf.in1d(dace['fileroot'],np.array(all_files))
 
                 new_dace = dace.loc[mask_dace].reset_index(drop=True)
                 new_dace['ins'] = instrument
@@ -1799,8 +1799,8 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
     print(' [INFO] Wave min : %.0f AA | Wave max : %.0f AA'%(mask_min,mask_max))
 
     #supress useless part of the spectra to speed up the CCF
-    grid_min = int(myf.find_nearest(grid,myf.doppler_r(mask_min,-100000)[0])[0])
-    grid_max = int(myf.find_nearest(grid,myf.doppler_r(mask_max,100000)[0])[0])
+    grid_min = int(myf.find_nearest(grid,myf.doppler_r(mask_min,-100000)[0])[0][0])
+    grid_max = int(myf.find_nearest(grid,myf.doppler_r(mask_max,100000)[0])[0][0])
     grid = grid[grid_min:grid_max]
     flux = flux[:,grid_min:grid_max]
     if flux_err is not None:
@@ -2221,7 +2221,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
 
     if save:
         summary = import_summary(dir_root)
-        mask = np.in1d(np.array(summary['filename']),files)
+        mask = myf.in1d(np.array(summary['filename']),files)
         summary['ccf_rv_'+ccf_name] = np.nan ; summary.loc[mask,'ccf_rv_'+ccf_name] = np.round(ccf_rv.y,0) # DONT USE RV FROM SNAKY, PRECISION NOT BETTER THAN 3 M/S
         summary['ccf_ct_'+ccf_name] = np.nan ; summary.loc[mask,'ccf_ct_'+ccf_name] = np.round(ccf_contrast.y,4)
         summary['ccf_fwhm_'+ccf_name] = np.nan ; summary.loc[mask,'ccf_fwhm_'+ccf_name] = np.round(ccf_fwhm.y,4)
@@ -2239,7 +2239,7 @@ def import_summary(dir_root):
 def get_jdb(files,dir_root):
     try:
         summary = import_summary(dir_root)
-        mask = np.in1d(np.array(summary['filename']),files)
+        mask = myf.in1d(np.array(summary['filename']),files)
         jdb = np.array(summary.loc[mask,'jdb'])
         if np.sum(jdb!=jdb)!=0:
             jdb = np.arange(len(files))
@@ -3553,7 +3553,7 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
             calib.masked(mask)
             index_vec = index_vec[mask]
 
-        index_vec = np.in1d(np.arange(len(ref)),index_vec)
+        index_vec = myf.in1d(np.arange(len(ref)),index_vec)
         mat.table-=calib.lin_intercept_w
         mat.table/=calib.lin_slope_w
         line_std/=calib.lin_slope_w

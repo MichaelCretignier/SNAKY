@@ -590,10 +590,8 @@ def main(argv=None):
         index = np.hstack([index,len(spectre)-1])
     
     #supression of cosmic peak
-    median = np.ravel(pd.DataFrame(flux).rolling(10,center=True).quantile(0.50))
-    IQ = np.ravel(pd.DataFrame(flux).rolling(10,center=True).quantile(0.75)) - median
-    #plt.plot(wave,np.ravel(pd.DataFrame(flux).rolling(10,center=True).quantile(0.50))+10*IQ,color='k')
-    #plt.scatter(wave,flux)
+    median = np.ravel(pd.DataFrame(flux).rolling(10,center=True).quantile(0.50)).copy() # Recent requirement
+    IQ = np.ravel(pd.DataFrame(flux).rolling(10,center=True).quantile(0.75)).copy() - median
     IQ[np.isnan(IQ)] = spectre.max()
     median[np.isnan(median)] = spectre.max()
     mask = (flux > median + 20 * IQ)
@@ -692,9 +690,9 @@ def main(argv=None):
         Penalty = True
         dx = par_fwhm/np.median(np.diff(grid))
         
-        continuum_small_win = np.ravel(pd.DataFrame(spectre[subset]).rolling(int(windows*dx/speedup),center=True).quantile(1)) #rolling maximum with small windows
-        continuum_right = np.ravel(pd.DataFrame(spectre[subset]).rolling(int(big_windows*dx/speedup)).quantile(1))
-        continuum_left = np.ravel(pd.DataFrame(spectre[subset][::-1]).rolling(int(big_windows*dx/speedup)).quantile(1))[::-1]
+        continuum_small_win = np.ravel(pd.DataFrame(spectre[subset]).rolling(int(windows*dx/speedup),center=True).quantile(1)).copy() #rolling maximum with small windows
+        continuum_right = np.ravel(pd.DataFrame(spectre[subset]).rolling(int(big_windows*dx/speedup)).quantile(1)).copy()
+        continuum_left = np.ravel(pd.DataFrame(spectre[subset][::-1]).rolling(int(big_windows*dx/speedup)).quantile(1)).copy()[::-1]
         continuum_right[np.isnan(continuum_right)] = continuum_right[~np.isnan(continuum_right)][0] 
         continuum_left[np.isnan(continuum_left)] = continuum_left[~np.isnan(continuum_left)][-1]
         both = np.array([continuum_right,continuum_left])
@@ -702,11 +700,11 @@ def main(argv=None):
         continuum_small_win[np.isnan(continuum_small_win)&(2*grid[subset]>(maxx+minx))] = continuum_small_win[~np.isnan(continuum_small_win)][-1] 
         continuum_large_win = np.min(both,axis=0) #when taking a large window, the rolling maximum depends on the direction make both direction and take the minimum
         
-        median_large = np.ravel(pd.DataFrame(continuum_large_win).rolling(int(10*big_windows*dx),min_periods=1,center=True).quantile(0.5))
-        Q3_large = np.ravel(pd.DataFrame(continuum_large_win).rolling(int(10*big_windows*dx),min_periods=1,center=True).quantile(0.75))
-        q3_large = np.ravel(pd.DataFrame(continuum_large_win).rolling(int(big_windows*dx),min_periods=1,center=True).quantile(0.75))
-        Q1_large = np.ravel(pd.DataFrame(continuum_large_win).rolling(int(10*big_windows*dx),min_periods=1,center=True).quantile(0.25))
-        q1_large = np.ravel(pd.DataFrame(continuum_large_win).rolling(int(big_windows*dx),min_periods=1,center=True).quantile(0.25))
+        median_large = np.ravel(pd.DataFrame(continuum_large_win).rolling(int(10*big_windows*dx),min_periods=1,center=True).quantile(0.5)).copy()
+        Q3_large = np.ravel(pd.DataFrame(continuum_large_win).rolling(int(10*big_windows*dx),min_periods=1,center=True).quantile(0.75)).copy()
+        q3_large = np.ravel(pd.DataFrame(continuum_large_win).rolling(int(big_windows*dx),min_periods=1,center=True).quantile(0.75)).copy()
+        Q1_large = np.ravel(pd.DataFrame(continuum_large_win).rolling(int(10*big_windows*dx),min_periods=1,center=True).quantile(0.25)).copy()
+        q1_large = np.ravel(pd.DataFrame(continuum_large_win).rolling(int(big_windows*dx),min_periods=1,center=True).quantile(0.25)).copy()
         IQ1_large = Q3_large - Q1_large
         IQ2_large = q3_large - q1_large
         sup_large = np.min([Q3_large+1.5*IQ1_large,q3_large+1.5*IQ2_large],axis=0)
@@ -719,11 +717,11 @@ def main(argv=None):
         mask = (continuum_large_win > sup_large)
         continuum_large_win[mask] = median_large[mask] 
 
-        median_small = np.ravel(pd.DataFrame(continuum_small_win).rolling(int(10*big_windows*dx/speedup),min_periods=1,center=True).quantile(0.5))
-        Q3_small = np.ravel(pd.DataFrame(continuum_small_win).rolling(int(10*big_windows*dx/speedup),min_periods=1,center=True).quantile(0.75))
-        q3_small = np.ravel(pd.DataFrame(continuum_small_win).rolling(int(big_windows*dx/speedup),min_periods=1,center=True).quantile(0.75))
-        Q1_small = np.ravel(pd.DataFrame(continuum_small_win).rolling(int(10*big_windows*dx/speedup),min_periods=1,center=True).quantile(0.25))
-        q1_small = np.ravel(pd.DataFrame(continuum_small_win).rolling(int(big_windows*dx/speedup),min_periods=1,center=True).quantile(0.25))
+        median_small = np.ravel(pd.DataFrame(continuum_small_win).rolling(int(10*big_windows*dx/speedup),min_periods=1,center=True).quantile(0.5)).copy()
+        Q3_small = np.ravel(pd.DataFrame(continuum_small_win).rolling(int(10*big_windows*dx/speedup),min_periods=1,center=True).quantile(0.75)).copy()
+        q3_small = np.ravel(pd.DataFrame(continuum_small_win).rolling(int(big_windows*dx/speedup),min_periods=1,center=True).quantile(0.75)).copy()
+        Q1_small = np.ravel(pd.DataFrame(continuum_small_win).rolling(int(10*big_windows*dx/speedup),min_periods=1,center=True).quantile(0.25)).copy()
+        q1_small = np.ravel(pd.DataFrame(continuum_small_win).rolling(int(big_windows*dx/speedup),min_periods=1,center=True).quantile(0.25)).copy()
         IQ1_small = Q3_small - Q1_small
         IQ2_small = q3_small - q1_small
         sup_small = np.min([Q3_small+1.5*IQ1_small,q3_small+1.5*IQ2_small],axis=0)
@@ -750,8 +748,8 @@ def main(argv=None):
         penalite = penalite0.copy()
             
         for j in range(iteration): #make the continuum less smooth (step-like function) to improve the speed later
-            continuum_right = np.ravel(pd.DataFrame(penalite).rolling(int(windows*dx)).quantile(1))
-            continuum_left = np.ravel(pd.DataFrame(penalite[::-1]).rolling(int(windows*dx)).quantile(1))[::-1]
+            continuum_right = np.ravel(pd.DataFrame(penalite).rolling(int(windows*dx)).quantile(1)).copy()
+            continuum_left = np.ravel(pd.DataFrame(penalite[::-1]).rolling(int(windows*dx)).quantile(1)).copy()[::-1]
             continuum_right[np.isnan(continuum_right)] = continuum_right[~np.isnan(continuum_right)][0] #define for the left border all nan value to the first non nan value
             continuum_left[np.isnan(continuum_left)] = continuum_left[~np.isnan(continuum_left)][-1] #define for the right border all nan value to the first non nan value
             both = np.array([continuum_right,continuum_left])

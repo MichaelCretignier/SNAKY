@@ -274,11 +274,12 @@ If only e2ds spectra exist and not s1d, follow NEID example.
 
 <a id="flag3"></a>
 
-| Processor        | VERSION        | [DATASET1](#flag1)    | [DATASET2](#flag2)     |
+| Processor        | VERSION        | LIBRARIES       | [DATASET1](#flag1)    | [DATASET2](#flag2)     |
 |---------------|---------------|--------------|--------------|
-| Apple M4 (2024) | SNAKY (1.0.1) | 01 min 58 s  | 01 min 52 s  |
-| Intel Mac (2018) | SNAKY (1.0.1) | 04 min 57 s  | 09 min 00 s  |
-| Yours! ☺ | SNAKY (1.0.1) | ???  | ???  |
+| Apple M4 (2024) | SNAKY (1.0.1) | 3.12.5_latest | 01 min 58 s  | 01 min 52 s  |
+| Apple M4 (2024) | SNAKY (1.0.1) | 3.12.5_old | 01 min 58 s  | 01 min 52 s  |
+| Intel Mac (2018) | SNAKY (1.0.1) | 3.7.8_old | 04 min 57 s  | 09 min 00 s  |
+| Yours! ☺ | SNAKY (1.0.1) | ??? | ???  | ???  |
 
 ## Uninstall
 

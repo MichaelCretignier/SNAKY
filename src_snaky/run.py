@@ -86,7 +86,7 @@ class start():
         #read fits files an create spectra normalised
         check_files =  np.array([os.path.exists(f) for f in self.sy_files])
 
-        if np.product(check_files)==0:
+        if np.prod(check_files)==0:
             print(Fore.YELLOW+' [EMERGENCY STOP] All the spectra were not found'+Fore.RESET)
             print(' [INFO] Missing files:\n')
             for f in np.array(files)[~check_files]:
@@ -444,11 +444,11 @@ class start():
             files = mym.import_ccf(dir_root,'G2')['filename']
         except:
             files = summary['filename']
-        berv = np.array(summary.loc[np.in1d(summary['filename'],files),'berv'])
+        berv = np.array(summary.loc[myf.in1d(summary['filename'],files),'berv'])
         fwhm_ins, berv_output = mym.yarara_instrumental_resolution(dir_root, files, np.zeros(len(berv)), berv.copy())
         summary = mym.import_summary(dir_root) # to reload updated table
         if np.sum(berv!=berv_output)!=0:
-            summary.loc[np.in1d(np.array(summary['filename']),files),'berv_computed'] = berv_output
+            summary.loc[myf.in1d(np.array(summary['filename']),files),'berv_computed'] = berv_output
         output = np.array([files,fwhm_ins]).T
         if ins[0:6]=='SOPHIE':
             newins = np.array([[ins.replace('-HE',''),ins.replace('-HE','').replace('_','-HE_')][int(i>5)] for i in fwhm_ins])
@@ -524,7 +524,7 @@ class start():
         material = mym.import_material(dir_root)
         ccf_output = mym.import_ccf(dir_root,'G2')   
         summary = mym.import_summary(dir_root)
-        proxy = np.array(summary.loc[np.in1d(summary['filename'],ccf_output['filename']),'CaII'])
+        proxy = np.array(summary.loc[myf.in1d(summary['filename'],ccf_output['filename']),'CaII'])
         dico, rhk, mhk = mym.yarara_activity_mhk(dir_root, ccf_output['filename'], rv_sys, ccf_output['rv'].y, teff, material, proxy)
         
         for kw in ['RHK','RHK_std','MHK','MHK_std']:

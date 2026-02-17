@@ -59,6 +59,13 @@ root = '/'.join(cwd.split('/')[:-1])
 
 # statistical
 
+def in1d(a, b):
+    major = int(np.__version__.split('.')[0])
+    if major >= 2:
+        return np.isin(a, b)
+    else:
+        return np.in1d(a, b)
+
 def time_step(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -412,7 +419,7 @@ def identify_nearest(array1,array2):
     
     begin=0
     for value in tqdm(array1):
-        begin2 = find_nearest(array2[begin:],value)[0]
+        begin2 = find_nearest(array2[begin:],value)[0][0]
         identification.append(begin2+begin)
         begin=int(begin2)
     return np.ravel(identification)
@@ -423,7 +430,7 @@ def match_unique_closest(array1, array2):
         array1 = np.array(array1)
     if type(array2)!=np.ndarray:
         array2 = np.array(array2)    
-    if not (np.product(~np.isnan(array1))*np.product(~np.isnan(array2))):
+    if not (np.prod(~np.isnan(array1))*np.prod(~np.isnan(array2))):
         print('there is a nan value in your list, remove it first to be sure of the algorithme reliability')
     index1 = np.arange(len(array1))[~np.isnan(array1)] ; index2 = np.arange(len(array2))[~np.isnan(array2)]  
     array1 = array1[~np.isnan(array1)] ;  array2 = array2[~np.isnan(array2)]
@@ -477,7 +484,7 @@ def match_nearest(array1, array2,fast=True,max_dist=None,random=True):
         array1 = np.array(array1)
     if type(array2)!=np.ndarray:
         array2 = np.array(array2)    
-    if not (np.product(~np.isnan(array1))*np.product(~np.isnan(array2))):
+    if not (np.prod(~np.isnan(array1))*np.prod(~np.isnan(array2))):
         print('there is a nan value in your list, remove it first to be sure of the algorithme reliability')
     index1 = np.arange(len(array1))[~np.isnan(array1)] ; index2 = np.arange(len(array2))[~np.isnan(array2)]  
     array1 = array1[~np.isnan(array1)] ;  array2 = array2[~np.isnan(array2)]
@@ -531,7 +538,7 @@ def match_nearest(array1, array2,fast=True,max_dist=None,random=True):
         liste1 = np.vstack([liste1,liste2])
         liste = []
         for j in np.unique(liste1,axis=0):
-            if np.sum(np.product(liste1 == j.astype(tuple),axis=1))==2:
+            if np.sum(np.prod(liste1 == j.astype(tuple),axis=1))==2:
                 liste.append(j)
         liste = np.array(liste)
         distance = []

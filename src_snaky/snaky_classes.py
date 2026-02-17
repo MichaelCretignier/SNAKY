@@ -943,8 +943,9 @@ class tableXY(object):
             mask_min = np.min(mask[:,0])
             mask_max = np.max(mask[:,0])
 
-            grid_min = int(myf.find_nearest(grid,myf.doppler_r(mask_min,-100000)[0])[0])
-            grid_max = int(myf.find_nearest(grid,myf.doppler_r(mask_max,100000)[0])[0])
+            
+            grid_min = int(myf.find_nearest(grid,myf.doppler_r(mask_min,-100000)[0])[0][0])
+            grid_max = int(myf.find_nearest(grid,myf.doppler_r(mask_max,100000)[0])[0][0])
             grid = grid[grid_min:grid_max]
 
             log_grid = np.linspace(np.log10(grid).min(),np.log10(grid).max(),len(grid))
