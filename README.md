@@ -23,9 +23,11 @@ Thank for your patience.
 
 Please cite the relevant works:
 
-1) [Cretignier et al. 2021] https://ui.adsabs.harvard.edu/abs/2021A%26A...653A..43C/abstract
-2) [Cretignier et al. 2024a] https://ui.adsabs.harvard.edu/abs/2024MNRAS.527.2940C/abstract
-3) [Cretignier et al. 2024b] https://ui.adsabs.harvard.edu/abs/2024MNRAS.535.2562C/abstract
+1) RASSINE: [Cretignier et al. 2021] https://ui.adsabs.harvard.edu/abs/2021A%26A...653A..43C/abstract
+4) Atmospheric parameters: [Cretignier et al. 2024b] https://ui.adsabs.harvard.edu/abs/2024MNRAS.535.2562C/abstract
+3) MHK: [Cretignier et al. 2024a] https://ui.adsabs.harvard.edu/abs/2024MNRAS.527.2940C/abstract
+4) MHK: [Cretignier et al. 2024b] https://ui.adsabs.harvard.edu/abs/2024MNRAS.535.2562C/abstract
+5) VSINI: [Cretignier et al. in prep] 
 
 ## ② Contact Me
 
