@@ -48,6 +48,12 @@ conda activate snaky
 pip install -r requirements_3.13.5.txt
 ```
 
+Check if the snaky environment exists:
+
+```bash
+conda env list
+```
+
 Python environment (Venv install)
 
 ```bash
