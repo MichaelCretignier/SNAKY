@@ -93,10 +93,10 @@ ipython
 
 *To run SNAKY on your spectra, you just need to specify:*
 
-1) An output directory
+1) An output directory 
 
 ```python
-output_dir = '/Users/cretignier/Desktop/' # <--- change it!
+output_dir = '/Users/cretignier/Desktop/' # will create .../Desktop/Snaky/
 ```
 
 2) A list of spectra you want to process
