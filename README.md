@@ -150,6 +150,8 @@ job.reset(supression='all')
 
 ```
 
+## ⑤ Tutorial (Simplified call)
+
 *Let's start again, all the previous lines can be called shortly using the `.reduce()` method:* 
 
 <a id="flag1"></a>
