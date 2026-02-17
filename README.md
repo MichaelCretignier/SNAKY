@@ -143,7 +143,7 @@ job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
 job.set_dataset('HD12345','HARPN_3.0.1',files) 
 
-job.reduce(begin=1,end=14)
+job.reduce(begin=1, end=14)
 # check the sequence number with job.reduce?
 ```
 
@@ -200,7 +200,7 @@ job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
 job.set_dataset('HD128621','HARPS15_3.3.6',files) 
 
-job.reduce(begin=1,end=14, ra=219.90, dec=-60.84)
+job.reduce(begin=1, end=14, ra=219.90, dec=-60.84)
 ```
 
 ## ⑦ Your favourite instrument missing?
