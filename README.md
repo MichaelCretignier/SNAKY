@@ -21,6 +21,14 @@ SNAKY contains a packaged version of RASSINE (https://github.com/MichaelCretigni
 The code is missing some important tables that prevent it from running, the code is planned to be released in a few weeks/months.
 Thank for your patience.
 
+Please cite the relevant works:
+
+ADS Link : 
+
+1) [Cretignier et al. 2021] https://ui.adsabs.harvard.edu/abs/2021A%26A...653A..43C/abstract
+2) [Cretignier et al. 2024a] https://ui.adsabs.harvard.edu/abs/2024MNRAS.527.2940C/abstract
+3) [Cretignier et al. 2024b] https://ui.adsabs.harvard.edu/abs/2024MNRAS.535.2562C/abstract
+
 ## ② Contact Me
 
 If you have any problem, please contact me at: michael.cretignier@physics.ox.ac.uk
@@ -232,10 +240,4 @@ If only e2ds spectra exist and not s1d, follow NEID example.
 
 ## ⑨ Citation references
 
-Please cite the relevant works:
 
-ADS Link : 
-
-1) [Cretignier et al. 2021] https://ui.adsabs.harvard.edu/abs/2021A%26A...653A..43C/abstract
-2) [Cretignier et al. 2024a] https://ui.adsabs.harvard.edu/abs/2024MNRAS.527.2940C/abstract
-3) [Cretignier et al. 2024b] https://ui.adsabs.harvard.edu/abs/2024MNRAS.535.2562C/abstract
