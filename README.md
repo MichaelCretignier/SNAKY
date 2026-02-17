@@ -170,7 +170,7 @@ job.set_dataset('HD12345','HARPN_3.0.1',files)
 job.reduce(begin=1, end=14) # check the sequence number with: job.reduce?
 ```
 
-You noticed but, the `.reduce()` also monitor the RAM and execution time as a bonus! And save it in `REDUCTION_INFO/` for benchmark purpose. Also, did you see that yellow color list printed at the start? This is the trigger. It indicates the SNAKY steps done or missing. 
+You noticed but, the `.reduce()` also monitor the RAM and execution time as a bonus, before to save it in `REDUCTION_INFO/` for [benchmark](#flag3) purpose. Also, did you see that yellow color list printed at the start? This is the trigger. It indicates the SNAKY steps done or missing. 
 
 Because of that, `.reduce()` can also restart from a crash point automatically:
 
@@ -202,7 +202,6 @@ job.reduce(begin=8, end=8, automatic_db=False, Prot=50, Rs=1.0)
 
 
 ```
-
 
 
 ## ⑥ Launching a RASSINE dataset
@@ -266,6 +265,8 @@ and modify the `extract_header()` function too.
 If only e2ds spectra exist and not s1d, follow NEID example.
 
 ## ⑨ BENCHMARK (Computation time)
+
+<a id="flag3"></a>
 
 | Processor        | VERSION        | [DATASET1](#flag1)    | [DATASET2](#flag2)     |
 |---------------|---------------|--------------|--------------|
