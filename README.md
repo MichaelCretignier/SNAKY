@@ -72,7 +72,7 @@ cd ../SNAKY/src_snaky
 python snaky_compile.py
 ```
 
-*You should now have a `../SNAKY/Material_snaky/template_star_SNAKY_3900_6800.npy` file*
+*You should now have a `../SNAKY/Material_snaky/template_star_SNAKY_3900_6800.npy` file.*
 
 ## ⑤ Tutorial
 
@@ -101,7 +101,7 @@ import src_snaky.run as snaky
 
 # let's use the SNAKY test dataset
 files = snaky.glob.glob(snaky.myv.TEST_DATASET1+'/HARPN_3.0.1/RAW/*.fits')
-output_dir = '/Users/cretignier/Desktop/test/'
+output_dir = '/Users/cretignier/Desktop/test/' # <--- change it!
 
 job = snaky.start()
 job.set_output_dir(output_dir)                   # define output dir
@@ -179,7 +179,7 @@ Because of that, `.reduce()` can also restart from a crash point automatically:
 import src_snaky.run as snaky
 
 files = snaky.glob.glob(snaky.myv.TEST_DATASET1+'HARPN_3.0.1/RAW/*.fits')
-output_dir = '/Users/cretignier/Desktop/test/'
+output_dir = '/Users/cretignier/Desktop/test/'  # <--- change it!
 
 job = snaky.start()
 job.set_output_dir(output_dir)
@@ -221,7 +221,7 @@ But, maybe you already have RASSINE spectra saved on your computer? (I'm sincere
 import src_snaky.run as snaky
 
 files = snaky.glob.glob(snaky.myv.TEST_DATASET2+'HARPS15_3.3.6/RAW/RASSINE*.p')
-output_dir = '/Users/cretignier/Desktop/test/'
+output_dir = '/Users/cretignier/Desktop/test/'   # <--- change it!
 
 job = snaky.start()
 job.set_output_dir(output_dir)
