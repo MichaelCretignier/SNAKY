@@ -23,9 +23,7 @@ Thank for your patience.
 
 ## ② Contact Me
 
-If you have any problem, please contact me at:
-
-michael.cretignier@physics.ox.ac.uk
+If you have any problem, please contact me at: michael.cretignier@physics.ox.ac.uk
 
 ## ③ Installation
 
