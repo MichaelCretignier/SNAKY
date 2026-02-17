@@ -161,7 +161,7 @@ job.reset(supression='all')
 import src_snaky.run as snaky
 
 files = snaky.glob.glob(snaky.myv.TEST_DATASET1+'HARPN_3.0.1/RAW/*.fits')
-output_dir = '/Users/cretignier/Desktop/'
+output_dir = '/Users/cretignier/Desktop/'  # <--- change it!
 
 job = snaky.start()
 job.set_output_dir(output_dir)
