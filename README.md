@@ -170,8 +170,7 @@ job.set_dataset('HD12345','HARPN_3.0.1',files)
 job.reduce(begin=1, end=14) # check the sequence number with: job.reduce?
 ```
 
-See that yellow color list printed at the start? This is the trigger.
-It indicates the SNAKY steps done or missing. 
+You noticed but, the `.reduce()` also monitor the RAM and execution time as a bonus! And save it in `REDUCTION_INFO/` for benchmark purpose. Also, did you see that yellow color list printed at the start? This is the trigger. It indicates the SNAKY steps done or missing. 
 
 Because of that, `.reduce()` can also restart from a crash point automatically:
 
@@ -204,7 +203,7 @@ job.reduce(begin=8, end=8, automatic_db=False, Prot=50, Rs=1.0)
 
 ```
 
-You noticed but, the `.reduce()` also monitor the RAM and execution time as a bonus! And save it in `REDUCTION_INFO/` for benchmark purpose.
+
 
 ## ⑥ Launching a RASSINE dataset
 
