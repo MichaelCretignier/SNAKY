@@ -117,7 +117,7 @@ job.compute_mag_cycle()
 job.cleaning()
 ```
 *You can check the figures created in the output directory `...IMAGES/`* \
-*For now, let's erase our work. For security, it is required to enter the command line twice in order to launch the `.reset()` method:*
+*For now, let's erase our work with the `.reset()` method. For security, it is required to enter the command line twice in order to launch it:*
 
 **[WARNING] It's dangerous to add any files not created by SNAKY in your output_directory!** 
 
