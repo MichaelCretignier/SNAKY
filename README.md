@@ -1,4 +1,4 @@
-# SNAKY (a Spectrocopic Novel Analysis Kit of Yarara) v1.0.1
+# SNAKY (a Spectroscopic Novel Analysis Kit of Yarara) v1.0.1
 
 <p align="center">
   <img src="logo.png" alt="Project logo" width="400">
@@ -19,7 +19,7 @@ SNAKY includes a packaged version of [RASSINE](https://github.com/MichaelCretign
 ## ① Release Date (Soon...!)
 
 The code is missing some important tables that prevent it from running, the code is planned to be released in a few weeks/months.
-Thank for your patience.
+Thanks for your patience.
 
 Please cite the relevant works:
 
@@ -207,11 +207,11 @@ job.reduce(begin=8, end=8, automatic_db=False, Prot=50, Rs=1.0)
 
 ## ⑥ Launching a RASSINE dataset
 
-*SNAKY itself is very fast, but RASSINE is among the longest step in the pipeline (~15% of the execution time in the previous example for a single spectrum!). Computational time of RASSINE is usually ~15s per spectrum.*
+*SNAKY itself is very fast, but RASSINE is among the longest step in the pipeline (~20-30% of the execution time in the previous example for a single spectrum!). Computational time of RASSINE is usually ~15s per spectrum.*
 
-*But, maybe you already have RASSINE spectra saved on your computer? (I'm sincerely honored of it!)*
+*But, maybe you already have RASSINE spectra saved on your computer? (I'm sincerely honoured of it!)*
 
-*Theoritically, you can't process them directly by SNAKY since those will miss the metadata of the star coordinates (shame on the past myself...)*
+*Theoretically, you can't process them directly by SNAKY since those will miss the metadata of the star coordinates (shame on the past myself...)*
 
 *However you can specify manually those values in `.reduce()`:*
 
