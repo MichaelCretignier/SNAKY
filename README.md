@@ -216,6 +216,11 @@ job.reduce(begin=1, end=14, ra=219.90, dec=-60.84, copy_files=True)
 *SNAKY is designed to process easily and rapidly thousands of datasets (a dataset corresponds to a star + instrument combination). For large runs, the recommended approach is to use `sbatch`.* \
 *This is possible by using the `run_snaky_med.s` SLURM script, that calls the `snaky_trigger.py` Python script.*
 
+```bash
+sbatch run_snaky_med.s %s %s %.0f %.0f'%(star,ins+'_'+drs_version,begin,end))
+```
+
+
 ## ⑧ Your favourite instrument missing?
 
 SNAKY can process spectra from the following spectrographs:
