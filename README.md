@@ -14,7 +14,7 @@ SNAKY is a small code producing as main outputs:
 from high resolution spectra in the visible (R>50'000).
 
 SNAKY is **NOT** an RV pipeline aiming at EPRV precision like YARARA.\
-SNAKY contains a packaged version of  — [RASSINE] (https://github.com/MichaelCretignier/Rassine_public)
+SNAKY contains a packaged version of  — [RASSINE](https://github.com/MichaelCretignier/Rassine_public)
 
 ## ① Release Date (Soon...!)
 
