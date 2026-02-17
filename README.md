@@ -93,7 +93,7 @@ job.set_dataset('HD12345', 'HARPN_3.0.1', files)
 
 ```python
 #initialization
-job.init_workspace() # Create tree directies
+job.init_workspace() # Create tree directories
 job.preprocess()     # Run RASSINE to normalise spectra
 job.set_summary()    # Create the summary table
 job.check_spectra()  # Quality flag control on the spectra
@@ -129,7 +129,12 @@ For security, it is required to enter the command line twice in order to launch 
 job.reset()
 job.reset()
 
+#job.reset()                 #remove all products except RASSINE normalised spectra
+#job.reset(supression='all') # remove everything
+
 ```
+
+
 
 *Let's start again, all the previous lines can be called shortly using the `.reduce()` method:* 
 

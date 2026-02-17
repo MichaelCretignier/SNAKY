@@ -582,19 +582,25 @@ class start():
     def cleaning(self):
         mym.clean_light_dir(self.sy_dir_root)
 
-    def reset(self):
+    def reset(self, supression='minimal'):
         if self.warning_printed>1:        
             os.system('rm -f '+self.sy_dir_root+'/IMAGES/*')
             os.system('rm -f '+self.sy_dir_root+'/WORKSPACE/Analyse_*')
             os.system('rm -f '+self.sy_dir_root+'/WARNING/*.png')
             os.system('rm -f '+self.sy_dir_root+'/STAR_INFO/*')
             os.system('rm -f '+self.sy_dir_root+'/CCF_MASK/*.fits')
+            if supression!='minimal':
+                os.system('rm -f '+self.sy_dir_root+'/WORKSPACE/RASSINE*')
             self.warning_printed = 0
+            print(' [INFO] Reduction reset, you can now relaunch the reduction.')
         else:
-            print(' [WARNING] Resetting the reduction will erase all the products in:') 
-            for j in ['IMAGES/','WORKSPACE/Analyse*','WARNING','STAR_INFO/','CCF_MASK/']:
-                print(' '+j) 
-            print('If you want to reset, please run it again (Emergency stop)')
+            print(Fore.YELLOW+' [WARNING] Resetting the reduction will erase all the products in:\n') 
+            liste = ['IMAGES/*','WORKSPACE/Analyse*','WARNING/*','STAR_INFO/*','CCF_MASK/*.fits']
+            if supression!='minimal':
+                liste.append('WORKSPACE/RASSINE*')
+            for j in liste:
+                print(' • '+j) 
+            print('\n [WARNING] If you want to reset, please run .reset() again.'+Fore.RESET)
             self.warning_printed += 1
 
     def monitor_ram(self,stage=0):
