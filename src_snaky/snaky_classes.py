@@ -33,6 +33,10 @@ except:
 
 MATERIAL_DIR = myv.MATERIAL_DIR
 
+class Param:
+    def __init__(self, value=np.nan):
+        self.value = value
+
 class table(object):
     """this classe has been establish with pandas DataFrame"""
     
@@ -645,11 +649,16 @@ class tableXY(object):
         if beta_fixed!=0:
             fit_params['beta'].vary = False
 
-        result1 = gmodel.fit(self.y, fit_params, 1/self.yerr**2, x=self.x)
-        self.lmfit = result1
-        self.params = result1.params
-        self.model_gnd = gmodel.eval(result1.params, x=self.x)
-        self.res = self.y - self.model_gnd
+        try:
+            result1 = gmodel.fit(self.y, fit_params, 1/self.yerr**2, x=self.x)
+            self.lmfit = result1
+            self.params = result1.params
+            self.model_gnd = gmodel.eval(result1.params, x=self.x)
+            self.res = self.y - self.model_gnd
+            self.convergence = True
+        except ValueError:
+            self.convergence = False
+            self.params = {'amp': Param(), 'cen': Param(), 'wid': Param(),'offset': Param(),'beta': Param()}
 
         if Plot:
             newx = np.linspace(np.min(self.x),np.max(self.x),10*len(self.x))
@@ -709,15 +718,22 @@ class tableXY(object):
 
         if mask is None:
             mask = np.ones(len(self.x)).astype('bool')
-        result1 = gmodel.fit(self.y[mask], fit_params, 1/self.yerr[mask]**2, x=self.x[mask])
-        self.lmfit = result1
-        self.params = result1.params
-        self.model_gaussian = gmodel.eval(result1.params, x=self.x)
-        self.res = self.y - self.model_gaussian
+        
+        try:
+            result1 = gmodel.fit(self.y[mask], fit_params, 1/self.yerr[mask]**2, x=self.x[mask])
+            self.lmfit = result1
+            self.params = result1.params
+            self.model_gaussian = gmodel.eval(result1.params, x=self.x)
+            self.res = self.y - self.model_gaussian
+            self.convergence = True
+        except ValueError:
+            self.convergence = False
+            self.params = {'amp': Param(), 'cen': Param(), 'wid': Param(),'offset': Param()}
 
         if Plot:
             newx = np.linspace(np.min(self.x),np.max(self.x),10*len(self.x))
-            plt.plot(newx,gmodel.eval(result1.params, x=newx),color=color)
+            if self.convergence:
+                plt.plot(newx,gmodel.eval(result1.params, x=newx),color=color)
 
 
     def fit_rassine(self, par_R, par_Rmax, par_stretching, tag=''):
@@ -1038,6 +1054,7 @@ class tableXY(object):
                     self.params_beta = 2.0
                     print(' [INFO] Using Gaussian profile (GND=2) for the fit')
                 self.warning_multipeak = 0
+                self.ccf_Rcorr = 0
                 try:
                     Rcorr = 1-np.std(ccf_profile.res)/np.std(ccf_profile.y)
                     self.ccf_Rcorr = Rcorr
@@ -1058,29 +1075,29 @@ class tableXY(object):
                     pass
 
                 if Plot:
-                    if ccf_profile.params['wid'].stderr is not None:
-                        width_err = ccf_profile.params['wid'].stderr/1000*2.355
-                    else:
-                        width_err = 0.0
-                    if ccf_profile.params['cen'].stderr is not None:
-                        ct_err = ccf_profile.params['cen'].stderr
-                    else:
-                        ct_err = 0.0
-                    if ccf_profile.params['amp'].stderr is not None:
-                        amp_err = 100*(ccf_profile.params['amp'].stderr/ccf_profile.params['offset'].value)
-                    else:
-                        amp_err = 0.0
+                    width_err = 0.0
+                    ct_err = 0.0
+                    amp_err = 0.0
+                    if ccf_profile.convergence:
+                        if ccf_profile.params['wid'].stderr is not None:
+                            width_err = ccf_profile.params['wid'].stderr/1000*2.355
+                        
+                        if ccf_profile.params['cen'].stderr is not None:
+                            ct_err = ccf_profile.params['cen'].stderr
+  
+                        if ccf_profile.params['amp'].stderr is not None:
+                            amp_err = 100*(ccf_profile.params['amp'].stderr/ccf_profile.params['offset'].value)
 
-                    plt.axvline(x=ccf_profile.params['cen'].value,color='r',alpha=0.3)
-                    plt.title('R = %.2f | Beta = %.2f \n C = %.2f +/- %.2f [%%] \n FWHM = %.2f +/- %.2f [km/s] \n RV = %.2f +/- %.2f [m/s]'%(
-                        Rcorr,
-                        self.params_beta,
-                        100*(-ccf_profile.params['amp'].value/ccf_profile.params['offset'].value),
-                        amp_err,
-                        ccf_profile.params['wid'].value/1000*2.355,
-                        width_err,
-                        ccf_profile.params['cen'].value+rv_sys,
-                        ct_err))
+                        plt.axvline(x=ccf_profile.params['cen'].value,color='r',alpha=0.3)
+                        plt.title('R = %.2f | Beta = %.2f \n C = %.2f +/- %.2f [%%] \n FWHM = %.2f +/- %.2f [km/s] \n RV = %.2f +/- %.2f [m/s]'%(
+                            Rcorr,
+                            self.params_beta,
+                            100*(-ccf_profile.params['amp'].value/ccf_profile.params['offset'].value),
+                            amp_err,
+                            ccf_profile.params['wid'].value/1000*2.355,
+                            width_err,
+                            ccf_profile.params['cen'].value+rv_sys,
+                            ct_err))
             
             if return_mask:
                 return log_grid, log_template, used_region

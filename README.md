@@ -46,7 +46,7 @@ a few libraries used (check the requirements file to see which ones). Otherwise 
 ```bash
 conda create -n snaky python=3.12.5 
 conda activate snaky 
-pip install -r requirements_3.12.5.txt
+pip install -r requirements_3.12.5_latest.txt # check others versioning if needed
 ```
 
 Check if the snaky environment exists:
@@ -166,9 +166,6 @@ import src_snaky.run as snaky
 files = snaky.glob.glob(snaky.myv.TEST_DATASET1+'HARPN_3.0.1/RAW/*.fits')
 output_dir = '/Users/cretignier/Desktop/'  # <--- change it!
 
-import os
-os.system('rm -rf '+output_dir+'Snaky/')
-
 job = snaky.start()
 job.set_output_dir(output_dir)
 job.set_dataset('HD12345','HARPN_3.0.1',files) 
@@ -233,9 +230,6 @@ import src_snaky.run as snaky
 files = snaky.glob.glob(snaky.myv.TEST_DATASET2+'HARPS15_3.3.6/RAW/RASSINE*.p')
 output_dir = '/Users/cretignier/Desktop/'   # <--- change it!
 
-import os
-os.system('rm -rf '+output_dir+'Snaky/')
-
 job = snaky.start()
 job.set_output_dir(output_dir)
 job.set_dataset('HD128621','HARPS15_3.3.6',files) 
@@ -282,9 +276,9 @@ If only e2ds spectra exist and not s1d, follow NEID example.
 
 | Processor        | VERSION        | LIBRARIES       | [DATASET1](#flag1)    | [DATASET2](#flag2)     |
 |---------------|---------------|---------------|--------------|--------------|
-| Apple M4 (2024) | SNAKY (1.0.1) | 3.12.5_latest | 01 min 58 s  | 01 min 52 s  |
-| Apple M4 (2024) | SNAKY (1.0.1) | 3.12.5 | 01 min 58 s  | 01 min 52 s  |
-| Intel Mac (2018) | SNAKY (1.0.1) | 3.7.8 | 04 min 57 s  | 09 min 00 s  |
+| Apple M4 (2024) | SNAKY (1.0.1) | 3.12.5_latest | 01 min 52 s  | 01 min 42 s  |
+| Apple M4 (2024) | SNAKY (1.0.1) | 3.12.5 | 01 min 58 s  | 01 min 47 s  |
+| Intel Mac (2018) | SNAKY (1.0.1) | 3.8.8 | 03 min 39 s  | 03 min 45 s  |
 | Yours! ☺ | SNAKY (1.0.1) | ??? | ???  | ???  |
 
 ## Uninstall

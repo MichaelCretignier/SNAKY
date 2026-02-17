@@ -669,6 +669,27 @@ class start():
             duration = np.round((time_end-time_start)/60,2)
             tag_duration = str(int(duration//1))+'m'+str(int((duration%1)*60))+'s'
             print(Fore.CYAN+"\n [INFO] Processing achieved in "+tag_duration+"' \n"+Fore.RESET)
+            
+            plt.figure(figsize=(14,8))
+            plt.subplot(2,1,1) ; plt.ylabel('Computation time [min]')
+            plt.plot(np.arange(len(table_time)),table_time['time_step_min'].values,marker='o',color='k',alpha=0.9)
+            plt.xticks(np.arange(len(table_time)))
+            for x,y,t in np.array(table_time[['stage','time_step_min','frac_time']][1:]):
+                plt.text(x+1,y,'%.0f%%'%(t),ha='left',va='bottom')
+            plt.tick_params(direction='inout',top=True,right=True,labelbottom=False)
+            plt.grid()
+
+            RAM_max = np.max(table_time[['RAM_peak_gb','RAM_all_gb']])
+            plt.title('Total time = %s minutes | RAM maximum = %.1f Gb | N files = %.0f'%(tag_duration,RAM_max, len(self.sy_files)))
+
+            plt.subplot(2,1,2) ; plt.ylabel('RAM [GB]')
+            plt.plot(np.arange(len(table_time)),table_time['RAM_peak_gb'].values,marker='o',color='k')
+            plt.plot(np.arange(len(table_time)),table_time['RAM_all_gb'].values,marker='o',color='gray')
+            plt.xticks(np.arange(len(table_time)),labels=list(table_time.index),rotation=60,ha='right')
+            plt.tick_params(direction='inout',top=True,right=True)
+            plt.grid()
+            plt.subplots_adjust(bottom=0.15,top=0.95,hspace=0.10)
+            plt.savefig(savefile.replace('csv','png'))
 
         if savefile is not None:
             table_time.to_csv(savefile)

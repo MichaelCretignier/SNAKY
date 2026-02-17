@@ -1622,8 +1622,8 @@ def yarara_check_rv_sys(spec, fwhm, rv_sys_approx, ccf_tag, dir_root=None):
         y_min=0
     if contrast_fit<2:
         y_max = 1.01
-    plt.ylim(y_min,y_max)
-
+    if (y_min==y_min)&(y_max==y_max):
+        plt.ylim(y_min,y_max)
 
     print('\n [INFO] RV_sys value fitted as %.2f kms'%(rv_sys_fit))
     
