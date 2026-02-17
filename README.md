@@ -142,8 +142,8 @@ job.cleaning()
 
 ```python
 
-job.reset(supression='all')
-job.reset(supression='all')
+job.reset(suppression='all')
+job.reset(suppression='all')
 
 #job.reset()                 # remove all products except RASSINE normalised spectra
 #job.reset(supression='all') # remove everything

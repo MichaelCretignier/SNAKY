@@ -597,7 +597,7 @@ class start():
     def cleaning(self):
         mym.clean_light_dir(self.sy_dir_root)
 
-    def reset(self, supression='minimal'):
+    def reset(self, suppression='minimal'):
         if self.warning_printed==1:        
             os.system('rm -f '+self.sy_dir_root+'/IMAGES/*')
             os.system('rm -f '+self.sy_dir_root+'/WORKSPACE/Analyse_*')
@@ -605,7 +605,7 @@ class start():
             os.system('rm -f '+self.sy_dir_root+'/STAR_INFO/*')
             os.system('rm -f '+self.sy_dir_root+'/REDUCTION_INFO/*')
             os.system('rm -f '+self.sy_dir_root+'/CCF_MASK/*.fits')
-            if supression=='all':
+            if suppression=='all':
                 os.system('rm -f '+self.sy_dir_root+'/WORKSPACE/RASSINE*')
                 os.system('rm -f '+self.sy_dir_root+'/DACE_TABLE/*.csv')
             self.warning_printed = 0
@@ -613,7 +613,7 @@ class start():
         else:
             print(Fore.YELLOW+'\n [WARNING] Resetting the reduction will erase all the products in:\n') 
             liste = ['IMAGES/*','WORKSPACE/Analyse*','WARNING/*','STAR_INFO/*','REDUCTION_INFO/*','CCF_MASK/*.fits']
-            if supression=='all':
+            if suppression=='all':
                 liste.append('WORKSPACE/RASSINE*')
                 liste.append('DACE_TABLE/*.csv')
             for j in liste:
