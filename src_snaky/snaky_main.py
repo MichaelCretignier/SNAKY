@@ -1487,7 +1487,7 @@ def yarara_flux_density(files,sub_dico='matching_diff',smooth=7):
 
     print('\n [INFO] Flux density 5, 10, 15, 20, 25 : ',np.round(all_flux_density,3))
 
-    xgb_file = MATERIAL_DIR+'/xgb_model_yarara_atmos_FluxD.p'
+    xgb_file = MATERIAL_DIR+'/xgb_model_yarara_atmos_FluxD'+myv.SKLEARN_VERSION+'.p'
     xgb_obj = pickle.load(open(xgb_file,'rb'))
     model = xgb_obj['model']
 
@@ -2448,10 +2448,10 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
 
     if phot:
         lines = ['FeIU','FeIS','FeIIS','TiI','VI','MnI','NdII','TiII','CaH','Z']
-        xgb_file = MATERIAL_DIR+'/xgb_model_yarara_atmos_phot.p'
+        xgb_file = MATERIAL_DIR+'/xgb_model_yarara_atmos_phot'+myv.SKLEARN_VERSION+'.p'
     else:
         lines = ['Ha','NaD','MgI','Hb','FeIU','FeIS','FeIIS','TiI','VI','MnI','NdII','TiII','CaH','Z']
-        xgb_file = MATERIAL_DIR+'/xgb_model_yarara_atmos.p'
+        xgb_file = MATERIAL_DIR+'/xgb_model_yarara_atmos'+myv.SKLEARN_VERSION+'.p'
     ew = np.array([star_info['Contrast'][kw] for kw in lines])
     rv_sys = star_info['Rv_sys']['SNAKY']
 

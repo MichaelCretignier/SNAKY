@@ -9,6 +9,7 @@ Created on Mon Oct 28 15:43:11 2019
 # NEVER TOUCH THIS FILE !
 
 from pathlib import Path
+from importlib.metadata import version
 
 ROOT_DIR = str(Path(__file__).resolve().parent.parent)
 SRC_DIR = str(Path(__file__).resolve().parent)
@@ -16,6 +17,7 @@ MATERIAL_DIR = ROOT_DIR + "/Material_snaky"
 WORKSPACE = ROOT_DIR + "/Snaky_data"
 TEST_DATASET1 = ROOT_DIR + "/Snaky_data/MY_STAR/data/s1d/"
 TEST_DATASET2 = ROOT_DIR + "/Snaky_data/RASSINE_STAR/data/s1d/"
+SKLEARN_VERSION = ['_sklearn_0.24.1','_sklearn_1.7.2'][int(version("scikit-learn")!='0.24.1')]
 
 # =============================================================================
 # ACTIVITY PROXY
