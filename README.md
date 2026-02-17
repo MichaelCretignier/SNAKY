@@ -198,6 +198,7 @@ job.reduce(begin=1, end=14, automatic_db=True)
 # See? The first stages have been skipped.
 # If you want to force the rerun of a specific step, disable the automatic_db option
 
+# For instance SNAKY can compute the inclination angle if Prot is specified manually
 job.reduce(begin=8, end=8, automatic_db=False, Prot=50, Rs=1.0)
 
 
