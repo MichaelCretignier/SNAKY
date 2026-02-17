@@ -40,12 +40,12 @@ If you have any problem, please contact me at: michael.cretignier@physics.ox.ac.
 *You can try with your own main Python environment since there are only
 a few libraries used (check the requirements file to see which ones). Otherwise:*
 
-[Conda install] Python environment (Python 3.13.5)
+[Conda install] Python environment (Python 3.12.5)
 
 ```bash
-conda create -n snaky python=3.13.5 
+conda create -n snaky python=3.12.5 
 conda activate snaky 
-pip install -r requirements_3.13.5.txt
+pip install -r requirements_3.12.5.txt
 ```
 
 Check if the snaky environment exists:
@@ -54,13 +54,13 @@ Check if the snaky environment exists:
 conda env list
 ```
 
-[Venv install] Python environment (Python 3.13.5)
+[Venv install] Python environment (Python 3.12.5)
 
 ```bash
 python3 -m venv snaky 
 source snaky/bin/activate 
 pip install --upgrade pip 
-pip install -r requirements_3.13.5.txt
+pip install -r requirements_3.12.5.txt
 ```
 
 ## ④ Compile the code
