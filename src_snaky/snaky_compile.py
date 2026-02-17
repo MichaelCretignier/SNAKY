@@ -14,6 +14,9 @@ for f in files_to_compile:
     process.append([f,filename,splitting,axis])
 process = np.array(process)
 
+print(' [INFO] Files that will be merged:')
+print(process[:,0])
+
 for p in np.unique(process[:,1]):
     split_files = process[process[:,1]==p]
     files = split_files[np.argsort(process[:,2])][:,0]
