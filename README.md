@@ -25,7 +25,7 @@ Please cite the relevant works:
 
 RASSINE: [Cretignier et al. 2021] \
 https://ui.adsabs.harvard.edu/abs/2021A%26A...653A..43C/abstract \
-Atmospheric parameters: [Cretignier et al. 2024b] \ 
+Atmospheric parameters: [Cretignier et al. 2024b] \
 https://ui.adsabs.harvard.edu/abs/2024MNRAS.535.2562C/abstract \
 MHK: [Cretignier et al. 2024a, 2024b] \
 https://ui.adsabs.harvard.edu/abs/2024MNRAS.527.2940C/abstract \
