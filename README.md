@@ -12,6 +12,7 @@ SNAKY is a small code producing as main outputs:
 4) The stellar vsini (in validation...)
 
 from high resolution spectra in the visible (R>50'000).\
+
 SNAKY is **NOT** an RV pipeline aiming at EPRV precision like YARARA.
 SNAKY contains a packaged version of RASSINE (https://github.com/MichaelCretignier/Rassine_public)
 
