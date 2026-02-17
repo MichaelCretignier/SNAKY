@@ -561,7 +561,7 @@ class tableXY(object):
 
     def fit_line(self, perm=1000, Draw=False, color='k', info=False, fontsize=13, label=True, compute_r=True, offset=True, recenter=True, info_printed=['r','s','i','rms'],loc_legend=0,ls='-.',s_end_point=0):
         k = perm
-        self.yerr[self.yerr==0] = [np.min(self.yerr),0.1][np.min(self.yerr)==0] #to avoid 0 value
+        self.yerr[self.yerr==0] = [np.min(self.yerr),0.1][int(np.min(self.yerr)==0)] #to avoid 0 value
         
         w = 1/self.yerr**2    
         if offset:    

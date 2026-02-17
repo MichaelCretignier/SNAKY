@@ -3054,15 +3054,15 @@ def yarara_activity_index(files, rv_sys, shift_rv, fwhm=6.0, material=None, sub_
         left = myf.doppler_r(vec[0]-vec[1],rv_sys*1000)[0]
         right = myf.doppler_r(vec[0]+vec[1],rv_sys*1000)[0]
         
-        center_idx_proxy = myf.find_nearest(grid,center)[0]
-        left_idx_proxy = myf.find_nearest(grid,left)[0]
-        right_idx_proxy = myf.find_nearest(grid,right)[0]
+        center_idx_proxy = myf.find_nearest(grid,center)[0][0]
+        left_idx_proxy = myf.find_nearest(grid,left)[0][0]
+        right_idx_proxy = myf.find_nearest(grid,right)[0][0]
 
         left = myf.doppler_r(vec[0]-vec[3],rv_sys*1000)[0]
         right = myf.doppler_r(vec[0]+vec[3],rv_sys*1000)[0]
 
-        left_idx_cont = myf.find_nearest(grid,left)[0]
-        right_idx_cont = myf.find_nearest(grid,right)[0]            
+        left_idx_cont = myf.find_nearest(grid,left)[0][0]
+        right_idx_cont = myf.find_nearest(grid,right)[0][0]            
         
         return int(center_idx_proxy), int(left_idx_proxy), int(right_idx_proxy), int(left_idx_cont), int(right_idx_cont)
     
