@@ -93,9 +93,10 @@ import src_snaky.run as snaky
 
 # let's use the SNAKY test dataset
 files = glob.glob(snaky.myv.TEST_DATASET1+'/HARPN_3.0.1/RAW/*.fits')
+output_dir = '/Users/cretignier/Desktop/test/'
 
 job = snaky.start()
-job.set_output_dir('/Users/cretignier/Desktop/test/') # define output dir
+job.set_output_dir(output_dir)                        # define output dir
 job.set_dataset('HD12345', 'HARPN_3.0.1', files)      # define the star + instrument + list of spectra
 ```
 
@@ -150,9 +151,10 @@ job.reset(supression='all')
 import src_snaky.run as snaky
 
 files = glob.glob(snaky.myv.TEST_DATASET1+'HARPN_3.0.1/RAW/*.fits')
+output_dir = '/Users/cretignier/Desktop/test/'
 
 job = snaky.start()
-job.set_output_dir('/Users/cretignier/Desktop/test/')
+job.set_output_dir(output_dir)
 job.set_dataset('HD12345','HARPN_3.0.1',files) 
 
 job.reduce(begin=1, end=14)
@@ -170,9 +172,10 @@ Because of that, `.reduce()` can also restart from a crash point automatically:
 import src_snaky.run as snaky
 
 files = glob.glob(snaky.myv.TEST_DATASET1+'HARPN_3.0.1/RAW/*.fits')
+output_dir = '/Users/cretignier/Desktop/test/'
 
 job = snaky.start()
-job.set_output_dir('/Users/cretignier/Desktop/test/')
+job.set_output_dir(output_dir)
 job.set_dataset('HD66666','HARPN_3.0.1',files) # new name to mimic a new dataset
 
 # let's mimic a crash at step of the atmospheric parameters (step=7)
@@ -209,15 +212,16 @@ You noticed but, the `.reduce()` also monitor the RAM and execution time as a bo
 import src_snaky.run as snaky
 
 files = glob.glob(snaky.myv.TEST_DATASET2+'HARPS15_3.3.6/RAW/RASSINE*.p')
+output_dir = '/Users/cretignier/Desktop/test/'
 
 job = snaky.start()
-job.set_output_dir('/Users/cretignier/Desktop/test/')
+job.set_output_dir(output_dir)
 job.set_dataset('HD128621','HARPS15_3.3.6',files) 
 
 job.reduce(begin=1, end=14, ra=219.90, dec=-60.84, copy_files=True) # ra and dec in degrees
 ```
 
-*The `copy_files` option will copy the RASSINE files your pointing on locally in the SNAKY directory as if those were produced by the pipeline. It's not mandatory, but pickle file can be corrupted and copying them is a safer option. Naturally, this double the storage required by duplicating files in your computer. Final decision is let to the user.*
+*The `copy_files=True` option will copy the RASSINE files your pointing on locally in the SNAKY directory as if those were produced by the pipeline. This is not mandatory for the code to successfully run, but `.p` pickle files can be corrupted and copying them is a safer option. Naturally, this double the storage requirement by duplicating files in your computer. Final decision is let to the user.*
 
 ## ⑦ Large-Scale Processing (SLURM / sbatch parallelization)
 
