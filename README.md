@@ -27,8 +27,8 @@ If you have any problem, please contact me at: michael.cretignier@physics.ox.ac.
 
 ## ③ Installation
 
-You can try with your own main Python environment since there are only
-a few libraries used. Otherwise:
+*You can try with your own main Python environment since there are only
+a few libraries used. Otherwise:*
 
 [Mac M4 Chip] Python environment (Conda install) (Python 3.13.5)
 
