@@ -77,6 +77,8 @@ python snaky_compile.py
 
 ## ⑤ Tutorial
 
+### Hands-on Session
+
 *First enter into your local `SNAKY/` directory:*
 
 ```bash
@@ -151,7 +153,7 @@ job.reset(suppression='all')
 
 ```
 
-## ⑤ Tutorial (Simplified call)
+### Tutorial (Simplified call)
 
 *Let's start again, all the previous lines can be called shortly using the `.reduce()` method:* 
 
