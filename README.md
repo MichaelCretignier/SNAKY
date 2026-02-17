@@ -105,6 +105,9 @@ output_dir = '/Users/cretignier/Desktop/' # <--- change it!
 *This information has to be provided as:*
 
 ```python
+
+#output_dir = '/Users/cretignier/Desktop/'
+
 import src_snaky.run as snaky
 
 # let's use the SNAKY test dataset
@@ -165,8 +168,10 @@ job.reset(suppression='all')
 
 ```python
 # Benchmark Dataset1
+
 import src_snaky.run as snaky
 
+#output_dir = '/Users/cretignier/Desktop/'
 files = snaky.glob.glob(snaky.myv.TEST_DATASET1+'HARPN_3.0.1/RAW/*.fits')
 
 job = snaky.start()
