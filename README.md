@@ -203,10 +203,10 @@ job.set_dataset('HD128621','HARPS15_3.3.6',files)
 job.reduce(begin=1, end=14, ra=219.90, dec=-60.84)
 ```
 
-## ⑦ Sbatch multiprocessing
+## ⑦ Large-Scale Processing (SLURM / sbatch parallelization)
 
-*SNAKY is designed to run thousand of datasets (a dataset is as a recall a star + instrument). The correct way is usually to use sbatch.* \
-*This is possible by using the `run_snaky_med.s` sbatch script, that call itself the `snaky_trigger.py` python script.*
+*SNAKY is designed to process thousands of datasets (a dataset corresponds to a star + instrument combination). For large runs, the recommended approach is to use `sbatch`.* \
+*This is possible by using the `run_snaky_med.s` SLURM script, that calls the `snaky_trigger.py` Python script.*
 
 ## ⑧ Your favourite instrument missing?
 
