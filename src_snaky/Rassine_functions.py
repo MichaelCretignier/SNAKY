@@ -13,10 +13,10 @@ import platform
 
 import matplotlib
 
-if platform.system()=='Linux':
-    matplotlib.use('Agg',force=True)
-else:
-    matplotlib.use('Qt5Agg',force=True)
+#if platform.system()=='Linux':
+#    matplotlib.use('Agg',force=True)
+#else:
+#    matplotlib.use('Qt5Agg',force=True)
 
 import glob as glob
 import multiprocessing as multicpu
