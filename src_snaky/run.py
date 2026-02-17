@@ -30,6 +30,7 @@ class start():
     def __init__(self, job_id=0):
         self.sy_output_dir = myv.WORKSPACE+'/'
         self.sy_job_id = job_id
+        self.warning_printed = 0
 
     def set_output_dir(self,outputdir):
         self.sy_output_dir = outputdir
@@ -582,11 +583,19 @@ class start():
         mym.clean_light_dir(self.sy_dir_root)
 
     def reset(self):
-        os.system('rm -f '+self.sy_dir_root+'/IMAGES/*')
-        os.system('rm -f '+self.sy_dir_root+'/WORKSPACE/Analyse_*')
-        os.system('rm -f '+self.sy_dir_root+'/WARNING/*.png')
-        os.system('rm -f '+self.sy_dir_root+'/STAR_INFO/*')
-        os.system('rm -f '+self.sy_dir_root+'/CCF_MASK/*.fits')
+        if self.warning_printed>1:        
+            os.system('rm -f '+self.sy_dir_root+'/IMAGES/*')
+            os.system('rm -f '+self.sy_dir_root+'/WORKSPACE/Analyse_*')
+            os.system('rm -f '+self.sy_dir_root+'/WARNING/*.png')
+            os.system('rm -f '+self.sy_dir_root+'/STAR_INFO/*')
+            os.system('rm -f '+self.sy_dir_root+'/CCF_MASK/*.fits')
+            self.warning_printed = 0
+        else:
+            print(' [WARNING] Resetting the reduction will erase all the products in:') 
+            for j in ['IMAGES/','WORKSPACE/Analyse*','WARNING','STAR_INFO/','CCF_MASK/']:
+                print(' '+j) 
+            print('If you want to reset, please run it again (Emergency stop)')
+            self.warning_printed += 1
 
     def monitor_ram(self,stage=0):
         current, peak = tracemalloc.get_traced_memory()

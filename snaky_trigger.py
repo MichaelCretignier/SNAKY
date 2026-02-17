@@ -88,11 +88,11 @@ import src_snaky.run as snaky
 job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
 
-files = glob.glob('/Users/cretignier/Documents/Yarara/HD128621/data/s1d/HARPS15_3.3.6/WORKSPACE/RASSINE_*.p')
-job.set_dataset('HD128621','HARPS15_3.3.6',files)
+files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
+job.set_dataset('HD99999','HARPN_3.0.1',files)
 
 # let's mimic a crash at step 3
-job.reduce(begin=1,end=3)
+job.reduce(begin=1,end=7)
 
 # let's rerun the sequence from the start with automatic_db
 # automatic_db will automatically skip the steps already done

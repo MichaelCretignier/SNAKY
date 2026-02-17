@@ -72,9 +72,9 @@ ipython
 
 *To run SNAKY on your spectra, you just need to specify:*
 
-1) The output directory (a new directory, see the warning below)
-2) The list of spectra you want to process
-3) The starname and the instrument
+1) An output directory (see the **warning** below)
+2) A list of spectra you want to process
+3) The starname and the instrument 
 
 *This information has to be provided as:*
 
@@ -120,11 +120,14 @@ job.cleaning()
 *For now, let's erase our work:*\
 **[WARNING]**\
 **Never put any files not created by SNAKY in your output_directory!** \
-**SNAKY can erase everything located in the output_dir!** \
+**SNAKY can erase everything located in the output_dir!** 
+
+For security, it is required to enter the command line twice in order to launch the `.reset()` method:
 
 ```python
 
-job.reset() 
+job.reset()
+job.reset()
 
 ```
 
@@ -138,7 +141,7 @@ job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
 
 files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
-job.set_dataset('HD99999','HARPN_3.0.1',files) #fictive name to mimic a new dataset
+job.set_dataset('HD12345','HARPN_3.0.1',files) 
 
 job.reduce(begin=1,end=14)
 # check the sequence number with job.reduce?
@@ -170,7 +173,7 @@ job.reduce(begin=1, end=14, automatic_db=True)
 
 ```
 
-You noticed but, the `.reduce()` also monitor the RAM and execution time as a bonus!
+You noticed but, the `.reduce()` also monitor the RAM and execution time as a bonus! And save it in `REDUCTION_INFO/` for benchmark purpose.
 
 # Your favourite instrument missing?
 
