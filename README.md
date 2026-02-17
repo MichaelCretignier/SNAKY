@@ -96,8 +96,8 @@ files = glob.glob(snaky.myv.TEST_DATASET1+'/HARPN_3.0.1/RAW/*.fits')
 output_dir = '/Users/cretignier/Desktop/test/'
 
 job = snaky.start()
-job.set_output_dir(output_dir)                        # define output dir
-job.set_dataset('HD12345', 'HARPN_3.0.1', files)      # define the star + instrument + list of spectra
+job.set_output_dir(output_dir)                   # define output dir
+job.set_dataset('HD12345', 'HARPN_3.0.1', files) # define the star + instrument + list of spectra
 ```
 
 *We then initialized SNAKY which will create the directory tree + normalise the spectra with RASSINE:*
@@ -157,8 +157,7 @@ job = snaky.start()
 job.set_output_dir(output_dir)
 job.set_dataset('HD12345','HARPN_3.0.1',files) 
 
-job.reduce(begin=1, end=14)
-# check the sequence number with job.reduce?
+job.reduce(begin=1, end=14) # check the sequence number with: job.reduce?
 ```
 
 See that yellow color list printed at the start? This is the trigger.
