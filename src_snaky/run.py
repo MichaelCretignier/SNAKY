@@ -31,11 +31,12 @@ class start():
         self.sy_output_dir = myv.WORKSPACE+'/'
         self.sy_job_id = job_id
         self.warning_printed = 0
+        self.debug = False
 
     def set_output_dir(self,outputdir):
         self.sy_output_dir = outputdir
 
-    def format(self,debug=False):
+    def format(self,ra=None,dec=None):
         dir_root = self.sy_dir_root
         starname = self.sy_starname
         ins = self.sy_instrument
@@ -44,13 +45,10 @@ class start():
             dace_table = mym.import_dace_table(dir_root)
             files = np.array(dace_table['fileroot'])
             sinfo = mym.import_star_info(dir_root)
-            if self.sy_rassine_db:
-                pouet #TBD
-            else:
-                query = mym.extract_header(files, ins, debug=debug, dec=None, ra=None)
-                sinfo['Ra']['fixed'] = np.median(query['RA'])
-                sinfo['Dec']['fixed'] = np.median(query['DEC'])
-                pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(starname),'wb'))
+            query = mym.extract_header(files, ins, debug=self.debug, dec=dec, ra=ra)
+            sinfo['Ra']['fixed'] = np.median(query['RA'])
+            sinfo['Dec']['fixed'] = np.median(query['DEC'])
+            pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(starname),'wb'))
             query['ins'] = ins
             dace_table = pd.concat([dace_table,query],axis=1)
             dace_table.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
@@ -62,6 +60,9 @@ class start():
         pickle.dump(template,open(starinfo,'wb'))
 
     def set_dataset(self, starname, ins, files, sub_dico='matching_diff'):
+        if len(files)==0:
+            raise SnakyError('The input list of files is empty')
+
         starname,ins = mym.create_snaky_dir(self.sy_output_dir,starname,ins)
         self.sy_starname = starname
         self.sy_instrument = ins
@@ -92,7 +93,7 @@ class start():
                 print(f)            
             raise SnakyError('All the spectra indicated were not found.')
 
-    def init_workspace(self,alpha=None,dec=None):
+    def init_workspace(self,ra=None,dec=None):
         dir_root = self.sy_dir_root
 
         self.set_starinfo()
@@ -103,14 +104,10 @@ class start():
 
         if not self.sy_yarara_db:
             table = pd.DataFrame(self.sy_files,columns=['fileroot'])
-            if alpha is not None:
-                table['RA'] = alpha
-            if dec is not None:
-                table['DEC'] = dec
             table.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
-            self.format()
+            self.format(ra=ra, dec=dec)
 
-    def set_summary(self, debug=False):
+    def set_summary(self):
         dir_root = self.sy_dir_root
         files = self.sy_rassine_files
         ins = self.sy_instrument
@@ -131,7 +128,7 @@ class start():
                 jdb = np.arange(len(files))
 
             flag = np.zeros(len(files)).astype('int')
-            if debug:
+            if self.debug:
                 mym.snaky_help()
                 print(files,'\n',inss,'\n',jdb,'\n',berv,'\n',flag)
                 print(len(files),len(inss),len(jdb),len(berv),len(flag))
@@ -225,7 +222,7 @@ class start():
             print('\n')
             raise SnakyError('No valid spectra detected (Emergency stop)')
         
-    def compute_rv_sys(self,debug=False):
+    def compute_rv_sys(self):
         dir_root = self.sy_dir_root
         sub_dico = self.sy_sub_dico
         star = self.sy_starname
@@ -243,7 +240,7 @@ class start():
         rv_sys = []
         for f in files:
             spec = mym.import_spectrum(f,sub_dico=sub_dico)
-            rv_sys1 = mym.yarara_rough_rv_sys(spec,teff=teff,verbose=debug)
+            rv_sys1 = mym.yarara_rough_rv_sys(spec,teff=teff,verbose=self.debug)
             rv_sys.append(rv_sys1)
         rv_sys = np.array(rv_sys)
 
@@ -252,7 +249,7 @@ class start():
         rv_sys_approx = np.round(np.nanmedian(rv_sys),2)
         print('\n [INFO] Final aproximated RV_sys = %.1f +/- %.1f kms'%(rv_sys_approx,rv_sys_std))
 
-        if debug:
+        if self.debug:
             mym.yarara_check_rv_sys(spec, 15, rv_sys_approx, dir_root=dir_root)
 
         mask = np.ones(len(rv_sys)).astype('bool')
@@ -320,7 +317,7 @@ class start():
             print(Fore.YELLOW+' [WARNING] Spectroscopy binary detected, pipeline not designed for them.'+Fore.RESET)
             print('\n')
 
-    def compute_ccf(self, debug=False):
+    def compute_ccf(self):
         dir_root = self.sy_dir_root
         sub_dico = self.sy_sub_dico
         star = self.sy_starname
@@ -335,7 +332,7 @@ class start():
         if sum(kept)!=0:
             sub = summary.loc[summary['flag1']==0]
             files = np.array(sub['filename'])
-            ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'G2', debug=debug, sub_dico=sub_dico, ccf_tag='', save=False)
+            ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'G2', debug=self.debug, sub_dico=sub_dico, ccf_tag='', save=False)
             ct = ccf_output['contrast'].y
             med_ct = np.nanmedian(ct)
             kept2 = abs(ct-med_ct)<2
@@ -352,12 +349,12 @@ class start():
         kept = np.array(1-summary['flag1'])*np.array(1-summary['flag2'])
         if sum(kept)!=0:
             files = np.array(summary.loc[kept==1,'filename'])
-            ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Magicat', debug=debug, sub_dico=sub_dico, ccf_tag='')
-            ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'G2', debug=debug, sub_dico=sub_dico, ccf_tag='')
+            ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Magicat', debug=self.debug, sub_dico=sub_dico, ccf_tag='')
+            ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'G2', debug=self.debug, sub_dico=sub_dico, ccf_tag='')
             sinfo['FWHM']['G2'] = np.round(np.nanmedian(ccf_output['fwhm'].y),2)
-            ccf_output1 = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Kitty', ccf_oversampling=3, debug=debug, sub_dico=sub_dico, ccf_tag='',rv_shift=ccf_output['rv'].y)
+            ccf_output1 = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Kitty', ccf_oversampling=3, debug=self.debug, sub_dico=sub_dico, ccf_tag='',rv_shift=ccf_output['rv'].y)
             sinfo['FWHM']['KITTY'] = np.round(np.nanmedian(ccf_output1['fwhm'].y),2)
-            ccf_output2 = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Garfield', ccf_oversampling=3, debug=debug, sub_dico=sub_dico, ccf_tag='',rv_shift=ccf_output['rv'].y)
+            ccf_output2 = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Garfield', ccf_oversampling=3, debug=self.debug, sub_dico=sub_dico, ccf_tag='',rv_shift=ccf_output['rv'].y)
             sinfo['FWHM']['GARFIELD'] = np.round(np.nanmedian(ccf_output2['fwhm'].y),2)
             if (np.std(ccf_output['rv'].y)>1000)&(np.median(ccf_output['fwhm'].y)<30):
                 sinfo = myf.update_info_lvl2(sinfo,'SB2','SNAKY',1)
@@ -382,7 +379,7 @@ class start():
         pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
         #sinfo = yarara_check_rv_sys_wrapper(dir_root,master,0) #check if on 0
 
-    def compute_atmos(self,debug=False):
+    def compute_atmos(self):
         dir_root = self.sy_dir_root
         star = self.sy_starname
         sinfo = mym.import_star_info(dir_root)
@@ -422,7 +419,7 @@ class start():
 
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
-    def compute_resolution(self,debug=False):
+    def compute_resolution(self):
         dir_root = self.sy_dir_root
         star = self.sy_starname
         ins = self.sy_instrument
@@ -454,18 +451,18 @@ class start():
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
 
-    def compute_vsini(self, Prot=None, Rs=None, debug=False):
+    def compute_vsini(self, Prot=None, Rs=None):
         dir_root = self.sy_dir_root
         star = self.sy_starname
         sub_dico = self.sy_sub_dico
 
         sinfo = mym.import_star_info(dir_root)
-        vsini = mym.yarara_vcat(dir_root, sub_dico=sub_dico, debug=debug, std_bias_kms=0.1) 
+        vsini = mym.yarara_vcat(dir_root, sub_dico=sub_dico, debug=self.debug, std_bias_kms=0.1) 
         mym.yarara_vsini(dir_root, Prot=Prot, Rs=Rs)
         sinfo = myf.update_info_lvl2(sinfo,'Vsini','SNAKY',np.round(np.nanmean(vsini),2))
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
-    def compute_abs_continuum(self, debug=False):
+    def compute_abs_continuum(self):
         dir_root = self.sy_dir_root
         star = self.sy_starname
         material = mym.import_material(dir_root)
@@ -474,7 +471,7 @@ class start():
         material['correction_factor'] = correction
         pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
 
-    def compute_activity(self, debug=False):
+    def compute_activity(self):
         dir_root = self.sy_dir_root
         star = self.sy_starname
         summary = mym.import_summary(dir_root)
@@ -498,7 +495,7 @@ class start():
         summary = pd.merge(summary,tab_proxies,on='filename',how='left')
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
 
-    def compute_mhk(self, debug=False):
+    def compute_mhk(self):
         dir_root = self.sy_dir_root
         star = self.sy_starname
         summary = mym.import_summary(dir_root)
@@ -540,7 +537,7 @@ class start():
         mym.plot_mhk(dir_root)
         mym.create_finch_db(dir_root=dir_root)
 
-    def compute_spectroscopy(self, debug=False):
+    def compute_spectroscopy(self):
         dir_root = self.sy_dir_root
         star = self.sy_starname
         material = mym.import_material(dir_root)
@@ -562,7 +559,7 @@ class start():
                 spectroscopy[kw] = extracted
         pickle.dump(spectroscopy,open(dir_root+'WORKSPACE/Analyse_spectroscopy.p','wb'))
 
-    def compute_mag_cycle(self, debug=False, rm_source=['DACE','Yu+23']):
+    def compute_mag_cycle(self, rm_source=['DACE','Yu+23']):
         dir_root = self.sy_dir_root
         star = self.sy_starname
         try:
@@ -658,7 +655,7 @@ class start():
             end=14,
             automatic_db = True,
             debug = False, 
-            alpha = None,
+            ra = None,
             dec = None,
             Prot = None,
             Rs = None,
@@ -726,6 +723,7 @@ class start():
         star = self.sy_starname
         ins = self.sy_instrument
         dir_root = self.sy_dir_root
+        self.debug = debug
 
         myf.print_box('\n---- Launching reduction %s with instrument %s  ----\n'%(star,ins))
         time_start = time.time()
@@ -767,7 +765,7 @@ class start():
 
         self.write_progress(0, 'init', savefile=filename_time)
         if force_pre: #1
-            self.init_workspace(alpha=alpha,dec=dec)
+            self.init_workspace(ra=ra, dec=dec)
             self.preprocess()
             self.write_progress(1, 'pre', savefile=filename_time)
         qc = mym.check_force_pre(dir_root)

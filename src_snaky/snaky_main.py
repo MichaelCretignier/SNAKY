@@ -1358,10 +1358,12 @@ def get_vmacro(teff,logg,feh,source='Cretignier+26'):
     return value
 
     
-def extract_header(files,instru,debug=False,ra=None,dec=None):
+def extract_header(files, instru, debug=False, ra=None, dec=None):
     instrument = instru.split('_')[0]
     ins = instrument[0:5]
-    
+    if files[0].split('/')[-1][0:7]:
+        ins = 'RASSINE'
+
     if (ins=='HARPS')&(instru.split('_')[-1]=='3.5'):
         ins = 'harps'
     if ins=='NEID-':
@@ -1375,10 +1377,14 @@ def extract_header(files,instru,debug=False,ra=None,dec=None):
            'HARPN':{'MJD-OBS':'rjd', 'TNG QC BERV':'berv', 'TNG QC ORDER50 SNR':'snr', 'TNG TEL TARG ALPHA':'RA', 'TNG TEL TARG DELTA':'DEC'}, #new DRS (3.0.1)
            'CORAL':{'ESO DRS BJD':'rjd', 'ESO DRS BERV':'berv', 'ESO DRS SPE EXT SN50':'snr', 'ESO TEL TARG ALPHA':'RA', 'ESO TEL TARG DELTA':'DEC'},
            'ESPRE':{'HIERARCH ESO QC BJD':'rjd', 'HIERARCH ESO QC BERV':'berv', 'HIERARCH ESO QC ORDER100 SNR':'snr', 'HIERARCH ESO TEL1 TARG ALPHA':'RA', 'HIERARCH ESO TEL1 TARG DELTA':'DEC'},
+           'RASSINE':{'jdb':'rjd', 'berv':'berv', 'SNR_5500':'snr'},
            'TBD':{'KEYWORD BJD':'rjd', 'KEYWORD BERV':'berv', 'KEYWORD SNR':'snr', 'KEYWORD ALPHA':'RA', 'KEYWORD DELTA':'DEC'},
            }
     for file in tqdm(files):
-        header = fits.open(file)[0].header
+        if ins!='RASSINE':
+            header = fits.open(file)[0].header
+        else:
+            header = pd.read_pickle(file)['parameters']
         infos = query_value(header,list(kws[ins].keys()))
         all_infos.append(infos)
     all_infos = np.array(all_infos)
@@ -1418,6 +1424,10 @@ def extract_header(files,instru,debug=False,ra=None,dec=None):
     if ins=='CORAL':
         summary['RA'] = np.round(summary['RA'].astype('float'),6)
         summary['DEC'] = np.round(summary['DEC'].astype('float'),6)
+    if ins=='RASSINE':
+        summary['rjd'] = summary['rjd'].astype('float') + 2400000
+        summary['RA'] = ra
+        summary['DEC'] = dec        
 
     if (instrument=='HARPS03')|(instrument=='HARPS15'):
         instrument = 'HARPS'
@@ -1435,7 +1445,7 @@ def extract_header(files,instru,debug=False,ra=None,dec=None):
     berv = get_berv(ra_deg, dec_deg, obstime_utc, instrument).value
     summary['rjd'] = summary['rjd'].astype('float') - 2400000
     summary['berv_computed'] = np.round(berv,4)
-
+    
     return summary
 
 

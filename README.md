@@ -203,7 +203,11 @@ job.set_dataset('HD128621','HARPS15_3.3.6',files)
 job.reduce(begin=1, end=14, ra=219.90, dec=-60.84)
 ```
 
-## ⑦ Your favourite instrument missing?
+## ⑦ Sbatch multiprocessing
+
+*SNAKY is designed to run thousand of datasets. The correct way is usually to use sbatch. This is possible by using the `run_snaky_med.s` sbatch script, that call itself the `snaky_trigger.py` python script.*
+
+## ⑧ Your favourite instrument missing?
 
 SNAKY can process spectra from the following spectrographs:
 
