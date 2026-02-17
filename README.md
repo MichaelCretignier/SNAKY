@@ -157,7 +157,7 @@ job.reset(supression='all')
 <a id="flag1"></a>
 
 ```python
-#Shortest call
+# Benchmark Dataset1
 import src_snaky.run as snaky
 
 files = snaky.glob.glob(snaky.myv.TEST_DATASET1+'HARPN_3.0.1/RAW/*.fits')
@@ -219,7 +219,8 @@ But, maybe you already have RASSINE spectra saved on your computer? (I'm sincere
 <a id="flag2"></a>
 
 ```python
-#Let's use the Alpha Cen B RASSINE dataset
+# Benchmark Dataset2
+# Let's use the Alpha Cen B RASSINE dataset
 import src_snaky.run as snaky
 
 files = snaky.glob.glob(snaky.myv.TEST_DATASET2+'HARPS15_3.3.6/RAW/RASSINE*.p')
