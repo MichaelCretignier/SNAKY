@@ -86,7 +86,7 @@ files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
 
 job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/') #define output dir
-job.set_dataset('HD12345', 'HARPN_3.0.1', files) #define the star + instrument + list of spectra
+job.set_dataset('HD12345', 'HARPN_3.0.1', files)      #define the star + instrument + list of spectra
 ```
 
 *We then initialized SNAKY which will create the directory tree + normalise the spectra with RASSINE:*
@@ -142,10 +142,10 @@ job.reset()
 #Shortest call
 import src_snaky.run as snaky
 
+files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
+
 job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
-
-files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
 job.set_dataset('HD12345','HARPN_3.0.1',files) 
 
 job.reduce(begin=1,end=14)
@@ -163,10 +163,10 @@ Because of that, `.reduce()` also allows to restart from a crash point automatic
 #Example of crash
 import src_snaky.run as snaky
 
+files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
+
 job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
-
-files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
 job.set_dataset('HD666','HARPN_3.0.1',files)
 
 # let's mimic a crash at step of the atmospheric parameters (step=7)
