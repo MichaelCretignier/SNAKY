@@ -105,13 +105,11 @@ output_dir = '/Users/cretignier/Desktop/' # <--- change it!
 *This information if specified by:*
 
 ```python
-
-#output_dir = '/Users/cretignier/Desktop/'
-
 import src_snaky.run as snaky
 
 # let's use the SNAKY test dataset
 files = snaky.glob.glob(snaky.myv.TEST_DATASET1+'/HARPN_3.0.1/RAW/*.fits')
+#output_dir = '/Users/cretignier/Desktop/'
 
 job = snaky.start()
 job.set_output_dir(output_dir)                   # define output dir
@@ -171,8 +169,8 @@ job.reset(suppression='all')
 
 import src_snaky.run as snaky
 
-#output_dir = '/Users/cretignier/Desktop/'
 files = snaky.glob.glob(snaky.myv.TEST_DATASET1+'HARPN_3.0.1/RAW/*.fits')
+#output_dir = '/Users/cretignier/Desktop/'
 
 job = snaky.start()
 job.set_output_dir(output_dir)
