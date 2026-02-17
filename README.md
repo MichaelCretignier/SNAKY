@@ -118,7 +118,7 @@ job.cleaning()
 ```
 *You can check the figures created in the output directory `...IMAGES/`* \
 *For now, let's erase our work:*\
-**[WARNING] Never put any files not created by SNAKY in your output_directory!** 
+**[WARNING] It's dangerous to add any files not created by SNAKY in your output_directory!** 
 
 For security, it is required to enter the command line twice in order to launch the `.reset()` method:
 
@@ -151,7 +151,7 @@ job.reduce(begin=1,end=14)
 ```
 
 See that yellow color list printed at the start? This is the trigger.
-It indicates the steps done or not by SNAKY. 
+It indicates the SNAKY steps done or missing. 
 
 Because of that, `.reduce()` can also restart from a crash point automatically:
 
@@ -184,6 +184,28 @@ job.reduce(begin=8, end=8, automatic_db=False, Prot=50, Rs=1.0)
 ```
 
 You noticed but, the `.reduce()` also monitor the RAM and execution time as a bonus! And save it in `REDUCTION_INFO/` for benchmark purpose.
+
+# Launching a RASSINE dataset
+
+*RASSINE is among the longest step in the pipeline. But, maybe you already have RASSINE spectra saved on your computer!*
+
+*I'm sincerely honored of it! Theoritically, you can't process them directly by SNAKY since those will miss the metadata of the star coordinates (shame on the past me...)*
+
+*However you can specify manually those value in deg, and then it works!*
+
+```python
+#Shortest call
+import src_snaky.run as snaky
+
+files = glob.glob(snaky.myv.TEST_DATASET+'/HARPS15_3.3.6/RAW'+'/RASSINE*.p')
+
+job = snaky.start()
+job.set_output_dir('/Users/cretignier/Desktop/test/')
+job.set_dataset('HD1234','HARPN_3.0.1',files) 
+
+job.reduce(begin=1,end=14)
+# check the sequence number with job.reduce?
+```
 
 # Your favourite instrument missing?
 
