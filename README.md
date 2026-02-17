@@ -118,9 +118,7 @@ job.cleaning()
 ```
 *You can check the figures created in the output directory `...IMAGES/`* \
 *For now, let's erase our work:*\
-**[WARNING]**\
-**Never put any files not created by SNAKY in your output_directory!** \
-**SNAKY can erase everything located in the output_dir!** 
+**[WARNING] Never put any files not created by SNAKY in your output_directory!** 
 
 For security, it is required to enter the command line twice in order to launch the `.reset()` method:
 
