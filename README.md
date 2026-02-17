@@ -205,7 +205,8 @@ job.reduce(begin=1, end=14, ra=219.90, dec=-60.84)
 
 ## ⑦ Sbatch multiprocessing
 
-*SNAKY is designed to run thousand of datasets. The correct way is usually to use sbatch. This is possible by using the `run_snaky_med.s` sbatch script, that call itself the `snaky_trigger.py` python script.*
+*SNAKY is designed to run thousand of datasets (a dataset is as a recall a star + instrument). The correct way is usually to use sbatch.* \
+*This is possible by using the `run_snaky_med.s` sbatch script, that call itself the `snaky_trigger.py` python script.*
 
 ## ⑧ Your favourite instrument missing?
 
