@@ -217,7 +217,7 @@ job.reduce(begin=1, end=14, ra=219.90, dec=-60.84, copy_files=True) # ra and dec
 *This is possible by using the `run_snaky_med.s` SLURM script, that calls the `snaky_trigger.py` Python script.*
 
 ```bash
-sbatch run_snaky_med.s %s %s %.0f %.0f'%(star,ins+'_'+drs_version,begin,end))
+sbatch run_snaky_med.s HD128621 HARPS15_3.3.6 1 14
 ```
 
 
