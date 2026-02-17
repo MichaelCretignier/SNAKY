@@ -40,7 +40,7 @@ If you have any problem, please contact me at: michael.cretignier@physics.ox.ac.
 *You can try with your own main Python environment since there are only
 a few libraries used. Otherwise:*
 
-[Mac M4 Chip] Python environment (Conda install) (Python 3.13.5)
+[Conda install] Python environment (Python 3.13.5)
 
 ```bash
 conda create -n snaky python=3.13.5 
@@ -54,7 +54,7 @@ Check if the snaky environment exists:
 conda env list
 ```
 
-Python environment (Venv install)
+[Venv install] Python environment (Python 3.13.5)
 
 ```bash
 python3 -m venv snaky 
