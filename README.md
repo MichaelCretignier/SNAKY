@@ -201,7 +201,6 @@ job.set_output_dir('/Users/cretignier/Desktop/test/')
 job.set_dataset('HD128621','HARPS15_3.3.6',files) 
 
 job.reduce(begin=1,end=14, ra=219.90, dec=-60.84)
-# check the sequence number with job.reduce?
 ```
 
 ## ⑦ Your favourite instrument missing?
