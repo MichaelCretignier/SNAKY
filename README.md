@@ -129,7 +129,7 @@ For security, it is required to enter the command line twice in order to launch 
 job.reset()
 job.reset()
 
-#job.reset()                 #remove all products except RASSINE normalised spectra
+#job.reset()                 # remove all products except RASSINE normalised spectra
 #job.reset(supression='all') # remove everything
 
 ```

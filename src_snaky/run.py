@@ -589,14 +589,14 @@ class start():
             os.system('rm -f '+self.sy_dir_root+'/WARNING/*.png')
             os.system('rm -f '+self.sy_dir_root+'/STAR_INFO/*')
             os.system('rm -f '+self.sy_dir_root+'/CCF_MASK/*.fits')
-            if supression!='minimal':
+            if supression=='all':
                 os.system('rm -f '+self.sy_dir_root+'/WORKSPACE/RASSINE*')
             self.warning_printed = 0
             print(' [INFO] Reduction reset, you can now relaunch the reduction.')
         else:
             print(Fore.YELLOW+' [WARNING] Resetting the reduction will erase all the products in:\n') 
             liste = ['IMAGES/*','WORKSPACE/Analyse*','WARNING/*','STAR_INFO/*','CCF_MASK/*.fits']
-            if supression!='minimal':
+            if supression!='all':
                 liste.append('WORKSPACE/RASSINE*')
             for j in liste:
                 print(' • '+j) 
