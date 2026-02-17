@@ -92,7 +92,7 @@ class start():
                 print(f)            
             raise SnakyError('All the spectra indicated were not found.')
 
-    def init_workspace(self):
+    def init_workspace(self,alpha=None,dec=None):
         dir_root = self.sy_dir_root
 
         self.set_starinfo()
@@ -103,6 +103,10 @@ class start():
 
         if not self.sy_yarara_db:
             table = pd.DataFrame(self.sy_files,columns=['fileroot'])
+            if alpha is not None:
+                table['RA'] = alpha
+            if dec is not None:
+                table['DEC'] = dec
             table.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
             self.format()
 
@@ -654,6 +658,8 @@ class start():
             end=14,
             automatic_db = True,
             debug = False, 
+            alpha = None,
+            dec = None,
             Prot = None,
             Rs = None,
             ):
@@ -761,7 +767,7 @@ class start():
 
         self.write_progress(0, 'init', savefile=filename_time)
         if force_pre: #1
-            self.init_workspace()
+            self.init_workspace(alpha=alpha,dec=dec)
             self.preprocess()
             self.write_progress(1, 'pre', savefile=filename_time)
         qc = mym.check_force_pre(dir_root)

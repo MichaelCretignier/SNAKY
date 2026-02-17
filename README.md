@@ -189,7 +189,7 @@ You noticed but, the `.reduce()` also monitor the RAM and execution time as a bo
 
 *I'm sincerely honored of it! Theoritically, you can't process them directly by SNAKY since those will miss the metadata of the star coordinates (shame on the past me...)*
 
-*However you can specify manually those value in deg, and then it works!*
+*However you can specify manually those value in degree, and then it works!*
 
 ```python
 #Let's use the Alpha Cen B RASSINE dataset
@@ -199,9 +199,9 @@ files = glob.glob(snaky.myv.TEST_DATASET+'/HARPS15_3.3.6/RAW'+'/RASSINE*.p')
 
 job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
-job.set_dataset('HD1234','HARPN_3.0.1',files) 
+job.set_dataset('HD128621','HARPS15_3.3.6',files) 
 
-job.reduce(begin=1,end=14)
+job.reduce(begin=1,end=14, ra=219.90, dec=-60.84)
 # check the sequence number with job.reduce?
 ```
 
