@@ -14,18 +14,18 @@ SNAKY is a small code producing as main outputs:
 from high resolution spectra in the visible (R>50'000).\
 SNAKY is **NOT** an RV pipeline aiming at EPRV precision like YARARA.
 
-## ⦾ Release Date (Soon...!)
+## ① Release Date (Soon...!)
 
 The code is missing some important tables that prevent it from running, the code is planned to be released in a few weeks/months.
 Thank for your patience.
 
-## ⦾ Contact Me
+## ② Contact Me
 
 If you have any problem, please contact me at:
 
 michael.cretignier@physics.ox.ac.uk
 
-## ⦾ Installation
+## ③ Installation
 
 You can try with your own main Python environment since there are only
 a few libraries used. Otherwise:
@@ -47,7 +47,7 @@ pip install --upgrade pip
 pip install -r requirements_3.13.5.txt
 ```
 
-## ⦾ Compile the code
+## ④ Compile the code
 
 *SNAKY contains a table too heavy for GitHub that need first to be merged back using the compiler function*
 
@@ -56,7 +56,7 @@ cd ../SNAKY/src_snaky
 python snaky_compile.py
 ```
 
-## ⦾ Tutorial
+## ⑤ Tutorial
 
 *First enter into your local `SNAKY/` directory:*
 
@@ -183,7 +183,7 @@ job.reduce(begin=8, end=8, automatic_db=False, Prot=50, Rs=1.0)
 
 You noticed but, the `.reduce()` also monitor the RAM and execution time as a bonus! And save it in `REDUCTION_INFO/` for benchmark purpose.
 
-## ⦾ Launching a RASSINE dataset
+## ⑥ Launching a RASSINE dataset
 
 *RASSINE is among the longest step in the pipeline. But, maybe you already have RASSINE spectra saved on your computer!*
 
@@ -205,7 +205,7 @@ job.reduce(begin=1,end=14)
 # check the sequence number with job.reduce?
 ```
 
-## ⦾ Your favourite instrument missing?
+## ⑦ Your favourite instrument missing?
 
 SNAKY can process spectra from the following spectrographs:
 
