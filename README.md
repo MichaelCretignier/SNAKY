@@ -209,7 +209,7 @@ job.set_dataset('HD128621','HARPS15_3.3.6',files)
 job.reduce(begin=1, end=14, ra=219.90, dec=-60.84, copy_files=True)
 ```
 
-*The `copy_files` option will copy the RASSINE files your pointing on locally in the SNAKY directory as if those were processed by the pipeline. This is a safer option since pickle file can be corrupted, but this increase the storage required.*
+*The `copy_files` option will copy the RASSINE files your pointing on locally in the SNAKY directory as if those were processed by the pipeline. It's not mandatory, but this is a safer option, since pickle file can be corrupted, but this increase the storage required by duplicating files in your computer.*
 
 ## ⑦ Large-Scale Processing (SLURM / sbatch parallelization)
 
