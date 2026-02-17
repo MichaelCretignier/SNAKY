@@ -101,6 +101,11 @@ class start():
         if self.sy_yarara_db:
             file_test = self.sy_files[0]
             self.copy_yarara(file_test.split('WORKSPACE/RASSINE')[0])
+        else:
+            if self.sy_rassine_db:
+                for f in self.sy_files:
+                    os.system('cp '+f+' '+dir_root+'WORKSPACE/')
+                self.sy_files = np.sort(glob.glob(dir_root+'WORKSPACE/RASSINE*.p'))
 
         if not self.sy_yarara_db:
             table = pd.DataFrame(self.sy_files,columns=['fileroot'])
@@ -111,7 +116,7 @@ class start():
         dir_root = self.sy_dir_root
         files = self.sy_rassine_files
         ins = self.sy_instrument
-        if self.sy_yarara_db==False:
+        if (self.sy_yarara_db==False)&(self.sy_rassine_db==False):
             dace_summary = pd.read_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv',index_col=0)
             berv = np.array(dace_summary['berv_computed'])
             inss = np.array(dace_summary['ins'])
@@ -135,8 +140,17 @@ class start():
             summary = pd.DataFrame(np.array([files, inss, jdb, berv, flag]).T,columns=['filename','ins','jdb','berv','flag'])
             summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
         else:
-            summary = pd.read_csv(dir_root+'WORKSPACE/Analyse_summary.csv',index_col=0)
+            if self.sy_rassine_db:
+                dace_summary = pd.read_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv',index_col=0)
+                summary = dace_summary[['fileroot','ins','rjd','berv']]
+                summary['flag'] = 0
+                summary = summary.rename(columns={'rjd':'jdb','fileroot':'filename'})
+                summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
+            else:
+                summary = pd.read_csv(dir_root+'WORKSPACE/Analyse_summary.csv',index_col=0)
             self.sy_rassine_files = np.array(summary['filename'].values)    
+        if self.debug:
+            print(summary)
 
     def copy_yarara(self,yarara_root):
         dir_root = self.sy_dir_root
@@ -189,8 +203,6 @@ class start():
                     mym.read_static(f,dir_root,w0,dw,force=True)
         else:
             print(' [INFO] No preprocessing needed, spectra already in RASSINE format.')
-            rassine_root = '/'.join(files[0].split('/')[0:-1])
-            os.system('cp '+rassine_root+'/RASSINE_*.p '+dir_root+'WORKSPACE/')
 
         self.sy_rassine_files = np.sort(glob.glob(dir_root+'WORKSPACE/RASSINE*.p'))
 
@@ -252,7 +264,7 @@ class start():
         print('\n [INFO] Final aproximated RV_sys = %.1f +/- %.1f kms'%(rv_sys_approx,rv_sys_std))
 
         if self.debug:
-            mym.yarara_check_rv_sys(spec, 15, rv_sys_approx, dir_root=dir_root)
+            mym.yarara_check_rv_sys(spec, 15, rv_sys_approx, ccf_tag='', dir_root=dir_root)
 
         mask = np.ones(len(rv_sys)).astype('bool')
         if len(rv_sys)>10:
@@ -586,7 +598,7 @@ class start():
         mym.clean_light_dir(self.sy_dir_root)
 
     def reset(self, supression='minimal'):
-        if self.warning_printed>1:        
+        if self.warning_printed==1:        
             os.system('rm -f '+self.sy_dir_root+'/IMAGES/*')
             os.system('rm -f '+self.sy_dir_root+'/WORKSPACE/Analyse_*')
             os.system('rm -f '+self.sy_dir_root+'/WARNING/*.png')
