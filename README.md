@@ -277,8 +277,9 @@ If only e2ds spectra exist and not s1d, follow NEID example.
 
 ## Uninstall
 
+*You can delete the snaky Python environment with:*
+
 ```bash
-[TERMINAL] 
 conda remove --name snaky --all
 ```
 
