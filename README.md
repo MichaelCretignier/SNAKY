@@ -85,8 +85,8 @@ import src_snaky.run as snaky
 files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW/*.fits')
 
 job = snaky.start()
-job.set_output_dir('/Users/cretignier/Desktop/test/') #define output dir
-job.set_dataset('HD12345', 'HARPN_3.0.1', files)      #define the star + instrument + list of spectra
+job.set_output_dir('/Users/cretignier/Desktop/test/') # define output dir
+job.set_dataset('HD12345', 'HARPN_3.0.1', files)      # define the star + instrument + list of spectra
 ```
 
 *We then initialized SNAKY which will create the directory tree + normalise the spectra with RASSINE:*
@@ -108,7 +108,7 @@ job.compute_ccf()
 job.compute_master()
 job.compute_atmos()
 job.compute_resolution()
-job.compute_vsini(Prot=None, Rs=None) #if Prot and Rs are known by the user
+job.compute_vsini(Prot=None, Rs=None) # if Prot and Rs are known by the user
 job.compute_abs_continuum()
 job.compute_activity()
 job.compute_mhk()
@@ -154,14 +154,14 @@ Because of that, `.reduce()` can also restart from a crash point automatically:
 
 ```python
 
-#Example of crash
+# Example of crash
 import src_snaky.run as snaky
 
 files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW/*.fits')
 
 job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
-job.set_dataset('HD66666','HARPN_3.0.1',files) #new name to mimic a new dataset
+job.set_dataset('HD66666','HARPN_3.0.1',files) # new name to mimic a new dataset
 
 # let's mimic a crash at step of the atmospheric parameters (step=7)
 
