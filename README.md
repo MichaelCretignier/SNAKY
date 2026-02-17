@@ -38,9 +38,9 @@ If you have any problem, please contact me at: michael.cretignier@physics.ox.ac.
 ## ③ Installation
 
 *You can try with your own main Python environment since there are only
-a few libraries used (check the requirements file to see which ones). Otherwise:*
+a few libraries used (check the requirements file to see which ones). Otherwise use either the conda or the venv installation:*
 
-[Conda install] Python environment (Python 3.12.5)
+[Conda install - Option 1] Python environment (Python 3.12.5)
 
 ```bash
 conda create -n snaky python=3.12.5 
@@ -54,7 +54,7 @@ Check if the snaky environment exists:
 conda env list
 ```
 
-[Venv install] Python environment (Python 3.12.5)
+[Venv install  - Option 2] Python environment (Python 3.12.5)
 
 ```bash
 python3 -m venv snaky 
