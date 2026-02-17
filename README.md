@@ -153,7 +153,7 @@ job.reset(suppression='all')
 
 ```
 
-### Simplified call
+### Simplified call (.reduce)
 
 *Let's start again, all the previous lines can be called shortly using the `.reduce()` method:* 
 
