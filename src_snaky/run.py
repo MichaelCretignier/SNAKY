@@ -93,7 +93,7 @@ class start():
                 print(f)            
             raise SnakyError('All the spectra indicated were not found.')
 
-    def init_workspace(self,ra=None,dec=None):
+    def init_workspace(self, ra=None, dec=None, copy_files=True):
         dir_root = self.sy_dir_root
 
         self.set_starinfo()
@@ -102,7 +102,7 @@ class start():
             file_test = self.sy_files[0]
             self.copy_yarara(file_test.split('WORKSPACE/RASSINE')[0])
         else:
-            if self.sy_rassine_db:
+            if (self.sy_rassine_db)&(copy_files):
                 for f in self.sy_files:
                     os.system('cp '+f+' '+dir_root+'WORKSPACE/')
                 self.sy_files = np.sort(glob.glob(dir_root+'WORKSPACE/RASSINE*.p'))
@@ -673,6 +673,7 @@ class start():
             dec = None,
             Prot = None,
             Rs = None,
+            copy_files = True,
             ):
         
         """
