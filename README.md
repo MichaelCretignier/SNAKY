@@ -77,7 +77,7 @@ python snaky_compile.py
 
 ## ⑤ Tutorial
 
-### Hands-on Session
+### Step-by-step
 
 *First enter into your local `SNAKY/` directory:*
 
