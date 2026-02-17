@@ -164,7 +164,7 @@ files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
 
 job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
-job.set_dataset('HD666','HARPN_3.0.1',files) #false stellar name to mimic a new dataset
+job.set_dataset('HD666','HARPN_3.0.1',files) #new name to mimic a new dataset
 
 # let's mimic a crash at step of the atmospheric parameters (step=7)
 job.reduce(begin=1, end=6)
