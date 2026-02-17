@@ -225,7 +225,7 @@ to add a new instrument you only need 5 information from its header:
 4) berv  [optional]
 5) snr   [optional]
 
-Then create your own function *read_espresso()* in snaky_main.py
-and modify the *extract_header()* function too. 
+Then create your own function `read_espresso()` in `snaky_main.py`
+and modify the `extract_header()` function too. 
 
 If only e2ds spectra exist and not s1d, follow NEID example.
