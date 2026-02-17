@@ -194,7 +194,7 @@ You noticed but, the `.reduce()` also monitor the RAM and execution time as a bo
 
 *Theoritically, you can't process them directly by SNAKY since those will miss the metadata of the star coordinates (shame on the past me...)*
 
-*However you can specify manually those values in degree in `.reduce()`:*
+*However you can specify manually those values in `.reduce()`:*
 
 ```python
 #Let's use the Alpha Cen B RASSINE dataset
@@ -206,7 +206,7 @@ job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
 job.set_dataset('HD128621','HARPS15_3.3.6',files) 
 
-job.reduce(begin=1, end=14, ra=219.90, dec=-60.84, copy_files=True)
+job.reduce(begin=1, end=14, ra=219.90, dec=-60.84, copy_files=True) # ra and dec in degrees
 ```
 
 *The `copy_files` option will copy the RASSINE files your pointing on locally in the SNAKY directory as if those were processed by the pipeline. It's not mandatory, but this is a safer option, since pickle file can be corrupted, but this increase the storage required by duplicating files in your computer.*
