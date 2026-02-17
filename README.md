@@ -185,11 +185,11 @@ You noticed but, the `.reduce()` also monitor the RAM and execution time as a bo
 
 ## ⑥ Launching a RASSINE dataset
 
-*RASSINE is among the longest step in the pipeline. But, maybe you already have RASSINE spectra saved on your computer!*
+*RASSINE is among the longest step in the pipeline. But, maybe you already have RASSINE spectra saved on your computer! (I'm sincerely honored of it!)*
 
-*I'm sincerely honored of it! Theoritically, you can't process them directly by SNAKY since those will miss the metadata of the star coordinates (shame on the past me...)*
+*Theoritically, you can't process them directly by SNAKY since those will miss the metadata of the star coordinates (shame on the past me...)*
 
-*However you can specify manually those value in degree, and then it works!*
+*However you can specify manually those values in degree in `.reduce()`:*
 
 ```python
 #Let's use the Alpha Cen B RASSINE dataset
