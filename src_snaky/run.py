@@ -591,6 +591,7 @@ class start():
             os.system('rm -f '+self.sy_dir_root+'/CCF_MASK/*.fits')
             if supression=='all':
                 os.system('rm -f '+self.sy_dir_root+'/WORKSPACE/RASSINE*')
+                os.system('rm -f '+self.sy_dir_root+'/DACE_TABLE/*.csv')
             self.warning_printed = 0
             print(' [INFO] Reduction reset, you can now relaunch the reduction.')
         else:
@@ -598,6 +599,7 @@ class start():
             liste = ['IMAGES/*','WORKSPACE/Analyse*','WARNING/*','STAR_INFO/*','CCF_MASK/*.fits']
             if supression!='all':
                 liste.append('WORKSPACE/RASSINE*')
+                liste.append('/DACE_TABLE/*.csv')
             for j in liste:
                 print(' • '+j) 
             print('\n [WARNING] If you want to reset, please run .reset() again.'+Fore.RESET)
