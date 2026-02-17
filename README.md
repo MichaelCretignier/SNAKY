@@ -72,6 +72,8 @@ cd ../SNAKY/src_snaky
 python snaky_compile.py
 ```
 
+*You should now have a `../SNAKY/Material_snaky/template_star_SNAKY_3900_6800.npy` file*
+
 ## ⑤ Tutorial
 
 *First enter into your local `SNAKY/` directory:*
