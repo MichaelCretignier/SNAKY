@@ -41,7 +41,7 @@ If you have any problem, please contact me at: michael.cretignier@physics.ox.ac.
 a few libraries used (check the requirements file to see which ones). Otherwise use either the conda or the venv installation:*
 
 
-### [Conda install - Option 1] Python environment (Python 3.12.5)
+### [Option 1] Conda install (Python 3.12.5)
 
 ```bash
 conda create -n snaky python=3.12.5 
@@ -55,7 +55,7 @@ Check if the snaky environment exists:
 conda env list
 ```
 
-### [Venv install  - Option 2] Python environment (Python 3.12.5)
+### [Option 2] Venv install (Python 3.12.5)
 
 ```bash
 python3 -m venv snaky 
