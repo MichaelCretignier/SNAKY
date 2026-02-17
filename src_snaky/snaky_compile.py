@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 cwd = os.getcwd()
-root = '/'.join(cwd.split('/'))
+root = '/'.join(cwd.split('/')[:-1])
 
 files_to_compile = np.sort(glob.glob(root+'/Material_snaky/compile_split_*.npy'))
 process = []
@@ -13,9 +13,6 @@ for f in files_to_compile:
     axis = splitting.split('_')[2]
     process.append([f,filename,splitting,axis])
 process = np.array(process)
-
-print(' [INFO] Files that will be merged:')
-print(process[:,0])
 
 for p in np.unique(process[:,1]):
     split_files = process[process[:,1]==p]
