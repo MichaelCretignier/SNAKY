@@ -257,8 +257,9 @@ If only e2ds spectra exist and not s1d, follow NEID example.
 
 ## ⑨ BENCHMARK (Computation time)
 
-| VERSION        | [DATASET1](#flag1)    | [DATASET2](#flag2)     |
-|---------------|--------------|--------------|
-| SNAKY (1.0.1) | 01 min 58 s  | 01 min 52 s  |
+| Processor        | VERSION        | [DATASET1](#flag1)    | [DATASET2](#flag2)     |
+|---------------|---------------|--------------|--------------|
+| Mac M4 CHIP | SNAKY (1.0.1) | 01 min 58 s  | 01 min 52 s  |
+| Mac Intel CHIP | SNAKY (1.0.1) | 04 min 57 s  | 01 min 52 s  |
 
 
