@@ -24,10 +24,11 @@ import platform
 
 import matplotlib
 
-if platform.system()=='Linux':
-    matplotlib.use('Agg',force=True)
-else:
-    matplotlib.use('Qt5Agg',force=True)
+# RASSINE GUI no more used in SNAKY
+#if platform.system()=='Linux':
+#    matplotlib.use('Agg',force=True)
+#else:
+#    matplotlib.use('Qt5Agg',force=True)
 
 import getopt
 import os
