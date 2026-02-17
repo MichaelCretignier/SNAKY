@@ -14,18 +14,18 @@ SNAKY is a small code producing as main outputs:
 from high resolution spectra in the visible (R>50'000).\
 SNAKY is **NOT** an RV pipeline aiming at EPRV precision like YARARA.
 
-## Release Date (Soon...!)
+## ⦾ Release Date (Soon...!)
 
 The code is missing some important tables that prevent it from running, the code is planned to be released in a few weeks/months.
 Thank for your patience.
 
-## Contact Me
+## ⦾ Contact Me
 
 If you have any problem, please contact me at:
 
 michael.cretignier@physics.ox.ac.uk
 
-## Installation
+## ⦾ Installation
 
 You can try with your own main Python environment since there are only
 a few libraries used. Otherwise:
@@ -47,7 +47,7 @@ pip install --upgrade pip
 pip install -r requirements_3.13.5.txt
 ```
 
-## Compile the code
+## ⦾ Compile the code
 
 *SNAKY contains a table too heavy for GitHub that need first to be merged back using the compiler function*
 
@@ -56,7 +56,7 @@ cd ../SNAKY/src_snaky
 python snaky_compile.py
 ```
 
-## Tutorial
+## ⦾ Tutorial
 
 *First enter into your local `SNAKY/` directory:*
 
@@ -132,8 +132,6 @@ job.reset()
 
 ```
 
-
-
 *Let's start again, all the previous lines can be called shortly using the `.reduce()` method:* 
 
 ```python
@@ -185,7 +183,7 @@ job.reduce(begin=8, end=8, automatic_db=False, Prot=50, Rs=1.0)
 
 You noticed but, the `.reduce()` also monitor the RAM and execution time as a bonus! And save it in `REDUCTION_INFO/` for benchmark purpose.
 
-# Launching a RASSINE dataset
+## ⦾ Launching a RASSINE dataset
 
 *RASSINE is among the longest step in the pipeline. But, maybe you already have RASSINE spectra saved on your computer!*
 
@@ -194,7 +192,7 @@ You noticed but, the `.reduce()` also monitor the RAM and execution time as a bo
 *However you can specify manually those value in deg, and then it works!*
 
 ```python
-#Shortest call
+#Let's use the Alpha Cen B RASSINE dataset
 import src_snaky.run as snaky
 
 files = glob.glob(snaky.myv.TEST_DATASET+'/HARPS15_3.3.6/RAW'+'/RASSINE*.p')
@@ -207,7 +205,7 @@ job.reduce(begin=1,end=14)
 # check the sequence number with job.reduce?
 ```
 
-# Your favourite instrument missing?
+## ⦾ Your favourite instrument missing?
 
 SNAKY can process spectra from the following spectrographs:
 
