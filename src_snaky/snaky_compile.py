@@ -8,8 +8,8 @@ root = '/'.join(cwd.split('/')[:-1])
 files_to_compile = np.sort(glob.glob(root+'/Material_snaky/compile_split_*.npy'))
 process = []
 for f in files_to_compile:
-    filename = f.split('&')[-1]
-    splitting = f.split('/')[-1].split('&')[0]
+    filename = f.split('_of_file_')[-1]
+    splitting = f.split('/')[-1].split('_of_file_')[0]
     axis = splitting.split('_')[2]
     process.append([f,filename,splitting,axis])
 process = np.array(process)
