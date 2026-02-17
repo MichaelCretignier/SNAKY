@@ -275,4 +275,10 @@ If only e2ds spectra exist and not s1d, follow NEID example.
 | Intel Mac (2018) | SNAKY (1.0.1) | 04 min 57 s  | 09 min 00 s  |
 | Yours! ☺ | SNAKY (1.0.1) | ???  | ???  |
 
+## Uninstall
+
+```bash
+[TERMINAL] 
+conda remove --name snaky --all
+```
 
