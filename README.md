@@ -143,6 +143,8 @@ job.reset(supression='all')
 
 *Let's start again, all the previous lines can be called shortly using the `.reduce()` method:* 
 
+<a id="flag1"></a>
+
 ```python
 #Shortest call
 import src_snaky.run as snaky
@@ -200,6 +202,8 @@ You noticed but, the `.reduce()` also monitor the RAM and execution time as a bo
 
 *However you can specify manually those values in `.reduce()`:*
 
+<a id="flag2"></a>
+
 ```python
 #Let's use the Alpha Cen B RASSINE dataset
 import src_snaky.run as snaky
@@ -249,7 +253,7 @@ If only e2ds spectra exist and not s1d, follow NEID example.
 
 ## ⑨ BENCHMARK
 
-| VERSION        | [DATASET1](#-tutorial)    | [DATASET2](#-launching-a-rassine-dataset)     |
+| VERSION        | [DATASET1](#flag1)    | [DATASET2](#flag2)     |
 |---------------|--------------|--------------|
 | SNAKY (1.0.1) | 02 min 51 s  | 02 min 01 s  |
 
