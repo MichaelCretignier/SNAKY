@@ -189,6 +189,8 @@ class start():
                     mym.read_static(f,dir_root,w0,dw,force=True)
         else:
             print(' [INFO] No preprocessing needed, spectra already in RASSINE format.')
+            rassine_root = '/'.join(files[0].split('/')[0:-1])
+            os.system('cp '+rassine_root+'/RASSINE_*.p '+dir_root+'WORKSPACE/')
 
         self.sy_rassine_files = np.sort(glob.glob(dir_root+'WORKSPACE/RASSINE*.p'))
 

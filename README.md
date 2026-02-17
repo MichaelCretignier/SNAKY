@@ -143,7 +143,7 @@ job.reset(supression='all')
 #Shortest call
 import src_snaky.run as snaky
 
-files = glob.glob(snaky.myv.TEST_DATASET1+'/HARPN_3.0.1/RAW/*.fits')
+files = glob.glob(snaky.myv.TEST_DATASET1+'HARPN_3.0.1/RAW/*.fits')
 
 job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
@@ -163,7 +163,7 @@ Because of that, `.reduce()` can also restart from a crash point automatically:
 # Example of crash
 import src_snaky.run as snaky
 
-files = glob.glob(snaky.myv.TEST_DATASET1+'/HARPN_3.0.1/RAW/*.fits')
+files = glob.glob(snaky.myv.TEST_DATASET1+'HARPN_3.0.1/RAW/*.fits')
 
 job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
@@ -200,7 +200,7 @@ You noticed but, the `.reduce()` also monitor the RAM and execution time as a bo
 #Let's use the Alpha Cen B RASSINE dataset
 import src_snaky.run as snaky
 
-files = glob.glob(snaky.myv.TEST_DATASET2+'/HARPS15_3.3.6/RAW/RASSINE*.p')
+files = glob.glob(snaky.myv.TEST_DATASET2+'HARPS15_3.3.6/RAW/RASSINE*.p')
 
 job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
@@ -211,7 +211,7 @@ job.reduce(begin=1, end=14, ra=219.90, dec=-60.84)
 
 ## ⑦ Large-Scale Processing (SLURM / sbatch parallelization)
 
-*SNAKY is designed to process thousands of datasets (a dataset corresponds to a star + instrument combination). For large runs, the recommended approach is to use `sbatch`.* \
+*SNAKY is designed to process easily and rapidly thousands of datasets (a dataset corresponds to a star + instrument combination). For large runs, the recommended approach is to use `sbatch`.* \
 *This is possible by using the `run_snaky_med.s` SLURM script, that calls the `snaky_trigger.py` Python script.*
 
 ## ⑧ Your favourite instrument missing?
@@ -236,6 +236,6 @@ and modify the `extract_header()` function too.
 
 If only e2ds spectra exist and not s1d, follow NEID example.
 
-## ⑨ Citation references
+## ⑨ 
 
 
