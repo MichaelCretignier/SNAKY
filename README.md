@@ -92,7 +92,7 @@ ipython
 import src_snaky.run as snaky
 
 # let's use the SNAKY test dataset
-files = glob.glob(snaky.myv.TEST_DATASET1+'/HARPN_3.0.1/RAW/*.fits')
+files = snaky.glob.glob(snaky.myv.TEST_DATASET1+'/HARPN_3.0.1/RAW/*.fits')
 output_dir = '/Users/cretignier/Desktop/test/'
 
 job = snaky.start()
@@ -150,7 +150,7 @@ job.reset(supression='all')
 #Shortest call
 import src_snaky.run as snaky
 
-files = glob.glob(snaky.myv.TEST_DATASET1+'HARPN_3.0.1/RAW/*.fits')
+files = snaky.glob.glob(snaky.myv.TEST_DATASET1+'HARPN_3.0.1/RAW/*.fits')
 output_dir = '/Users/cretignier/Desktop/test/'
 
 job = snaky.start()
@@ -170,7 +170,7 @@ Because of that, `.reduce()` can also restart from a crash point automatically:
 # Example of crash
 import src_snaky.run as snaky
 
-files = glob.glob(snaky.myv.TEST_DATASET1+'HARPN_3.0.1/RAW/*.fits')
+files = snaky.glob.glob(snaky.myv.TEST_DATASET1+'HARPN_3.0.1/RAW/*.fits')
 output_dir = '/Users/cretignier/Desktop/test/'
 
 job = snaky.start()
@@ -210,7 +210,7 @@ You noticed but, the `.reduce()` also monitor the RAM and execution time as a bo
 #Let's use the Alpha Cen B RASSINE dataset
 import src_snaky.run as snaky
 
-files = glob.glob(snaky.myv.TEST_DATASET2+'HARPS15_3.3.6/RAW/RASSINE*.p')
+files = snaky.glob.glob(snaky.myv.TEST_DATASET2+'HARPS15_3.3.6/RAW/RASSINE*.p')
 output_dir = '/Users/cretignier/Desktop/test/'
 
 job = snaky.start()
@@ -220,7 +220,7 @@ job.set_dataset('HD128621','HARPS15_3.3.6',files)
 job.reduce(begin=1, end=14, ra=219.90, dec=-60.84, copy_files=True) # ra and dec in degrees
 ```
 
-*The `copy_files=True` option will copy the RASSINE files your pointing on locally in the SNAKY directory as if those were produced by the pipeline. This is not mandatory for the code to successfully run, but `.p` pickle files can be corrupted and copying them is a safer option. Naturally, this double the storage requirement by duplicating files in your computer. Final decision is let to the user.*
+*The `copy_files=True` option will copy the RASSINE files locally in the SNAKY directory as if those were produced by the pipeline. This is not mandatory for the code to successfully run, but `.p` pickle files can be corrupted and copying them is a safer option. Naturally, this double the storage requirement by duplicating files in your computer. Final decision is let to the user.*
 
 ## ⑦ Large-Scale Processing (SLURM / sbatch parallelization)
 
@@ -230,7 +230,6 @@ job.reduce(begin=1, end=14, ra=219.90, dec=-60.84, copy_files=True) # ra and dec
 ```bash
 sbatch run_snaky_med.s HD128621 HARPS15_3.3.6 1 14
 ```
-
 
 ## ⑧ Your favourite instrument missing?
 
@@ -254,7 +253,7 @@ and modify the `extract_header()` function too.
 
 If only e2ds spectra exist and not s1d, follow NEID example.
 
-## ⑨ BENCHMARK
+## ⑨ BENCHMARK (Computation time)
 
 | VERSION        | [DATASET1](#flag1)    | [DATASET2](#flag2)     |
 |---------------|--------------|--------------|
