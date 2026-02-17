@@ -190,7 +190,7 @@ You noticed but, the `.reduce()` also monitor the RAM and execution time as a bo
 
 ## ⑥ Launching a RASSINE dataset
 
-*RASSINE is among the longest step in the pipeline. But, maybe you already have RASSINE spectra saved on your computer! (I'm sincerely honored of it!)*
+*RASSINE is among the longest step in the pipeline (41% of the execution time in the previous example!). But, maybe you already have RASSINE spectra saved on your computer! (I'm sincerely honored of it!)*
 
 *Theoritically, you can't process them directly by SNAKY since those will miss the metadata of the star coordinates (shame on the past me...)*
 
@@ -245,8 +245,8 @@ If only e2ds spectra exist and not s1d, follow NEID example.
 
 ## ⑨ BENCHMARK
 
-| VERSION        | DATASET1      | DATASET2      |
+| VERSION        | DATASET1 (⑤)    | DATASET2 (⑥)     |
 |---------------|--------------|--------------|
-| SNAKY (1.0.1) | 02 min 01 s  | 02 min 01 s  |
+| SNAKY (1.0.1) | 02 min 51 s  | 02 min 01 s  |
 
 

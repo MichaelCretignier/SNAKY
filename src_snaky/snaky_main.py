@@ -1361,7 +1361,7 @@ def get_vmacro(teff,logg,feh,source='Cretignier+26'):
 def extract_header(files, instru, debug=False, ra=None, dec=None):
     instrument = instru.split('_')[0]
     ins = instrument[0:5]
-    if files[0].split('/')[-1][0:7]:
+    if files[0].split('/')[-1][0:7]=='RASSINE':
         ins = 'RASSINE'
 
     if (ins=='HARPS')&(instru.split('_')[-1]=='3.5'):
@@ -1445,7 +1445,7 @@ def extract_header(files, instru, debug=False, ra=None, dec=None):
     berv = get_berv(ra_deg, dec_deg, obstime_utc, instrument).value
     summary['rjd'] = summary['rjd'].astype('float') - 2400000
     summary['berv_computed'] = np.round(berv,4)
-    
+
     return summary
 
 
