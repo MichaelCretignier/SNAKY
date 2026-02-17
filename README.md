@@ -212,11 +212,11 @@ job.reduce(begin=1, end=14, ra=219.90, dec=-60.84)
 
 SNAKY can process spectra from the following spectrographs:
 
-ESPRESSO \
-HARPS \
-HARPN \
-SOPHIE \
-NEID 
+1) ESPRESSO \
+2) HARPS \
+3) HARPN \
+4) SOPHIE \
+5) NEID 
 
 to add a new instrument you only need 5 information from its header:
 1) jdb   [!mandatory!]
