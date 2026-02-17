@@ -82,7 +82,7 @@ ipython
 import src_snaky.run as snaky
 
 # let's use the SNAKY test dataset
-files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
+files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW/*.fits')
 
 job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/') #define output dir
@@ -138,7 +138,7 @@ job.reset(supression='all')
 #Shortest call
 import src_snaky.run as snaky
 
-files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
+files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW/*.fits')
 
 job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
@@ -158,7 +158,7 @@ Because of that, `.reduce()` can also restart from a crash point automatically:
 #Example of crash
 import src_snaky.run as snaky
 
-files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
+files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW/*.fits')
 
 job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
@@ -195,7 +195,7 @@ You noticed but, the `.reduce()` also monitor the RAM and execution time as a bo
 #Let's use the Alpha Cen B RASSINE dataset
 import src_snaky.run as snaky
 
-files = glob.glob(snaky.myv.TEST_DATASET+'/HARPS15_3.3.6/RAW'+'/RASSINE*.p')
+files = glob.glob(snaky.myv.TEST_DATASET+'/HARPS15_3.3.6/RAW/RASSINE*.p')
 
 job = snaky.start()
 job.set_output_dir('/Users/cretignier/Desktop/test/')
