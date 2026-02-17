@@ -189,28 +189,24 @@ Because of the trigger, `.reduce()` can also restart from a crash point automati
 
 ```python
 
-# Example of crash
+# Simulate a crash
 import src_snaky.run as snaky
 
-files = snaky.glob.glob(snaky.myv.TEST_DATASET1+'HARPN_3.0.1/RAW/*.fits')
+files = snaky.glob.glob(snaky.myv.TEST_DATASET1 + 'HARPN_3.0.1/RAW/*.fits')
 
 job = snaky.start()
 job.set_output_dir(output_dir)
-job.set_dataset('HD66666','HARPN_3.0.1',files) # new name to mimic a new dataset
+job.set_dataset('HD66666', 'HARPN_3.0.1', files)  # fake new dataset
 
-# let's mimic a crash at step of the atmospheric parameters (step=7)
+# Stop at step 6 (crash before atmospheric parameters, step 7)
+job.reduce(begin=1, end=6)
 
-job.reduce(begin=1, end=6) # No the pipeline stopped at stage 6!
-
-# let's rerun the sequence from the start with automatic_db (automatic_db = True by default)
-# automatic_db will automatically skip the steps already done
-
+# Restart from the beginning
+# automatic_db=True (default) skips completed steps
 job.reduce(begin=1, end=14, automatic_db=True)
 
-# See? The first stages have been skipped.
-# If you want to force the rerun of a specific step, disable the automatic_db option
-
-# For instance SNAKY can compute the stellar inclination angle if Prot is specified manually
+# To force re-running a step, disable automatic_db
+# Example: recompute inclination with manual Prot and Rs
 job.reduce(begin=8, end=8, automatic_db=False, Prot=50, Rs=1.0)
 
 
