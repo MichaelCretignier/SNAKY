@@ -198,9 +198,11 @@ You noticed but, the `.reduce()` also monitor the RAM and execution time as a bo
 
 ## ⑥ Launching a RASSINE dataset
 
-*RASSINE is among the longest step in the pipeline (41% of the execution time in the previous example!). But, maybe you already have RASSINE spectra saved on your computer! (I'm sincerely honored of it!)*
+*SNAKY itself is very fast, but RASSINE is among the longest step in the pipeline (~15% of the execution time in the previous example for a single spectrum!). Computational time of RASSINE is usually ~15s per spectrum.
 
-*Theoritically, you can't process them directly by SNAKY since those will miss the metadata of the star coordinates (shame on the past me...)*
+But, maybe you already have RASSINE spectra saved on your computer? (I'm sincerely honored of it!)*
+
+*Theoritically, you can't process them directly by SNAKY since those will miss the metadata of the star coordinates (shame on the past myself...)*
 
 *However you can specify manually those values in `.reduce()`:*
 
@@ -220,7 +222,7 @@ job.set_dataset('HD128621','HARPS15_3.3.6',files)
 job.reduce(begin=1, end=14, ra=219.90, dec=-60.84, copy_files=True) # ra and dec in degrees
 ```
 
-*The `copy_files=True` option will copy the RASSINE files locally in the SNAKY directory as if those were produced by the pipeline. This is not mandatory for the code to successfully run, but `.p` pickle files can be corrupted and copying them is a safer option. Naturally, this double the storage requirement by duplicating files in your computer. Final decision is let to the user.*
+*The `copy_files=True` option will copy the RASSINE files locally in the SNAKY output directory as if those were produced by the pipeline. This is not mandatory for the code to successfully run, but `.p` pickle files can be corrupted and copying them is a safer option. Naturally, this double the storage requirement by duplicating files in your computer. Final decision is let to the user.*
 
 ## ⑦ Large-Scale Processing (SLURM / sbatch parallelization)
 
@@ -257,6 +259,6 @@ If only e2ds spectra exist and not s1d, follow NEID example.
 
 | VERSION        | [DATASET1](#flag1)    | [DATASET2](#flag2)     |
 |---------------|--------------|--------------|
-| SNAKY (1.0.1) | 02 min 51 s  | 02 min 01 s  |
+| SNAKY (1.0.1) | 01 min 58 s  | 01 min 52 s  |
 
 

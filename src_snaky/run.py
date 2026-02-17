@@ -665,6 +665,7 @@ class start():
             print('\n',table_time[['time_step_min','frac_time','stage','RAM_peak_gb','RAM_all_gb']],'\n')
             time_start = table_time.loc['begin']['time_abs']
             time_end = table_time.loc['end']['time_abs']
+            table_time['time_abs'] = table_time['time_abs'] - time_start
             duration = np.round((time_end-time_start)/60,2)
             tag_duration = str(int(duration//1))+'m'+str(int((duration%1)*60))+'s'
             print(Fore.CYAN+"\n [INFO] Processing achieved in "+tag_duration+"' \n"+Fore.RESET)
