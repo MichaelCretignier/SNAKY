@@ -165,6 +165,8 @@ import src_snaky.run as snaky
 
 files = snaky.glob.glob(snaky.myv.TEST_DATASET1+'HARPN_3.0.1/RAW/*.fits')
 output_dir = '/Users/cretignier/Desktop/'  # <--- change it!
+
+import os
 os.system('rm -rf '+output_dir+'Snaky/')
 
 job = snaky.start()
@@ -230,6 +232,8 @@ import src_snaky.run as snaky
 
 files = snaky.glob.glob(snaky.myv.TEST_DATASET2+'HARPS15_3.3.6/RAW/RASSINE*.p')
 output_dir = '/Users/cretignier/Desktop/'   # <--- change it!
+
+import os
 os.system('rm -rf '+output_dir+'Snaky/')
 
 job = snaky.start()
