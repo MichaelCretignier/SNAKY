@@ -81,12 +81,12 @@ ipython
 ```python
 import src_snaky.run as snaky
 
-job = snaky.start()
-job.set_output_dir('/Users/cretignier/Desktop/test/')
-
 # let's use the SNAKY test dataset
 files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
-job.set_dataset('HD12345', 'HARPN_3.0.1', files)
+
+job = snaky.start()
+job.set_output_dir('/Users/cretignier/Desktop/test/') #define output dir
+job.set_dataset('HD12345', 'HARPN_3.0.1', files) #define the star + instrument + list of spectra
 ```
 
 *We then initialized SNAKY which will create the directory tree + normalise the spectra with RASSINE:*
