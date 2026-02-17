@@ -102,7 +102,7 @@ output_dir = '/Users/cretignier/Desktop/' # <--- change it!
 2) A list of spectra you want to process
 3) The starname and the instrument 
 
-*This information has to be provided as:*
+*This information if specified by:*
 
 ```python
 
