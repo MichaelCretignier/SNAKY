@@ -709,7 +709,7 @@ class start():
             duration = np.round((time_end-time_start)/60,2)
             tag_duration = str(int(duration//1))+'m'+str(int((duration%1)*60))+'s'
             print(Fore.CYAN+"\n [INFO] Processing achieved in "+tag_duration+Fore.RESET)
-            print(Fore.CYAN+" [INFO] Processing time was estimated initially: "+self.sy_time_required_est+"' \n"+Fore.RESET)
+            print(Fore.CYAN+" [INFO] Processing time was estimated initially: "+self.sy_time_required_est+" \n"+Fore.RESET)
             
             plt.figure(figsize=(14,8))
             plt.subplot(2,1,1) ; plt.ylabel('Computation time [min]')
