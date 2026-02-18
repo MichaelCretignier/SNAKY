@@ -219,6 +219,10 @@ job.reduce(begin=8, end=8, automatic_db=False, Prot=50, Rs=1.0)
 
 *SNAKY itself is very fast, but RASSINE is among the longest step in the pipeline (~20-30% of the execution time in the previous example for a single spectrum!). Computational time of RASSINE is usually ~15s per spectrum.*
 
+$$
+\text{Execution time} = 15s \times N + 94s + \left(\frac{\mathrm{FWHM}}{7.3}\right)\left(\frac{N}{100}\right) \times 76s
+$$
+
 *But, maybe you already have RASSINE spectra saved on your computer? (I'm sincerely honoured of it!)*
 
 *Theoretically, you can't process them directly by SNAKY since those will miss the metadata of the star coordinates (shame on the past myself...)*

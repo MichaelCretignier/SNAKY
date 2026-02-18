@@ -59,6 +59,32 @@ class start():
         template['Name'] = self.sy_starname
         pickle.dump(template,open(starinfo,'wb'))
 
+    def estimate_computation_time(self,fwhm=7.3):
+        N = len(self.sy_files)
+
+        time_per_rassine = 15 # 15s per continuum normlisation
+        snaky1 = 93.8            # time to process snaky with N=1
+        snaky100 = 76.36         # time to process snaky with N=100
+
+        rassine_processing = time_per_rassine*N
+        snaky_processing = snaky1+(fwhm/7.3)*(N/100)*snaky100
+
+        total_time = rassine_processing*(1-self.sy_rassine_db) + snaky_processing
+        minutes = int(total_time//60)
+        secondes = int(total_time-60*minutes)
+
+        total_time_required = str(minutes)+'m'+str(secondes)+'s'
+        rassine_time_required = str(int(rassine_processing//60))+'m'+str(int(rassine_processing - 60*(rassine_processing//60)))+'s'
+        snaky_time_required = str(int(snaky_processing//60))+'m'+str(int(snaky_processing - 60*(snaky_processing//60)))+'s'
+
+        print(' [INFO] For N=%.0f and FWHM = %.1f kms:'%(N,fwhm))
+
+        print(Fore.CYAN+"\n [INFO] RASSINE computation time: %s %s"%(rassine_time_required,['','(SKIPPED)'][int(self.sy_rassine_db)]))
+        print(" [INFO] SNAKY computation time: "+snaky_time_required)
+        print("\n [INFO] Total computation time estimated: "+total_time_required+" \n"+Fore.RESET)
+        
+        self.sy_time_required_est = total_time_required
+
     def set_dataset(self, starname, ins, files, sub_dico='matching_diff'):
         if len(files)==0:
             raise SnakyError('The input list of files is empty')
@@ -82,6 +108,8 @@ class start():
             self.sy_rassine_db = True
             if len(file_test.split('/Yarara/'))==2:
                 self.sy_yarara_db = True
+
+        self.estimate_computation_time(fwhm=7.3)
 
         #read fits files an create spectra normalised
         check_files =  np.array([os.path.exists(f) for f in self.sy_files])
@@ -165,6 +193,10 @@ class start():
         summary = mym.import_summary(dir_root)
         if 'snr_computed' in summary.keys():
             summary['snr'] = summary['snr_computed']
+        
+        mask = myf.in1d(summary['filename'],self.sy_files)
+        summary = summary.loc[mask].reset_index(drop=True)
+
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
         sinfo = mym.import_star_info(dir_root)
         if 'DRS' in sinfo['Ra'].keys():
@@ -179,6 +211,8 @@ class start():
         dace_summary = pd.read_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv',index_col=0)
         dace_summary['RA'] = np.round(ra,6) ; dace_summary['DEC'] = np.round(dec,6)
         dace_summary.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
+
+
 
     def preprocess(self):
         ins = self.sy_instrument
@@ -295,6 +329,9 @@ class start():
             fwhm=300 
         if teff>8500:
             fwhm=200
+
+        print(' [INFO] Reevaluation of the computation time...')
+        self.estimate_computation_time(fwhm=fwhm)
 
         sinfo = mym.import_star_info(dir_root)
         sinfo = myf.update_info_lvl2(sinfo,'FluxD','P05',fluxD[0])
@@ -671,7 +708,8 @@ class start():
             table_time['time_abs'] = table_time['time_abs'] - time_start
             duration = np.round((time_end-time_start)/60,2)
             tag_duration = str(int(duration//1))+'m'+str(int((duration%1)*60))+'s'
-            print(Fore.CYAN+"\n [INFO] Processing achieved in "+tag_duration+"' \n"+Fore.RESET)
+            print(Fore.CYAN+"\n [INFO] Processing achieved in "+tag_duration+Fore.RESET)
+            print(Fore.CYAN+" [INFO] Processing time was estimated initially: "+self.sy_time_required_est+"' \n"+Fore.RESET)
             
             plt.figure(figsize=(14,8))
             plt.subplot(2,1,1) ; plt.ylabel('Computation time [min]')
