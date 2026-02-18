@@ -99,7 +99,7 @@ ipython
 1) An output directory 
 
 ```python
-output_dir = '/Users/cretignier/Desktop/'
+output_dir = '/Users/cretignier/Desktop/Snaky/'
 ```
 
 2) A list of spectra you want to process
@@ -112,10 +112,10 @@ import src_snaky.run as snaky
 
 # let's use the SNAKY test dataset
 files = snaky.glob.glob(snaky.myv.TEST_DATASET1)
-#output_dir = '/Users/cretignier/Desktop/'
+#output_dir = '/Users/cretignier/Desktop/Snaky/'
 
 job = snaky.start()
-job.set_output_dir(output_dir)                   # define output dir (will create .../Desktop/Snaky/)
+job.set_output_dir(output_dir)                   # define output dir 
 job.set_dataset('HD12345', 'HARPN_3.0.1', files) # define the star + instrument + list of spectra
 ```
 
@@ -173,7 +173,7 @@ job.reset(suppression='all')
 import src_snaky.run as snaky
 
 files = snaky.glob.glob(snaky.myv.TEST_DATASET1)
-#output_dir = '/Users/cretignier/Desktop/'
+#output_dir = '/Users/cretignier/Desktop/Snaky/'
 
 job = snaky.start()
 job.set_output_dir(output_dir)
@@ -194,7 +194,7 @@ Because of the trigger, `.reduce()` can also restart from a crash point automati
 import src_snaky.run as snaky
 
 files = snaky.glob.glob(snaky.myv.TEST_DATASET1)
-#output_dir = '/Users/cretignier/Desktop/'
+#output_dir = '/Users/cretignier/Desktop/Snaky/'
 
 job = snaky.start()
 job.set_output_dir(output_dir)
@@ -241,7 +241,7 @@ $$
 import src_snaky.run as snaky
 
 files = snaky.glob.glob(snaky.myv.TEST_DATASET2)
-#output_dir = '/Users/cretignier/Desktop/'
+#output_dir = '/Users/cretignier/Desktop/Snaky/'
 
 job = snaky.start()
 job.set_output_dir(output_dir)

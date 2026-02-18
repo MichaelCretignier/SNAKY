@@ -33,9 +33,8 @@ class start():
         self.warning_printed = 0
         self.debug = False
 
-    def set_output_dir(self,outputdir,snaky_dir='Snaky/'):
+    def set_output_dir(self,outputdir):
         self.sy_output_dir = outputdir
-        self.sy_snaky_dir = snaky_dir
 
     def format(self,ra=None,dec=None):
         dir_root = self.sy_dir_root
@@ -93,7 +92,7 @@ class start():
         starname,ins = mym.create_snaky_dir(self.sy_output_dir,starname,ins)
         self.sy_starname = starname
         self.sy_instrument = ins
-        self.sy_dir_root = self.sy_output_dir+self.sy_snaky_dir+starname+'/data/s1d/'+ins+'/'
+        self.sy_dir_root = self.sy_output_dir+starname+'/data/s1d/'+ins+'/'
         dir_root = self.sy_dir_root
        
         print(Fore.CYAN+" [INFO] (root directory) dir_root = '"+dir_root+"' \n"+Fore.RESET)
