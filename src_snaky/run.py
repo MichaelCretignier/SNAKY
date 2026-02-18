@@ -194,7 +194,13 @@ class start():
         if 'snr_computed' in summary.keys():
             summary['snr'] = summary['snr_computed']
         
-        mask = myf.in1d(summary['filename'],self.sy_files)
+        files1 = np.array(summary['filename'])
+        files2 = np.array(self.sy_files)
+
+        files1 = np.array([i.split('/')[-1] for i in files1])
+        files2 = np.array([i.split('/')[-1] for i in files2])
+
+        mask = myf.in1d(files1,files2)
         summary = summary.loc[mask].reset_index(drop=True)
 
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
