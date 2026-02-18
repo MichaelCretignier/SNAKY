@@ -40,13 +40,14 @@ If you have any problem, please contact me at: michael.cretignier@physics.ox.ac.
 *You can try with your own main Python environment since there are only
 a few libraries used (check the requirements file to see which ones). Otherwise use either the conda or the venv installation:*
 
+*Based on [benchmark](#flag3), the fastest version is the python 3.10.15:*
 
-### [Option 1] Conda install (Python 3.12.5)
+### [Option 1] Conda install (Python 3.10.15)
 
 ```bash
-conda create -n snaky python=3.12.5
+conda create -n snaky python=3.10.15
 conda activate snaky
-pip install -r requirements_3.12.5_latest.txt
+pip install -r requirements_3.10.15.txt
 ```
 
 Other tested `../SNAKY/requirement_PYTHON_VERSION.txt` libraries versioning are available if needed. 
