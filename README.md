@@ -103,7 +103,7 @@ output_dir = '/Users/cretignier/Desktop/' # will create .../Desktop/Snaky/
 ```
 
 2) A list of spectra you want to process
-3) The starname and the instrument  (INS = SPECTRO_DRS)
+3) The starname and the instrument
 
 *This information if specified by:*
 
