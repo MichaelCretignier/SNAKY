@@ -233,10 +233,10 @@ def create_snaky_dir(output_dir,star,ins):
     ins: string, name of the instrument and DRS version (e.g. ESPRESSO_3.3.1, HARPS_3.5)
     """
     
-    if not os.path.exists(output_dir+'/Snaky/'+star+'/data/s1d/ALLINS_MERGED'):
-        os.makedirs(output_dir+'/Snaky/'+star+'/data/s1d/ALLINS_MERGED', exist_ok=True)
+    if not os.path.exists(output_dir+'/'+star+'/data/s1d/ALLINS_MERGED'):
+        os.makedirs(output_dir+'/'+star+'/data/s1d/ALLINS_MERGED', exist_ok=True)
 
-    if os.path.exists(output_dir+'/Snaky/'+star+'/data/s1d/'+ins+'/WORKSPACE'):
+    if os.path.exists(output_dir+'/'+star+'/data/s1d/'+ins+'/WORKSPACE'):
         print(' [INFO] SNAKY directory found!\n')
         return star, ins
     else:
@@ -255,7 +255,7 @@ def create_snaky_dir(output_dir,star,ins):
         directories = ['RAW','IMAGES','WORKSPACE','EXPORT','CCF_MASK','DACE_TABLE','DETECTION_LIMIT','FILM','KEPLERIAN','KITCAT','MASTER','PCA','REDUCTION_INFO','TEMP','STAR_INFO','WARNING']
         print(' [INFO] Star and instrument defined as %s and %s'%(star,ins))
         for d in directories:
-            base = output_dir+'/Snaky/'+star+'/data/s1d/'+ins+'/'+d
+            base = output_dir+'/'+star+'/data/s1d/'+ins+'/'+d
             os.makedirs(base, exist_ok=True)
         return star, ins
 
@@ -880,7 +880,7 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
 
     myf.print_box('\n---- RECIPE : FINCH MAGNETIC CYCLE PERIOD ----\n')
 
-    starname = dir_root.split('Snaky/')[-1].split('/')[0]
+    starname = dir_root.split('/')[-5]
     ins = dir_root.split('/')[-2]
     star_info = import_star_info(dir_root)
 
