@@ -90,7 +90,7 @@ class start():
 
     def set_dataset(self, starname, ins, files, sub_dico='matching_diff'):
         if len(files)==0:
-            raise SnakyError('The input list of files is empty')
+            print(Fore.YELLOW+' [WARNING] The input list of files is empty')
 
         starname,ins = mym.create_snaky_dir(self.sy_output_dir,starname,ins)
         self.sy_starname = starname
@@ -103,26 +103,27 @@ class start():
         self.sy_files = files
         self.sy_sub_dico = sub_dico
 
-        file_test = self.sy_files[0]
         self.sy_rassine_db = False
         self.sy_yarara_db = False
 
-        if file_test.split('/')[-1][0:8]=='RASSINE_':
-            self.sy_rassine_db = True
-            if len(file_test.split('/Yarara/'))==2:
-                self.sy_yarara_db = True
-
         self.estimate_computation_time(fwhm=7.3)
 
-        #read fits files an create spectra normalised
-        check_files =  np.array([os.path.exists(f) for f in self.sy_files])
+        if len(files)!=0:
+            file_test = self.sy_files[0]
+            if file_test.split('/')[-1][0:8]=='RASSINE_':
+                self.sy_rassine_db = True
+                if len(file_test.split('/Yarara/'))==2:
+                    self.sy_yarara_db = True
 
-        if np.prod(check_files)==0:
-            print(Fore.YELLOW+' [EMERGENCY STOP] All the spectra were not found'+Fore.RESET)
-            print(' [INFO] Missing files:\n')
-            for f in np.array(files)[~check_files]:
-                print(f)            
-            raise SnakyError('All the spectra indicated were not found.')
+            #read fits files an create spectra normalised
+            check_files =  np.array([os.path.exists(f) for f in self.sy_files])
+
+            if np.prod(check_files)==0:
+                print(Fore.YELLOW+' [EMERGENCY STOP] All the spectra were not found'+Fore.RESET)
+                print(' [INFO] Missing files:\n')
+                for f in np.array(files)[~check_files]:
+                    print(f)            
+                raise SnakyError('All the spectra indicated were not found.')
 
     def init_workspace(self, ra=None, dec=None, copy_files=True):
         dir_root = self.sy_dir_root
@@ -615,9 +616,11 @@ class start():
     def compute_mag_cycle(self, rm_source=['DACE','Yu+23']):
         dir_root = self.sy_dir_root
         star = self.sy_starname
+        ins = self.sy_instrument
         try:
             sinfo = mym.import_star_info(dir_root)
-            finch_output = mym.yarara_finch(dir_root, rm_source=rm_source, offset_instrument='no!', ext='_fix_model')
+            finch_output = mym.yarara_finch(dir_root, rm_source=rm_source, offset_instrument='no', ext='_fix_model')
+            finch_output = mym.yarara_finch(dir_root, rm_source=rm_source, offset_instrument='yes', automatic_fit=True, ext='_free_model', predict_samples=[2026,2036])
             sinfo = myf.update_info_lvl2(sinfo,'Pmag','SNAKY', finch_output[1])
             pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
             pickle.dump({
@@ -629,8 +632,7 @@ class start():
                 'Phase_pred':finch_output[5],
                 'Phase_pred_side':finch_output[6]}, 
                 open(dir_root.replace(ins+'/','ALLINS_MERGED/Pmag_FINCH_info.p'),'wb'))
-            finch_output = mym.yarara_finch(dir_root, rm_source=rm_source, offset_instrument='yes', automatic_fit=True, ext='_free_model', predict_samples=[2026,2036])
-        except:
+        except ValueError:
             pass
 
     def cleaning(self):

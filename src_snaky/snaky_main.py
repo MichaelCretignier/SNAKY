@@ -876,7 +876,7 @@ def plot_mhk(dir_root, hide_outliers=True, daily_binned=True, debug=False):
     plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'MHK'+myv.PRD_EXT+'.png')
 
 
-def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offset_instrument='no!', automatic_fit=False, x_unit='years',predict='today', predict_samples=None,print_reference=True, rm_source=['DACE','Yu+23'], rm_ins=[], add_source=[], add_ins=[], offset_fixed=['SNAKY','HYDRA']):
+def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offset_instrument='yes', automatic_fit=False, x_unit='years',predict='today', predict_samples=None,print_reference=True, rm_source=['DACE','Yu+23'], rm_ins=[], add_source=[], add_ins=[], offset_fixed=['SNAKY','HYDRA']):
 
     myf.print_box('\n---- RECIPE : FINCH MAGNETIC CYCLE PERIOD ----\n')
 
@@ -934,9 +934,9 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
         )
     
     if db_finch is not None:
+        db_finch.masked(db_finch.y!=0)
         if proxy_name.split('_')[0]=='MHK':
             db_finch.convert_smw_mhk(int(star_info['Teff']['SNAKY']))
-            
         x.append(db_finch.x)
         y.append(db_finch.y)
         yerr.append(db_finch.yerr)
@@ -959,7 +959,8 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
     vec = Finch.tableXY(proxy.x, proxy.y, proxy.yerr, proxy_name = proxy_name) 
     vec.set_instrument(instru)
     vec.set_reference(reference)
-    vec.set_ins_uncertainties(null_yerr=True)
+
+    vec.set_ins_uncertainties(null_yerr=False)
     vec.set_flag(flag)
 
     vec.set_star(
@@ -983,20 +984,17 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
             trend_degree = trend_degree, 
             harm = harm,
             automatic_fit = automatic_fit, 
-            data_driven_std = True, 
+            data_driven_std = False, 
             offset_instrument = offset_instrument, 
             offset_fixed = offset_fixed,
             predict = 'today',
             x_unit = x_unit)
-        
+
         plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_magnetic_cycle'+ext+myv.PRD_EXT+'.png')
         if not vec.out_convergence_flag:
             vec.out_pmag = 0.00
+        vec.remove_ins_offset()
 
-        for i in np.unique(vec.out_model_offset.instrument):
-            value_offset = np.median(vec.out_model_offset.y[vec.out_model_offset.instrument==i])
-            vec.y[vec.instrument==i] -= value_offset
-            vec.bin.y[vec.bin.instrument==i] -= value_offset
     else:
         dust = vec.prepare_data(debug=False, data_driven_std=True)
         vec.out_convergence_flag = False
