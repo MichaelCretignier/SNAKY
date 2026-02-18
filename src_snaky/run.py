@@ -21,6 +21,8 @@ from . import snaky_main as mym
 # MEMORY AND TIME MONITORING
 # =============================================================================
 
+__version__ = '1.0.2'
+
 #### main reduction
 
 class SnakyError(Exception):
@@ -32,6 +34,7 @@ class start():
         self.sy_job_id = job_id
         self.warning_printed = 0
         self.debug = False
+        self.prd_ext = ''
 
     def set_output_dir(self,outputdir):
         self.sy_output_dir = outputdir
@@ -287,12 +290,7 @@ class start():
         summary = mym.import_summary(dir_root)
         files = np.array(summary['filename'])[summary['flag1']==0]
 
-        teff,feh,fluxD,warning_hole = mym.yarara_flux_density(files)
-        plt.savefig(dir_root+'IMAGES/Teff_approximated.png')
-        if warning_hole:
-            plt.figure('warning')
-            plt.savefig(dir_root+'WARNING/WARNING_Flux_density.png')
-            plt.close()
+        teff,feh,fluxD,warning_hole = mym.yarara_flux_density(dir_root,files)
         
         rv_sys = []
         for f in files:
@@ -836,6 +834,9 @@ class start():
         force_spectroscopy = bool(np.sum(steps==12))
         force_magcycle = bool(np.sum(steps==13))
         force_cleaning = bool(np.sum(steps==14))
+
+        if debug==True:
+            force_cleaning = False
 
         if automatic_db:
             print(' [INFO] Automatic sequence build...')

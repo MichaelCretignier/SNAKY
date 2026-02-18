@@ -1,4 +1,4 @@
-# SNAKY (a Spectroscopic Novel Analysis Kit of Yarara) v1.0.1
+# SNAKY (a Spectroscopic Novel Analysis Kit of Yarara) v1.0.2
 
 <p align="center">
   <img src="logo.png" alt="Project logo" width="400">

@@ -40,8 +40,6 @@ SNAKY — Spectroscopic Novel Analysis Kit of Yarara
 
 """
 
-__version__ = '1.0.1'
-
 print(Fore.GREEN+"""\n[INFO SNAKY]
 [INFO USER] SNAKY version = """+__version__ +""" 
 [INFO USER] READ ME CAREFULLY 
@@ -872,8 +870,8 @@ def plot_mhk(dir_root, hide_outliers=True, daily_binned=True, debug=False):
     plt.ylim(ylim)
     plt.yticks(y_ticks,np.round(mhk_rhk(y_ticks),2))
     plt.ylabel(r'$\log$ $R_{HK}$ [dex]',fontsize=14)
-    plt.savefig(dir_root+'IMAGES/MHK.png')
-    plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'MHK.png')
+    plt.savefig(dir_root+'IMAGES/MHK'+myv.PRD_EXT+'.png')
+    plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'MHK'+myv.PRD_EXT+'.png')
 
 
 def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offset_instrument='no!', automatic_fit=False, x_unit='years',predict='today', predict_samples=None,print_reference=True, rm_source=['DACE','Yu+23'], rm_ins=[], add_source=[], add_ins=[], offset_fixed=['SNAKY','HYDRA']):
@@ -989,7 +987,7 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
             predict = 'today',
             x_unit = x_unit)
         
-        plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_magnetic_cycle'+ext+'.png')
+        plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_magnetic_cycle'+ext+myv.PRD_EXT+'.png')
         if not vec.out_convergence_flag:
             vec.out_pmag = 0.00
 
@@ -1032,7 +1030,7 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
     FINCH_Mmag_GP = np.round(vec.out_gp_meanmag,1)   
     FINCH_Kmag_GP = np.round(vec.out_gp_ampmag,1)   
 
-    plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_magnetic_cycle_GP'+ext+'.png')
+    plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_magnetic_cycle_GP'+ext+myv.PRD_EXT+'.png')
 
     fig_gp.set_figwidth(10)
     plt.title('Teff = %.0f K   |    Logg = %.2f dex   |    Fe/H = %.2f dex   |    Pmag = %.2f years   |    < M > = %.1f %% (A = %.1f %%)    '%(vec.star_teff, vec.star_logg, vec.star_feh, vec.out_gp_pmag, vec.out_gp_meanmag, vec.out_gp_ampmag))
@@ -1040,7 +1038,7 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
     plt.ylim(-15,90)
     plt.legend()
     plt.axhline(y=0,color='k',ls='-',alpha=0.7,lw=1)
-    plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_magnetic_cycle_GP_fixed_axis'+ext+'.png')
+    plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_magnetic_cycle_GP_fixed_axis'+ext+myv.PRD_EXT+'.png')
 
     if not vec.out_convergence_flag:
         vec.bin.fit_line()
@@ -1088,8 +1086,7 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
         plt.legend()
         plt.xticks(np.arange(-25,200,25))
         plt.subplots_adjust(hspace=0.35)
-        plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'MHK_samples_%.1f_%.1f'%(predict_samples[0],predict_samples[1])+ext+'.pdf')
-
+        plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'MHK_samples_%.1f_%.1f'%(predict_samples[0],predict_samples[1])+ext+myv.PRD_EXT+'.pdf')
 
     output = [
         FINCH_Pmag,
@@ -1453,7 +1450,7 @@ def rassine_normalise(spec, min_radius=4.0, max_radius=76.0):
     spec.fit_rassine(min_radius, max_radius, 12.4, tag='%.0f'%(np.random.randint(1,10000)))
     return spec
 
-def yarara_flux_density(files,sub_dico='matching_diff',smooth=7):
+def yarara_flux_density(dir_root,files,sub_dico='matching_diff',smooth=7):
     all_flux_density = []
     count = -1
     warning = 0
@@ -1508,6 +1505,12 @@ def yarara_flux_density(files,sub_dico='matching_diff',smooth=7):
 
     if Teff_rough_est>7000:
         print(Fore.YELLOW+'\n [WARNING] Very hot star! Parameters unreliable'+Fore.RESET)
+
+    plt.savefig(dir_root+'IMAGES/Teff_approximated'+myv.PRD_EXT+'.png')
+    if warning:
+        plt.figure('warning')
+        plt.savefig(dir_root+'WARNING/WARNING_Flux_density'+myv.PRD_EXT+'.png')
+        plt.close()
 
     return (Teff_rough_est,FeH_rough_est,np.round(all_flux_density,3),warning)
 
@@ -1628,13 +1631,13 @@ def yarara_check_rv_sys(spec, fwhm, rv_sys_approx, ccf_tag, dir_root=None):
     print('\n [INFO] RV_sys value fitted as %.2f kms'%(rv_sys_fit))
     
     if dir_root is not None:
-        plt.savefig(dir_root+'IMAGES/RV_sys_fitting.pdf')
+        plt.savefig(dir_root+'IMAGES/RV_sys_fitting'+myv.PRD_EXT+'.pdf')
     
     SB1 = 0
     if spec.warning_multipeak==1:
         SB1 = 1
         if dir_root is not None:
-            plt.savefig(dir_root+'WARNING/WARNING_RV_sys_fitting.pdf')
+            plt.savefig(dir_root+'WARNING/WARNING_RV_sys_fitting'+myv.PRD_EXT+'.pdf')
 
     ccf = pd.DataFrame(np.array([spec.ccf_profile.x/1000,spec.ccf_profile.y]).T,columns=['vrad','ccf'])
     contrast = np.round(contrast_fit/100,3)
@@ -1651,9 +1654,9 @@ def yarara_check_sb(dir_root):
     ccf = pd.read_csv(dir_root+'STAR_INFO/CCF_RV_SYS.csv',index_col=0)
     ccf = myc.tableXY(np.array(ccf['vrad']),np.array(ccf['ccf']),0*np.array(ccf['ccf']))
     criterion = ccf.fit_multi_sb()
-    plt.savefig(dir_root+'IMAGES/SB_check.pdf')
+    plt.savefig(dir_root+'IMAGES/SB_check'+myv.PRD_EXT+'.pdf')
     if criterion:
-        plt.savefig(dir_root+'WARNING/WARNING_SB.pdf')
+        plt.savefig(dir_root+'WARNING/WARNING_SB'+myv.PRD_EXT+'.pdf')
     return criterion
 
 
@@ -1703,6 +1706,8 @@ def yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag=0):
     print('\n [INFO] Best RV_SYS detected is %.1f km/s \n'%(rv_sys))
     SB1 = int(np.sum(kept[:,-1])!=0)
     
+    os.system('rm -f '+dir_root+'/CCF_MASK/*.fits')
+
     sinfo = yarara_check_rv_sys(spec, fwhm, rv_sys, ccf_tag, dir_root=dir_root)
 
     if fwhm<50:
@@ -2209,9 +2214,9 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
     plt.plot(vrad/1000,ccf_norm,alpha=0.2,color='k')
     plt.axvline(x=0,color='k',ls='-.',lw=1) 
     plt.tick_params(top=True,labeltop=True,labelbottom=False)
-    plt.savefig(dir_root+'IMAGES/CCF_summary_%s.pdf'%(ccf_name))
+    plt.savefig(dir_root+'IMAGES/CCF_summary_%s'%(ccf_name)+myv.PRD_EXT+'.pdf')
     if warning:
-        plt.savefig(dir_root+'WARNING/CCF_summary_%s.pdf'%(ccf_name))
+        plt.savefig(dir_root+'WARNING/CCF_summary_%s'%(ccf_name)+myv.PRD_EXT+'.pdf')
 
     output = {
         'rv':ccf_rv,
@@ -2382,14 +2387,14 @@ def yarara_iron_lines(dir_root, master, fwhm, rv_sys=0.0):
 
         plt.fill_between(grid,master.ccf_profile.y_interp,1,color='g',alpha=0.2,label='%.2f'%(contrast1))
         plt.legend(loc=3)
-        plt.savefig(dir_root+'IMAGES/Atmos_FeIU.pdf')
+        plt.savefig(dir_root+'IMAGES/Atmos_FeIU'+myv.PRD_EXT+'.pdf')
         
         print('\n [INFO] Contrast FeIU = %.3f kms | EW = %.1f mA'%(contrast1,ew1))
 
         Contrast['FeIU']=np.round(contrast1,5)
         EW['FeIU'] = np.round(ew1,1)
 
-        plt.figure('All_profiles',figsize=(9,12))
+        plt.figure('All_profiles',figsize=(12,12))
         plt.subplot(4,4,1)
         plt.scatter(master.ccf_profile.x/1000,master.ccf_profile.y,color='k',s=5)
         plt.fill_between(grid/1000,master.ccf_profile.y_interp,1,color='g',alpha=0.2,label='%.2f'%(contrast1))
@@ -2420,7 +2425,7 @@ def yarara_iron_lines(dir_root, master, fwhm, rv_sys=0.0):
             ew2 = contrast2/3e5*np.mean(mask2[:,0])*1000
             plt.fill_between(grid,master.ccf_profile.y_interp,1,color='g',alpha=0.2,label='%.2f'%(contrast2))
             plt.legend(loc=3)
-            plt.savefig(dir_root+'IMAGES/Atmos_%s.pdf'%(species))
+            plt.savefig(dir_root+'IMAGES/Atmos_%s'%(species)+myv.PRD_EXT+'.pdf')
 
             print('\n [INFO] Contrast %s = %.3f kms | EW = %.1f mA'%(species,contrast2,ew2))
             
@@ -2437,7 +2442,7 @@ def yarara_iron_lines(dir_root, master, fwhm, rv_sys=0.0):
             plt.ylim(0.0,1.1)
             plt.xlim(-rv_range,rv_range)
         plt.subplots_adjust(hspace=0.35,wspace=0.35,top=0.95,left=0.07,right=0.96,bottom=0.13)
-        plt.savefig(dir_root+'IMAGES/Atmos_all.pdf')
+        plt.savefig(dir_root+'IMAGES/Atmos_all'+myv.PRD_EXT+'.pdf')
     return Contrast, EW
 
 def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=False):
@@ -2552,8 +2557,8 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
         fwhm = xlim/3
         plt.axes([0,0,1,0.1])
         plt.axis('off')
-        plt.text(0.5,0.5,'FWHM = %.2f km/s | RV_sys = %.1f km/s\n'%(fwhm,rv_sys)+r'$T_{eff}$'+' = %.0f +/- 70 K  |  logg = %.2f +/- 0.07 dex  |  [Fe/H] = %.2f +/- 0.07 dex\n Ms = %.2f +/- %.2f |  Rs = %.2f +/- %.2f'%(teff,logg,feh, M, dM, R, dR),ha='center',va='center',fontsize=12)
-        plt.savefig(dir_root+'IMAGES/Atmos_all.pdf')
+        plt.text(0.5,0.5,'FWHM = %.2f km/s | RV_sys = %.1f km/s\n'%(fwhm,rv_sys)+r'$T_{eff}$'+' = %.0f +/- 70 K  |  logg = %.2f +/- 0.07 dex  |  [Fe/H] = %.2f +/- 0.07 dex\n Ms = %.2f +/- %.2f |  Rs = %.2f +/- %.2f'%(teff,logg,feh, M, dM, R, dR),ha='center',va='center',fontsize=15)
+        plt.savefig(dir_root+'IMAGES/Atmos_all'+myv.PRD_EXT+'.pdf')
 
 
     return teff,feh,logg,M,R,BV,vmicro,vmacro
@@ -2762,7 +2767,7 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False, std_
     plt.hist(samples,bins=100,density=True,histtype='step',color='k',lw=2)
     plt.title(r'v $\sin$ i = %.2f +/- %.2f km/s'%(np.mean(samples),np.std(samples)))
     print('\n [INFO] v sin i = %.2f +/- %.2f km/s'%(np.mean(samples),np.std(samples)))
-    plt.savefig(dir_root+'IMAGES/Vsini_CCF.pdf')
+    plt.savefig(dir_root+'IMAGES/Vsini_CCF_hist'+myv.PRD_EXT+'.pdf')
 
     plt.figure('vsin3')
     plt.subplot(3,1,3)
@@ -2774,7 +2779,7 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False, std_
     plt.ylabel(r'$v$ $\sin$ $i$ [km/s]')
     plt.subplots_adjust(hspace=0,top=0.96,right=0.83)
 
-    plt.savefig(dir_root+'IMAGES/Vsini_CCF_sts.pdf')
+    plt.savefig(dir_root+'IMAGES/Vsini_CCF_sts'+myv.PRD_EXT+'.pdf')
 
     samples = np.random.choice(samples,99999)
     samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv',index_col=0)
@@ -2973,7 +2978,7 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
     plt.ylim(0,None)
     plt.xlabel(r'$\sin i$ []')
     plt.subplots_adjust(left=0.05,right=0.97)
-    plt.savefig(dir_root+'IMAGES/Vsini_inclination.pdf')
+    plt.savefig(dir_root+'IMAGES/Vsini_inclination'+myv.PRD_EXT+'.pdf')
 
     samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv',index_col=0)
     if Prot is not None:
@@ -3005,7 +3010,7 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
             plt.text(x*1.1,y*1.1,'%.0f°'%(np.arcsin(y)*180/np.pi))
         plt.plot(np.cos(np.linspace(0,2*np.pi,100)),np.sin(np.linspace(0,2*np.pi,100)),color='k')
         plt.plot([0,0],[-1,1],color='k',alpha=0.3,lw=1,ls='--')
-        plt.savefig(dir_root+'IMAGES/Stellar_inclination.pdf')
+        plt.savefig(dir_root+'IMAGES/Stellar_inclination'+myv.PRD_EXT+'.pdf')
 
 
 def yarara_activity_index(files, rv_sys, shift_rv, fwhm=6.0, material=None, sub_dico='matching_diff'):
@@ -3343,7 +3348,7 @@ def yarara_correct_continuum_absorption(dir_root):
         plt.plot(grid[i0-500:i0+500], template_flux[i0-500:i0+500],color='r') 
         plt.xlim(line-5,line+5)
         myf.only_axis()
-    plt.savefig(dir_root+'IMAGES/Correction_absolute_continuum.png')
+    plt.savefig(dir_root+'IMAGES/Correction_absolute_continuum'+myv.PRD_EXT+'.png')
     
     return template_flux, correction
 
@@ -3677,7 +3682,7 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
         plt.imshow(res2,aspect='auto',vmin=-0.3,vmax=0.3)
         plt.colorbar(pad=0)
         plt.subplots_adjust(left=0.07,right=0.97)
-        plt.savefig(dir_root+'IMAGES/Activity_profiles_%s_model_%s.pdf'%(l[-1],fmodel))
+        plt.savefig(dir_root+'IMAGES/Activity_profiles_%s_model_%s'%(l[-1],fmodel)+myv.PRD_EXT+'.pdf')
         plt.figure(name,figsize=(14,8))
 
         index_extracted = mat3.coeff_fitted[:,0]*100
@@ -3736,7 +3741,7 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
         'index_p10':q1, 'index_p50':q2, 'index_p90':q3, 'fmodel':fmodel}
         
         plt.subplots_adjust(left=0.07,right=0.98,top=0.90,bottom=0.08,hspace=0.35)
-        plt.savefig(dir_root+'IMAGES/Activity_profiles_%s_%s.pdf'%(name,fmodel))
+        plt.savefig(dir_root+'IMAGES/Activity_profiles_%s_%s'%(name,fmodel)+myv.PRD_EXT+'.pdf')
 
     #CaII
 
@@ -3795,7 +3800,7 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
     plt.yticks(y_ticks,np.round(mhk_rhk(y_ticks),2))
     plt.ylabel(r'$\log$ $R_{HK}$ [dex]')
     plt.subplots_adjust(right=0.85) 
-    plt.savefig(dir_root+'IMAGES/MHK_RHK.pdf')
+    plt.savefig(dir_root+'IMAGES/MHK_RHK'+myv.PRD_EXT+'.pdf')
 
     nb = int(99999/len(jdb))
     samples_mhk = []
@@ -3843,7 +3848,7 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
     plt.xlim(-6,-4)
     plt.subplots_adjust(hspace=0.35)
 
-    plt.savefig(dir_root+'IMAGES/MHK_samples.pdf')
+    plt.savefig(dir_root+'IMAGES/MHK_samples'+myv.PRD_EXT+'.pdf')
     
     if len(samples_mhk)&len(samples_rhk):
         samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv',index_col=0)
