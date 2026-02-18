@@ -217,7 +217,7 @@ job.reduce(begin=8, end=8, automatic_db=False, Prot=50, Rs=1.0)
 
 ## ⑥ Launching a RASSINE dataset
 
-*SNAKY itself is very fast and grows with O(N), but among the reduction, RASSINE is the slowest step in the pipeline (~20-30% of the execution time in the previous example for a single spectrum!). Computational time of RASSINE is usually ~15s per spectrum.*
+*SNAKY itself is very fast and grows with O(N), but among the reduction, RASSINE is the slowest step in the pipeline (~20-30% of the execution time in the previous example for a single spectrum!). Computational time of RASSINE is usually ~15s per spectrum and can rapidly overpass the SNAKY reduction time by order of magnitudes:*
 
 $$
 \text{Total Execution Time} =
@@ -231,9 +231,7 @@ $$
 
 *But, maybe you already have RASSINE spectra saved on your computer? (I'm sincerely honoured of it!)*
 
-*Theoretically, you can't process them directly by SNAKY since those will miss the metadata of the star coordinates (shame on the past myself...)*
-
-*However you can specify manually those values in `.reduce()`:*
+*You can read them with SNAKY if and only if you specify the star coordinates ,that are missing from the metadata, manually in `.reduce()`:*
 
 <a id="flag2"></a>
 
