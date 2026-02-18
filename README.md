@@ -38,7 +38,7 @@ If you have any problem, please contact me at: michael.cretignier@physics.ox.ac.
 ## ③ Installation
 
 *You can try with your own main Python environment since there are only
-a few libraries used (check the requirements file to see which ones). Otherwise use either the conda or the venv installation:*
+a few libraries used (check the requirements file to see which ones). It is however recommanded to have the same `scikit-learn` version. Otherwise use either the conda or the venv to create a python environment:*
 
 *Based on [benchmark](#flag3), the fastest version is the python 3.10.15:*
 
