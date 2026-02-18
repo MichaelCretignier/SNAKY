@@ -280,6 +280,7 @@ If only e2ds spectra exist and not s1d, follow NEID example.
 |---------------|---------------|---------------|--------------|--------------|
 | Apple M4 (2024) | SNAKY (1.0.1) | 3.12.5_latest | 01 min 52 s  | 01 min 42 s  |
 | Apple M4 (2024) | SNAKY (1.0.1) | 3.12.5 | 01 min 58 s  | 01 min 47 s  |
+| Apple M4 (2024) | SNAKY (1.0.1) | 3.10.5 | 01 min 30 s  | 01 min 05 s  |
 | Intel Mac (2018) | SNAKY (1.0.1) | 3.8.8 | 03 min 39 s  | 03 min 45 s  |
 | Yours! ☺ | SNAKY (1.0.1) | ??? | ???  | ???  |
 

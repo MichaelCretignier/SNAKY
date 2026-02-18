@@ -140,7 +140,7 @@ class start():
             summary = pd.DataFrame(np.array([files, inss, jdb, berv, flag]).T,columns=['filename','ins','jdb','berv','flag'])
             summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
         else:
-            if self.sy_rassine_db:
+            if (self.sy_rassine_db==True)&(self.sy_yarara_db==False):
                 dace_summary = pd.read_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv',index_col=0)
                 summary = dace_summary[['fileroot','ins','rjd','berv']]
                 summary['flag'] = 0

@@ -38,8 +38,8 @@ if len(sys.argv)>1:
             Rs = float(j[1])
 
 
-files = glob.glob(snaky.myv.TEST_DATASET+'/HARPN_3.0.1/RAW'+'/*.fits')
-output_dir = '/'.join(snaky.myv.ROOT_DIR.split('/')[0:-2])+'/Snaky/'
+files = TODEFINE # glob.glob() to select all the spectra you want or read a csv DB table
+output_dir = TODEFINE # Best practice is to use the same directory all stars processed
 
 import src_snaky.run as snaky
 
