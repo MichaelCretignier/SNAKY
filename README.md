@@ -51,7 +51,7 @@ pip install -r requirements_3.12.5_latest.txt
 
 Other tested `../SNAKY/requirement_PYTHON_VERSION.txt` libraries versioning are available if needed. 
 
-Check if the snaky environment exists:
+Check if the snaky environment exists and is active:
 
 ```bash
 conda env list
