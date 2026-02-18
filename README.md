@@ -230,7 +230,7 @@ $$
 
 *But, maybe you already have RASSINE spectra saved on your computer? (Such a wise decision!)*
 
-*You can read them with SNAKY if and only if you specify manually the star coordinates (that are missing from the RASSINE metadata) in `.reduce()`:*
+*To read them with SNAKY, you just have to specify manually in `.reduce()`the star coordinates (that are missing from the RASSINE metadata):*
 
 <a id="flag2"></a>
 
