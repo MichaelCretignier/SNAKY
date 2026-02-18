@@ -50,7 +50,7 @@ conda activate snaky
 pip install -r requirements_3.10.15.txt
 ```
 
-Other tested `../SNAKY/requirements/requirement_PYTHON_VERSION.txt` libraries versioning are available if needed. 
+Other tested `../SNAKY/requirements/requirement_PYTHON_VERSION.txt` libraries versioning are available if needed. For `Mac Intel Chip`, python version 3.8.8 is recommended.
 
 Check if the snaky environment exists and is active:
 
@@ -291,9 +291,7 @@ If only e2ds spectra exist and not s1d, follow NEID example.
 |---------------|---------------|---------------|---------------|--------------|--------------|
 | MC1 | Apple M4 MAX (2024) | SNAKY (1.0.2) | 3.12.5 | 02 min 11 s  | 02 min 03 s  |
 | MC1 | Apple M4 MAX (2024) | SNAKY (1.0.2) | 3.10.15 | 01 min 34 s  | 01 min 40 s  |
-| MC1 | Apple M4 MAX (2024) | SNAKY (1.0.2) | 3.8.8 | 01 min 34 s  | 01 min 40 s  |
-
-| MC2 | Intel Mac (2018) | SNAKY (1.0.1) | 3.8.8 | 05 min 05 s  | 08 min 18 s  |
+| MC2 | Intel Mac (2018) | SNAKY (1.0.2) | 3.8.8 | 05 min 05 s  | 08 min 18 s  |
 | CC1 | Apple M4 PRO (2024) | SNAKY (1.0.1) | 3.10.15 | 01 min 30 s  | 01 min 05 s  |
 | CC1 | Apple M4 PRO (2024) | SNAKY (1.0.1) | 3.12.5_latest | 01 min 40 s  | 01 min 36 s  |
 | MC1 | Apple M4 MAX (2024) | SNAKY (1.0.1) | 3.12.5_latest | 01 min 52 s  | 01 min 42 s  |
