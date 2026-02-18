@@ -224,8 +224,6 @@ class start():
         dace_summary['RA'] = np.round(ra,6) ; dace_summary['DEC'] = np.round(dec,6)
         dace_summary.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
 
-
-
     def preprocess(self):
         ins = self.sy_instrument
         files = self.sy_files
@@ -303,7 +301,7 @@ class start():
         rv_sys_std = np.nanstd(rv_sys)
         rv_sys_approx = np.round(np.nanmedian(rv_sys),2)
         print('\n [INFO] Final aproximated RV_sys = %.1f +/- %.1f kms'%(rv_sys_approx,rv_sys_std))
-        
+
         mask = np.ones(len(rv_sys)).astype('bool')
         if len(rv_sys)>10:
             mask_outliers = abs(rv_sys-np.nanmedian(rv_sys))/myf.mad(rv_sys)

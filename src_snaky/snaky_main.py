@@ -40,7 +40,7 @@ SNAKY — Spectroscopic Novel Analysis Kit of Yarara
 
 """
 
-__version__ = '1.0.3'
+__version__ = '1.0.4'
 
 print(Fore.GREEN+"""\n[INFO SNAKY]
 [INFO USER] SNAKY version = """+__version__ +""" 
@@ -1424,6 +1424,20 @@ def extract_header(files, instru, debug=False, ra=None, dec=None):
         summary['RA'] = np.round(summary['RA'].astype('float'),6)
         summary['DEC'] = np.round(summary['DEC'].astype('float'),6)
     if ins=='RASSINE':
+        missing_time = (summary['rjd']!=summary['rjd'])
+        print(' [INFO] Nb of missing time = %.0f'%(np.sum(missing_time)))
+        if np.sum(missing_time)!=0: #search ut in filename
+            uttime = np.array([f[-25:-2] for f in files])
+            year = np.array([ut[0:4] for ut in uttime])
+            year_num = np.array([float(y) if y.isdigit() else np.nan for y in year])
+            valid = (year_num>1950)&(year_num<2050)
+            missing_time = missing_time[valid]
+            rjd = np.ones(len(summary))[missing_time]*np.nan
+            rjd = myf.conv_time(uttime[valid])[0]
+            summary.loc[missing_time,'rjd'] = rjd
+            missing_time = (summary['rjd']!=summary['rjd'])
+            print(' [INFO] Nb of missing time after UT search = %.0f'%(np.sum(missing_time)))
+        
         summary['rjd'] = summary['rjd'].astype('float') + 2400000
         summary['RA'] = ra
         summary['DEC'] = dec        
@@ -1435,15 +1449,23 @@ def extract_header(files, instru, debug=False, ra=None, dec=None):
         summary['RA'] = ra
         summary['DEC'] = dec
 
+    skip_berv = False
+    if np.sum(summary['rjd']!=summary['rjd'])!=0:
+        summary['rjd'] = np.arange(len(summary))
+        skip_berv = True
+
     summary['berv'] = np.round(summary['berv'].astype('float'),6)
     summary['snr'] = np.round(summary['snr'].astype('float'),1)
     ra_deg = np.nanmedian(summary['RA'])
     dec_deg = np.nanmedian(summary['DEC'])
-    obstime = Time(summary['rjd'].astype('float'), format='jd', scale='utc')
-    obstime_utc = obstime.utc.isot
-    berv = get_berv(ra_deg, dec_deg, obstime_utc, instrument).value
-    summary['rjd'] = summary['rjd'].astype('float') - 2400000
-    summary['berv_computed'] = np.round(berv,4)
+    if not skip_berv:
+        obstime = Time(summary['rjd'].astype('float'), format='jd', scale='utc')
+        obstime_utc = obstime.utc.isot
+        berv = get_berv(ra_deg, dec_deg, obstime_utc, instrument).value
+        summary['rjd'] = summary['rjd'].astype('float') - 2400000
+        summary['berv_computed'] = np.round(berv,4)
+    else:
+        summary['berv_computed'] = np.nan
 
     return summary
 

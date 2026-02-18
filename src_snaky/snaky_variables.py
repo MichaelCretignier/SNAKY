@@ -110,7 +110,11 @@ instrument_lat_deg = {
     'NEID':31.9584,
     'KPF':19.8261,
     '2ES':-29.25786,
-    }   
+    'FIES':28.7583,        
+    'UVES':-24.6270,       
+    'HERMES':-29.2567,     
+    'FEROS':-29.2584,     
+}
 
 instrument_lon_deg = {
     'HARPN':-17.8890,
@@ -123,7 +127,11 @@ instrument_lon_deg = {
     'NEID':-111.5987,
     'KPF':-155.4700,
     '2ES':-70.73666,
-    }
+    'FIES':-17.8890,       
+    'UVES':-70.4045,       
+    'HERMES':-70.7345,     
+    'FEROS':-70.7346,     
+}
 
 instrument_altm = {
     'HARPN'   : 2326,   # La Palma (TNG)
@@ -136,7 +144,12 @@ instrument_altm = {
     'NEID'    : 2120,   # Kitt Peak 3.5m WIYN
     'KPF'     : 4160,   # Keck I (Maunakea)
     '2ES'     : 2400,   # La Silla (same site as HARPS)
+    'FIES'    : 2382,   # NOT
+    'UVES'    : 2635,   # Paranal VLT
+    'HERMES'  : 2400,   # La Silla (Mercator)
+    'FEROS'   : 2400,   # La Silla (MPG/ESO 2.2m)
 }
+
 
 rassine_continuum = [3805.95, 3811.49, 3844.77, 3851.95, 3863.23, 3867.51, 3874.89,
        3892.72, 3896.9 , 3909.16, 3950.66, 3954.31, 3982.78, 3988.14,
