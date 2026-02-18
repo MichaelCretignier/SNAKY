@@ -661,6 +661,9 @@ class start():
 
         table_time[['time_step_min','frac_time','RAM_gb','RAM_peak_gb','RAM_all_gb']] = np.round(table_time[['time_step_min','frac_time','RAM_gb','RAM_peak_gb','RAM_all_gb']],2)
 
+        if savefile is not None:
+            table_time.to_csv(savefile)
+
         if step=='end':
             print('\n',table_time[['time_step_min','frac_time','stage','RAM_peak_gb','RAM_all_gb']],'\n')
             time_start = table_time.loc['begin']['time_abs']
@@ -679,7 +682,7 @@ class start():
             plt.tick_params(direction='inout',top=True,right=True,labelbottom=False)
             plt.grid()
 
-            RAM_max = np.max(table_time[['RAM_peak_gb','RAM_all_gb']])
+            RAM_max = np.max(np.array(table_time[['RAM_peak_gb','RAM_all_gb']]))
             plt.title('Total time = %s minutes | RAM maximum = %.1f Gb | N files = %.0f'%(tag_duration,RAM_max, len(self.sy_files)))
 
             plt.subplot(2,1,2) ; plt.ylabel('RAM [GB]')
@@ -690,9 +693,6 @@ class start():
             plt.grid()
             plt.subplots_adjust(bottom=0.15,top=0.95,hspace=0.10)
             plt.savefig(savefile.replace('csv','png'))
-
-        if savefile is not None:
-            table_time.to_csv(savefile)
 
     def reduce(self,
             begin=1,
