@@ -221,10 +221,10 @@ job.reduce(begin=8, end=8, automatic_db=False, Prot=50, Rs=1.0)
 
 $$
 \text{Total Execution Time} =
-\underbrace{15\,N}_{\text{RASSINE}} 
+\underbrace{15 \times N}_{\text{RASSINE}} 
 + 
 \underbrace{
-94 + \left(\frac{\mathrm{FWHM}}{7.3\,\mathrm{km\,s^{-1}}}\right) N \times 0.76
+94 + \left(\frac{\mathrm{FWHM}}{7.3}\right) \times N \times 0.76
 }_{\text{SNAKY}}
 \quad [\mathrm{s}]
 $$
