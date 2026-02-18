@@ -44,9 +44,9 @@ a few libraries used (check the requirements file to see which ones). Otherwise 
 ### [Option 1] Conda install (Python 3.12.5)
 
 ```bash
-conda create -n snaky python=3.12.5 
-conda activate snaky 
-pip install -r requirements_3.12.5_latest.txt 
+conda create -n snaky python=3.12.5
+conda activate snaky
+pip install -r requirements_3.12.5_latest.txt
 ```
 
 Other tested `../SNAKY/requirement_PYTHON_VERSION.txt` libraries versioning are available if needed. 
@@ -280,9 +280,9 @@ If only e2ds spectra exist and not s1d, follow NEID example.
 
 | Computer | Processor        | VERSION        | LIBRARIES       | [DATASET1](#flag1)    | [DATASET2](#flag2)     |
 |---------------|---------------|---------------|---------------|--------------|--------------|
-| CC1 | Apple M4 (2024) | SNAKY (1.0.1) | 3.10.5 | 01 min 30 s  | 01 min 05 s  |
-| MC1 | Apple M4 (2024) | SNAKY (1.0.1) | 3.12.5_latest | 01 min 52 s  | 01 min 42 s  |
-| MC1 | Apple M4 (2024) | SNAKY (1.0.1) | 3.12.5 | 01 min 58 s  | 01 min 47 s  |
+| CC1 | Apple M4 PRO (2024) | SNAKY (1.0.1) | 3.10.5 | 01 min 30 s  | 01 min 05 s  |
+| MC1 | Apple M4 MAX (2024) | SNAKY (1.0.1) | 3.12.5_latest | 01 min 52 s  | 01 min 42 s  |
+| MC1 | Apple M4 MAX (2024) | SNAKY (1.0.1) | 3.12.5 | 01 min 58 s  | 01 min 47 s  |
 | MC2 | Intel Mac (2018) | SNAKY (1.0.1) | 3.8.8 | 03 min 39 s  | 03 min 45 s  |
 | ? | Yours! ☺ | SNAKY (1.0.1) | ??? | ???  | ???  |
 
