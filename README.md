@@ -220,7 +220,13 @@ job.reduce(begin=8, end=8, automatic_db=False, Prot=50, Rs=1.0)
 *SNAKY itself is very fast and grows with O(N), but among the reduction, RASSINE is the slowest step in the pipeline (~20-30% of the execution time in the previous example for a single spectrum!). Computational time of RASSINE is usually ~15s per spectrum.*
 
 $$
-\text{Total Execution Time} =  N \times 15 [s] + 94 [s] + \left(\frac{\mathrm{FWHM}}{7.3 [\text{km/s}]}\right) \times N \times 0.76 [s]
+\text{Total Execution Time} =
+\underbrace{15\,N}_{\text{RASSINE}} 
++ 
+\underbrace{
+94 + \left(\frac{\mathrm{FWHM}}{7.3\,\mathrm{km\,s^{-1}}}\right) N \times 0.76
+}_{\text{SNAKY}}
+\quad [\mathrm{s}]
 $$
 
 *But, maybe you already have RASSINE spectra saved on your computer? (I'm sincerely honoured of it!)*
