@@ -89,7 +89,7 @@ sys.path.append('../GitHub/SNAKY/')
 
 ### Step-by-step
 
-*First enter into your local `SNAKY/` directory:*
+*If you didn't add SNAKY to your sys.path, first enter into your local `SNAKY/` directory:*
 
 ```bash
 cd .../GitHub/SNAKY/
