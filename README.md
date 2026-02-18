@@ -50,7 +50,7 @@ conda activate snaky
 pip install -r requirements_3.10.15.txt
 ```
 
-Other tested `../SNAKY/requirement_PYTHON_VERSION.txt` libraries versioning are available if needed. 
+Other tested `../SNAKY/requirements/requirement_PYTHON_VERSION.txt` libraries versioning are available if needed. 
 
 Check if the snaky environment exists and is active:
 
