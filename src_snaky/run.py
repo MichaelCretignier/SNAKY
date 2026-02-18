@@ -303,10 +303,7 @@ class start():
         rv_sys_std = np.nanstd(rv_sys)
         rv_sys_approx = np.round(np.nanmedian(rv_sys),2)
         print('\n [INFO] Final aproximated RV_sys = %.1f +/- %.1f kms'%(rv_sys_approx,rv_sys_std))
-
-        if self.debug:
-            mym.yarara_check_rv_sys(spec, 15, rv_sys_approx, ccf_tag='', dir_root=dir_root)
-
+        
         mask = np.ones(len(rv_sys)).astype('bool')
         if len(rv_sys)>10:
             mask_outliers = abs(rv_sys-np.nanmedian(rv_sys))/myf.mad(rv_sys)

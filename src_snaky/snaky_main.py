@@ -40,7 +40,7 @@ SNAKY — Spectroscopic Novel Analysis Kit of Yarara
 
 """
 
-__version__ = '1.0.2'
+__version__ = '1.0.3'
 
 print(Fore.GREEN+"""\n[INFO SNAKY]
 [INFO USER] SNAKY version = """+__version__ +""" 
@@ -1684,6 +1684,7 @@ def yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag=0):
     print(' [INFO] Table summary FWHM | RV_SYS \n')
     save[save[:,3]==save[:,5],3] = -999
     save[save[:,4]<0.70,3] = -998
+        
     validated = (save[:,3]>-900)
     if sum(validated)==0:
         index = np.arange(len(save))[save[:,3]!=-999]
@@ -1709,7 +1710,6 @@ def yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag=0):
     SB1 = int(np.sum(kept[:,-1])!=0)
     
     os.system('rm -f '+dir_root+'/CCF_MASK/*.fits')
-
     sinfo = yarara_check_rv_sys(spec, fwhm, rv_sys, ccf_tag, dir_root=dir_root)
 
     if fwhm<50:

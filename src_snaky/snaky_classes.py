@@ -976,9 +976,14 @@ class tableXY(object):
                 mask_wave = np.log10(mask[:,0])
                 mask_contrast = mask[:,1]*weighted + (1-weighted)
 
-                log_grid_mask = np.arange(log_grid.min()-10*dgrid,log_grid.max()+10*dgrid+dgrid/10,dgrid/11)   
+                range_start = log_grid.min() - 10*dgrid
+                range_stop  = log_grid.max() + 10*dgrid
+                range_step  = dgrid/11
+                range_n = int((range_stop - range_start)/range_step) + 1
+
+                log_grid_mask = np.linspace(range_start, range_stop, range_n)
                 log_mask = np.zeros(len(log_grid_mask))
-                
+
                 match = myf.identify_nearest(mask_wave,log_grid_mask)
                 for j in np.arange(-5,6,1):
                     log_mask[match+j] = (mask_contrast)**pow_weight
@@ -1002,7 +1007,7 @@ class tableXY(object):
 
             vrad, ccf_power, ccf_power_std = myf.ccf(log_grid[used_region], flux[:,used_region], log_template[used_region], 
                                                     rv_range = rv_range, oversampling = ccf_oversampling, spec1_std = flux_err[:,used_region]) #to compute on all the ccf simultaneously
-
+            
             self.ccf_profile = tableXY(vrad,np.ravel(ccf_power))
             if norm:
                 if np.nanmedian(self.ccf_profile.y/np.percentile(self.ccf_profile.y,95))>0.90:

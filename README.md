@@ -1,4 +1,4 @@
-# SNAKY (a Spectroscopic Novel Analysis Kit of Yarara) v1.0.2
+# SNAKY (a Spectroscopic Novel Analysis Kit of Yarara) v1.0.3
 
 <p align="center">
   <img src="logo.png" alt="Project logo" width="400">
@@ -289,12 +289,12 @@ If only e2ds spectra exist and not s1d, follow NEID example.
 
 | Computer | Processor        | VERSION        | LIBRARIES       | [DATASET1](#flag1)    | [DATASET2](#flag2)     |
 |---------------|---------------|---------------|---------------|--------------|--------------|
-| MC1 | Apple M4 MAX (2024) | SNAKY (1.0.2) | 3.12.5 | 02 min 11 s  | 02 min 03 s  |
 | MC1 | Apple M4 MAX (2024) | SNAKY (1.0.2) | 3.10.15 | 01 min 34 s  | 01 min 40 s  |
-| MC2 | Intel Mac (2018) | SNAKY (1.0.2) | 3.8.8 | 05 min 05 s  | 08 min 18 s  |
+| MC1 | Apple M4 MAX (2024) | SNAKY (1.0.2) | 3.12.5 | 02 min 11 s  | 02 min 03 s  |
+| MC1 | Apple M4 MAX (2024) | SNAKY (1.0.2) | 3.12.5_latest | 02 min 14 s  | 02 min 09 s  |
+| MC2 | Intel Mac (2018) | SNAKY (1.0.2) | 3.8.8 | 04 min 24 s  | 08 min 18 s  |
 | CC1 | Apple M4 PRO (2024) | SNAKY (1.0.1) | 3.10.15 | 01 min 30 s  | 01 min 05 s  |
 | CC1 | Apple M4 PRO (2024) | SNAKY (1.0.1) | 3.12.5_latest | 01 min 40 s  | 01 min 36 s  |
-| MC1 | Apple M4 MAX (2024) | SNAKY (1.0.1) | 3.12.5_latest | 01 min 52 s  | 01 min 42 s  |
 | ? | Yours! ☺ | SNAKY (1.0.1) | ??? | ???  | ???  |
 
 ## Uninstall
