@@ -67,13 +67,13 @@ pip install --upgrade pip
 pip install -r requirements_3.10.15.txt
 ```
 
-## ④ Compile the code
+## ④ Build the code
 
-*SNAKY contains a table too heavy for GitHub that need first to be merged back using the compiler function*
+*SNAKY contains a table too heavy for GitHub that need first to be merged back using the build function*
 
 ```bash
 cd ../SNAKY/src_snaky 
-python snaky_compile.py
+python snaky_build.py
 ```
 
 *You should now have a `../SNAKY/Material_snaky/template_star_SNAKY_3900_6800.npy` file.*
