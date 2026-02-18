@@ -189,8 +189,8 @@ You noticed but, the `.reduce()` also monitor the RAM and execution time as a bo
 Because of the trigger, `.reduce()` can also restart from a crash point automatically:
 
 ```python
-
 # Simulate a crash
+
 import src_snaky.run as snaky
 
 files = snaky.glob.glob(snaky.myv.TEST_DATASET1)
@@ -236,6 +236,7 @@ $$
 
 ```python
 # Benchmark Dataset2
+
 # Let's use the Alpha Cen B RASSINE dataset
 import src_snaky.run as snaky
 
