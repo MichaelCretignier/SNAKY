@@ -46,8 +46,10 @@ a few libraries used (check the requirements file to see which ones). Otherwise 
 ```bash
 conda create -n snaky python=3.12.5 
 conda activate snaky 
-pip install -r requirements_3.12.5_latest.txt # check others versioning if needed
+pip install -r requirements_3.12.5_latest.txt 
 ```
+
+Other tested `../SNAKY/requirement_*.txt` libraries versioning are available if needed.
 
 Check if the snaky environment exists:
 
