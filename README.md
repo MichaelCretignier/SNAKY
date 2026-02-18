@@ -217,7 +217,7 @@ job.reduce(begin=8, end=8, automatic_db=False, Prot=50, Rs=1.0)
 
 ## ⑥ Launching a RASSINE dataset
 
-*SNAKY itself is very fast and grows with O(N), but among the reduction, RASSINE is the slowest step in the pipeline (~20-30% of the execution time in the previous example for a single spectrum!). Computational time of RASSINE is usually ~15s per spectrum and can rapidly overpass the SNAKY reduction time by order of magnitudes:*
+*SNAKY itself is very fast and scales approximately as O(N). However, within the reduction pipeline, RASSINE is the most time-consuming step (about 20–30% of the total execution time in the previous single-spectrum example). RASSINE typically requires ~15 seconds per spectrum and can quickly dominate the total runtime, exceeding the SNAKY processing time by orders of magnitude when many spectra are processed:*
 
 $$
 \text{Total Execution Time} =
