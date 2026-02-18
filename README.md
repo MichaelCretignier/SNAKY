@@ -69,7 +69,7 @@ pip install -r requirements_3.10.15.txt
 
 ## ④ Build the code
 
-*SNAKY contains a table too heavy for GitHub that need first to be merged back using the build script `snaky_build.py`*
+*SNAKY contains a table too heavy for GitHub that need to be merged using the build script `snaky_build.py`*
 
 ```bash
 cd ../SNAKY/src_snaky 
