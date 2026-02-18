@@ -82,14 +82,14 @@ The code is closed to be packaged. For the moment, if you want to run `snaky` ev
 
 ```python
 import sys
-sys.path.append('../GitHub/SNAKY/')
+sys.path.append('.../GitHub/SNAKY/')
 ```
 
 ## ⑤ Tutorial
 
 ### Step-by-step
 
-*If you didn't add SNAKY to your sys.path, first enter into your local `SNAKY/` directory:*
+*If you didn't add `SNAKY/` to your sys.path, first enter into your local git clone `SNAKY/` directory:*
 
 ```bash
 cd .../GitHub/SNAKY/
