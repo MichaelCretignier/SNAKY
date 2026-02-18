@@ -108,7 +108,7 @@ output_dir = '/Users/cretignier/Desktop/' # will create .../Desktop/Snaky/
 import src_snaky.run as snaky
 
 # let's use the SNAKY test dataset
-files = snaky.glob.glob(snaky.myv.TEST_DATASET1+'/HARPN_3.0.1/RAW/*.fits')
+files = snaky.glob.glob(snaky.myv.TEST_DATASET1)
 #output_dir = '/Users/cretignier/Desktop/'
 
 job = snaky.start()
@@ -169,7 +169,7 @@ job.reset(suppression='all')
 
 import src_snaky.run as snaky
 
-files = snaky.glob.glob(snaky.myv.TEST_DATASET1+'HARPN_3.0.1/RAW/*.fits')
+files = snaky.glob.glob(snaky.myv.TEST_DATASET1)
 #output_dir = '/Users/cretignier/Desktop/'
 
 job = snaky.start()
@@ -190,7 +190,7 @@ Because of the trigger, `.reduce()` can also restart from a crash point automati
 # Simulate a crash
 import src_snaky.run as snaky
 
-files = snaky.glob.glob(snaky.myv.TEST_DATASET1 + 'HARPN_3.0.1/RAW/*.fits')
+files = snaky.glob.glob(snaky.myv.TEST_DATASET1)
 #output_dir = '/Users/cretignier/Desktop/'
 
 job = snaky.start()
@@ -229,7 +229,7 @@ job.reduce(begin=8, end=8, automatic_db=False, Prot=50, Rs=1.0)
 # Let's use the Alpha Cen B RASSINE dataset
 import src_snaky.run as snaky
 
-files = snaky.glob.glob(snaky.myv.TEST_DATASET2+'HARPS15_3.3.6/RAW/RASSINE*.p')
+files = snaky.glob.glob(snaky.myv.TEST_DATASET2)
 #output_dir = '/Users/cretignier/Desktop/'
 
 job = snaky.start()
