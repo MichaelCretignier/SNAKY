@@ -21,7 +21,7 @@ from . import snaky_main as mym
 # MEMORY AND TIME MONITORING
 # =============================================================================
 
-__version__ = '1.0.2'
+__version__ = mym.__version__
 
 #### main reduction
 
