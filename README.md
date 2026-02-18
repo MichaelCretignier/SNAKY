@@ -99,7 +99,7 @@ ipython
 1) An output directory 
 
 ```python
-output_dir = '/Users/cretignier/Desktop/' # will create .../Desktop/Snaky/
+output_dir = '/Users/cretignier/Desktop/'
 ```
 
 2) A list of spectra you want to process
@@ -115,7 +115,7 @@ files = snaky.glob.glob(snaky.myv.TEST_DATASET1)
 #output_dir = '/Users/cretignier/Desktop/'
 
 job = snaky.start()
-job.set_output_dir(output_dir)                   # define output dir
+job.set_output_dir(output_dir)                   # define output dir (will create .../Desktop/Snaky/)
 job.set_dataset('HD12345', 'HARPN_3.0.1', files) # define the star + instrument + list of spectra
 ```
 
