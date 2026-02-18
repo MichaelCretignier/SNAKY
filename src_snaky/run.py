@@ -197,11 +197,14 @@ class start():
         files1 = np.array(summary['filename'])
         files2 = np.array(self.sy_files)
 
+        raw_dir = os.path.dirname(files2[0])
+
         files1 = np.array([i.split('/')[-1] for i in files1])
         files2 = np.array([i.split('/')[-1] for i in files2])
 
         mask = myf.in1d(files1,files2)
         summary = summary.loc[mask].reset_index(drop=True)
+        summary['filename'] = np.array([raw_dir+'/'+i for i in files1[mask]])
 
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
         sinfo = mym.import_star_info(dir_root)
