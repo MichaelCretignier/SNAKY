@@ -89,7 +89,7 @@ sys.path.append('.../GitHub/SNAKY/')
 
 ### Step-by-step
 
-*If you didn't add `SNAKY/` to your sys.path, first enter into your local git clone `SNAKY/` directory:*
+*If you haven't add `SNAKY/` to your sys.path, first enter into your local git clone `SNAKY/` directory:*
 
 ```bash
 cd .../GitHub/SNAKY/
