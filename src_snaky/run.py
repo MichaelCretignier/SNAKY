@@ -66,7 +66,7 @@ class start():
         N = len(self.sy_files)
 
         time_per_rassine = 15 # 15s per continuum normlisation
-        snaky1 = 93.8            # time to process snaky with N=1
+        snaky1 = 115.8            # time to process snaky with N=1
         snaky100 = 76.36         # time to process snaky with N=100
 
         rassine_processing = time_per_rassine*N

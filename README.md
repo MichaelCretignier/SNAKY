@@ -224,7 +224,7 @@ $$
 \underbrace{15 N}_{\text{RASSINE}} 
 + 
 \underbrace{
-94 + 0.76 N \times \left(\frac{\mathrm{FWHM}}{7.3}\right)}_{\text{SNAKY}}
+116 + 0.76 N \times \left(\frac{\mathrm{FWHM}}{7.3}\right)}_{\text{SNAKY}}
 \quad [\mathrm{s}]
 $$
 
