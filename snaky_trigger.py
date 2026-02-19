@@ -8,11 +8,11 @@ import sys
 ins = 'SOPHIE_0.5'
 star = ''
 sub_dico = 'matching_diff'
-begin = 0
-end = 0
+begin = 1
+end = 14
 debug = False
-Rs = None
-Prot = None
+rs = None
+prot = None
 automatic_db = False
 
 if len(sys.argv)>1:
@@ -33,9 +33,9 @@ if len(sys.argv)>1:
         elif j[0] == '-A':
             automatic_db = bool(int(j[1]))
         elif j[0] == '-P':
-            Prot = float(j[1])
+            prot = float(j[1])
         elif j[0] == '-R':
-            Rs = float(j[1])
+            rs = float(j[1])
 
 
 files = TODEFINE # glob.glob() to select all the spectra you want or read a csv DB table
@@ -46,6 +46,8 @@ import src_snaky.run as snaky
 job = snaky.start()
 job.set_output_dir(output_dir)
 job.set_dataset(star,ins,files) 
-job.reduce(begin=begin, end=end, Prot=Prot, Rs=Rs, debug=debug, automatic_db=automatic_db)
+
+job.set_star(prot=Prot, rs=Rs)
+job.reduce(begin=begin, end=end, debug=debug, automatic_db=automatic_db)
 
 
