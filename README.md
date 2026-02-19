@@ -136,28 +136,28 @@ job.set_dataset('HD12345', 'HARPS_3.5', files)   # define the star + instrument 
 
 ```python
 #initialization
-job.init_workspace() # Create tree directories
-job.preprocess()     # Run RASSINE to normalise spectra
-job.set_summary()    # Create the summary table
-job.check_spectra()  # Quality flag control on the spectra
+job.init_workspace() # 1) Create tree directories
+job.preprocess()     # 1) Run RASSINE to normalise spectra
+job.set_summary()    # 2) Create the summary table
+job.check_spectra()  # 2) Quality flag control on the spectra
 ```
 
 *Now the data preprocessed, we can finally launch the SNAKY pipeline:*
 
 ```python
 #pipeline
-job.compute_rv_sys()
-job.compute_ccf()
-job.compute_master()
-job.compute_atmos()
-job.compute_resolution()
-job.compute_vsini() 
-job.compute_abs_continuum()
-job.compute_activity()
-job.compute_mhk()
-job.compute_spectroscopy()
-job.compute_mag_cycle()
-job.cleaning()
+job.compute_rv_sys()        # 3)
+job.compute_ccf()           # 4)
+job.compute_master()        # 5)
+job.compute_atmos()         # 6)
+job.compute_resolution()    # 7)
+job.compute_vsini()         # 8)
+job.compute_abs_continuum() # 9)
+job.compute_activity()      # 10)
+job.compute_mhk()           # 11)
+job.compute_spectroscopy()  # 12)
+job.compute_mag_cycle()     # 13) FINCH magnetic cycle
+job.cleaning()              # 14)
 ```
 *You can check the figures created in the output directory `...IMAGES/`* \
 *For now, let's erase our work with the `.reset()` method. For security, it is required to enter the command line twice in order to launch it:*
