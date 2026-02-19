@@ -1,4 +1,4 @@
-# SNAKY (a Spectroscopic Novel Analysis Kit of Yᴀʀᴀʀᴀ) v1.0.7
+# SNAKY (a Spectroscopic Novel Analysis Kit of Yᴀʀᴀʀᴀ) v1.0.8
 
 <p align="center">
   <img src="logo.png" alt="Project logo" width="400">
@@ -305,8 +305,8 @@ NB: s1d spectra should always be preferred over e2ds/s2d spectra
 
 | Computer | Processor        | VERSION        | LIBRARIES       | [DATASET1](#flag1)    | [DATASET2](#flag2)     |
 |---------------|---------------|---------------|---------------|--------------|--------------|
+| MC1 | Apple M4 MAX (2024) | SNAKY (1.0.8) | 3.12.5 | 01 min 47 s  | 01 min 40 s  |
 | MC1 | Apple M4 MAX (2024) | SNAKY (1.0.3) | 3.10.15 | 01 min 34 s  | 01 min 40 s  |
-| MC1 | Apple M4 MAX (2024) | SNAKY (1.0.3) | 3.12.5 | 02 min 11 s  | 02 min 03 s  |
 | MC1 | Apple M4 MAX (2024) | SNAKY (1.0.3) | 3.12.5_latest | 02 min 14 s  | 02 min 09 s  |
 | MC2 | Intel Mac (2018) | SNAKY (1.0.3) | 3.8.8 | 04 min 24 s  | 08 min 18 s  |
 | CC1 | Apple M4 PRO (2024) | SNAKY (1.0.1) | 3.10.15 | 01 min 30 s  | 01 min 05 s  |
