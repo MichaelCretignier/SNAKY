@@ -86,6 +86,11 @@ python snaky_build.py
 ```python
 import sys
 sys.path.append('.../GitHub/SNAKY/')
+
+import src_snaky.run as snaky
+
+...
+
 ```
 
 ### Step-by-step
