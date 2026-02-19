@@ -1,4 +1,4 @@
-# SNAKY (a Spectroscopic Novel Analysis Kit of Y<small>ARARA</small>) v1.0.5
+# SNAKY (a Spectroscopic Novel Analysis Kit of Yᴀʀᴀʀᴀ) v1.0.5
 
 <p align="center">
   <img src="logo.png" alt="Project logo" width="400">
