@@ -79,14 +79,14 @@ python snaky_build.py
 
 *You should now have a `../SNAKY/Material_snaky/template_star_SNAKY_3900_6800.npy` file.*
 
+## ⑤ Tutorial
+
 *The code is closed to be packaged. For the moment, if you want to run `snaky` everywhere on your machine without having to launch it inside the directory  `SNAKY/`, you can add `SNAKY/` to your sys path in your Python scripts:*
 
 ```python
 import sys
 sys.path.append('.../GitHub/SNAKY/')
 ```
-
-## ⑤ Tutorial
 
 ### Step-by-step
 
