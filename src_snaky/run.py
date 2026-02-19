@@ -62,6 +62,19 @@ class start():
         template['Name'] = self.sy_starname
         pickle.dump(template,open(starinfo,'wb'))
 
+    def set_star(self, ra=None, dec=None, teff=None, prot=None, rs=None, ms=None):
+        self.sy_user_object = {
+            'star' : self.sy_starname,
+            'ra'   : ra,
+            'dec'  : dec,
+            'prot' : prot,
+            'rs'   : rs,
+            'ms'   : ms,
+            'teff' : teff,
+            'logg' : logg,
+            'feh'  : feh
+        }
+
     def estimate_computation_time(self,fwhm=7.3):
         N = len(self.sy_files)
 
@@ -98,6 +111,8 @@ class start():
         self.sy_dir_root = self.sy_output_dir+starname+'/data/s1d/'+ins+'/'
         dir_root = self.sy_dir_root
        
+        self.set_star()
+
         print(Fore.CYAN+" [INFO] (root directory) dir_root = '"+dir_root+"' \n"+Fore.RESET)
 
         self.sy_files = files
@@ -742,10 +757,6 @@ class start():
             end=14,
             automatic_db = True,
             debug = False, 
-            ra = None,
-            dec = None,
-            Prot = None,
-            Rs = None,
             copy_files = True,
             ):
         
@@ -853,6 +864,11 @@ class start():
             force_magcycle = bool(1-mym.check_force_magcycle(dir_root))&force_magcycle
             print(' [INFO] Automatic sequence done!\n')
             print(' [INFO] Reduction launched, wait...\n')
+
+        ra = self.sy_user_object['ra']
+        dec = self.sy_user_object['dec']
+        Prot = self.sy_user_object['prot']
+        Rs = self.sy_user_object['rs']
 
         self.write_progress(0, 'init', savefile=filename_time)
         if force_pre: #1

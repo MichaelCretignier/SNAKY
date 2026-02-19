@@ -217,7 +217,8 @@ job.reduce(begin=1, end=14, automatic_db=True)
 
 # To force re-running a step, disable automatic_db
 # Example: recompute inclination with manual Prot and Rs
-job.reduce(begin=8, end=8, automatic_db=False, Prot=50, Rs=1.0)
+job.set_star(prot=50,rs=1.0)
+job.reduce(begin=8, end=8, automatic_db=False)
 
 
 ```
@@ -255,7 +256,8 @@ job = snaky.start()
 job.set_output_dir(output_dir)
 job.set_dataset('HD128621','HARPS15_3.3.6',files) 
 
-job.reduce(begin=1, end=14, ra=219.90, dec=-60.84, copy_files=True) # ra and dec in degrees
+job.set_star(ra=219.90, dec=-60.84, prot=36) # ra and dec in degrees (prot optional)
+job.reduce(begin=1, end=14,  copy_files=True) 
 ```
 
 *The `copy_files=True` option will copy the RASSINE files locally in the SNAKY output directory as if those were produced by the pipeline. This is not mandatory for the code to successfully run, but `.p` pickle files can be corrupted and copying them is a safer option. Naturally, this double the storage requirement by duplicating files in your computer. Final decision is let to the user.*
