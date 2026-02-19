@@ -118,7 +118,7 @@ output_dir = '/Users/cretignier/Desktop/Snaky/'
 2) A list of spectra you want to process
 3) The starname and the instrument
 
-*This information if specified by:*
+*This information is specified by:*
 
 ```python
 import src_snaky.run as snaky
