@@ -129,7 +129,7 @@ files = snaky.glob.glob(snaky.myv.TEST_DATASET1)
 
 job = snaky.start()
 job.set_output_dir(output_dir)                   # define output dir 
-job.set_dataset('HD12345', 'HARPN_3.0.1', files) # define the star + instrument + list of spectra
+job.set_dataset('HD12345', 'HARPS_3.5', files)   # define the star + instrument + list of spectra
 ```
 
 *We then initialized SNAKY which will create the directory tree + normalise the spectra with RASSINE:*
