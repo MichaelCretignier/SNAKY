@@ -223,7 +223,7 @@ job.reduce(begin=1, end=14, automatic_db=True)
 # To force re-running a step, disable automatic_db
 # Example: recompute inclination with user specified Prot and Rs
 job.set_star(prot=11,rs=0.74)
-job.reduce(begin=8, end=8, automatic_db=False)
+job.reduce(begin=8, end=8, automatic_db=False) # Eps.Eridani inclination ~26° !
 
 
 ```
