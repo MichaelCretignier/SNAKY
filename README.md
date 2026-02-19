@@ -37,7 +37,7 @@ If you have any problem, please contact me at: michael.cretignier@physics.ox.ac.
 *Git Clone / Download this GitHub repository on your own machine.*
 
 *You can try with your own main Python environment since there are only
-a few libraries used (check the requirements file to see which ones). It is however recommanded to have the same `scikit-learn` version. Otherwise use either the conda or the venv to create a python environment:*
+a few libraries used (check the requirements file to see which ones). It is however recommanded to have the same `scikit-learn` version `1.7.2`. Otherwise use either the conda or the venv to create a python environment:*
 
 *Based on [benchmark](#flag3), the fastest version is the python 3.10.15. Other tested `../SNAKY/requirements/requirement_PYTHON_VERSION.txt` libraries versioning are available if needed. For `Mac Intel Chip`, python version 3.8.8 is recommended.*
 
