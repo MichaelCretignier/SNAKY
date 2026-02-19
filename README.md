@@ -18,9 +18,6 @@ SNAKY includes a packaged version of [RASSINE](https://github.com/MichaelCretign
 
 ## ① Release Date (Soon...!)
 
-The code is missing some important tables that prevent it from running, the code is planned to be released in a few weeks/months.
-Thanks for your patience.
-
 Please cite the relevant works:
 
 - **RASSINE** — [Cretignier et al. 2020b](https://ui.adsabs.harvard.edu/abs/2021A%26A...653A..43C/abstract)
