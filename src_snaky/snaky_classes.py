@@ -32,6 +32,7 @@ except:
 #######functions
 
 MATERIAL_DIR = myv.MATERIAL_DIR
+interp_degree = myv.interp_degree
 
 class Param:
     def __init__(self, value=np.nan):
@@ -996,7 +997,7 @@ class tableXY(object):
                 log_grid_mask, log_mask = fits.open(static)[0].data.T
 
             all_flux = []
-            all_flux.append(interp1d(np.log10(self.x), flux[0], kind='cubic', bounds_error=False, fill_value='extrapolate')(log_grid))
+            all_flux.append(interp1d(np.log10(self.x), flux[0], kind=interp_degree, bounds_error=False, fill_value='extrapolate')(log_grid))
             flux = np.array(all_flux)
 
             all_flux_err = []
@@ -1007,7 +1008,7 @@ class tableXY(object):
 
             vrad, ccf_power, ccf_power_std = myf.ccf(log_grid[used_region], flux[:,used_region], log_template[used_region], 
                                                     rv_range = rv_range, oversampling = ccf_oversampling, spec1_std = flux_err[:,used_region]) #to compute on all the ccf simultaneously
-            
+
             self.ccf_profile = tableXY(vrad,np.ravel(ccf_power))
             if norm:
                 if np.nanmedian(self.ccf_profile.y/np.percentile(self.ccf_profile.y,95))>0.90:

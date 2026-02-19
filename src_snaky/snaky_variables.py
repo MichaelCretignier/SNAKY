@@ -22,6 +22,7 @@ TEST_DATASET2 = TEST_DATADIR2+'HARPS15_3.3.6/RAW/RASSINE*.p'
 PRD_EXT = ''
 
 SKLEARN_VERSION = ['_sklearn_0.24.1','_sklearn_1.7.2'][int(version("scikit-learn")!='0.24.1')]
+interp_degree = 'cubic'
 
 # =============================================================================
 # ACTIVITY PROXY

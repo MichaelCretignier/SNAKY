@@ -410,7 +410,7 @@ def flat_clustering(length,cluster_output,extended=0,elevation=1):
     return flat
     
 
-def identify_nearest(array1,array2):
+def identify_nearest_deprecated(array1,array2):
     """identify the closest elements in array2 of array1"""
     array1 = np.sort(array1)
     array2 = np.sort(array2)
@@ -422,8 +422,28 @@ def identify_nearest(array1,array2):
         begin2 = find_nearest(array2[begin:],value)[0][0]
         identification.append(begin2+begin)
         begin=int(begin2)
+    
     return np.ravel(identification)
     
+def identify_nearest(array1, array2):
+    array1 = np.sort(array1)
+    array2 = np.sort(array2)
+
+    # Find insertion positions
+    idx = np.searchsorted(array2, array1)
+
+    # Clip to valid range
+    idx = np.clip(idx, 1, len(array2) - 1)
+
+    # Compare left and right neighbors
+    left = array2[idx - 1]
+    right = array2[idx]
+
+    idx -= array1 - left < right - array1
+
+    return idx
+
+
 def match_unique_closest(array1, array2):
     """return a table [idx1,idx2,num1,num2,distance] matching the closest element from an array to the other, each pair is unique. Remark : algorithm very slow by conception if the arrays are too large."""
     if type(array1)!=np.ndarray:
@@ -593,7 +613,7 @@ def ccf(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=10, spec1_s
     
     rv_max = int(np.log10((rv_range/299.792e3)+1)/dwave)
     for j in tqdm(shift):
-        new_spec = interp1d(wave+j,spec2,kind='cubic', bounds_error=False, fill_value='extrapolate')(wave)
+        new_spec = interp1d(wave+j,spec2,kind='linear', bounds_error=False, fill_value='extrapolate')(wave)
         for k in np.arange(-rv_max,rv_max+1,1):
             new_spec2 = np.hstack([new_spec[-k:],new_spec[:-k]])
             convolution.append(np.nansum(new_spec2*spec1,axis=1)/sum_spec)

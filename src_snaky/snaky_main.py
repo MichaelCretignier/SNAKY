@@ -33,6 +33,7 @@ except:
     print(Fore.YELLOW+'[IMPORT] FINCH module is missing'+Fore.RESET)
 
 MATERIAL_DIR = myv.MATERIAL_DIR
+interp_degree = myv.interp_degree
 
 """
 
@@ -1900,7 +1901,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
         else:
             f_err = flux_err[j]
         temp = myc.tableXY(np.log10(grid), flux[j], f_err)
-        temp.interpolate(new_grid=log_grid,method='cubic')
+        temp.interpolate(new_grid=log_grid,method=interp_degree)
         flux[j] = temp.y
         if flux_err is not None:
             flux_err[j] = temp.yerr
