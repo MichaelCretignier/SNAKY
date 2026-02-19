@@ -422,7 +422,7 @@ def identify_nearest_deprecated(array1,array2):
         begin2 = find_nearest(array2[begin:],value)[0][0]
         identification.append(begin2+begin)
         begin=int(begin2)
-    
+
     return np.ravel(identification)
     
 def identify_nearest(array1, array2):
@@ -587,7 +587,6 @@ def black_body_ratio(T0,teff,wave):
         planck_factor = (np.exp(myv.h_planck*myv.c_lum/(myv.k_boltz*T0*wave*1e-10))-1)/(np.exp(myv.h_planck*myv.c_lum/(myv.k_boltz*teff*wave*1e-10))-1)
     return planck_factor
 
-
 def ccf(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=10, spec1_std=None):
     "CCF for a equidistant grid in log wavelength spec1 = spectrum, spec2 =  binary mask"   
     dwave = np.median(np.diff(wave))
@@ -621,7 +620,12 @@ def ccf(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=10, spec1_s
             shift_save.append(j+k*dwave)
     shift_save = np.array(shift_save)
     sorting = np.argsort(shift_save)
-    return (299.792e6*10**shift_save[sorting])-299.792e6, np.array(convolution)[sorting], np.array(convolution_std)[sorting]
+
+    velocity = (299.792e6*10**shift_save[sorting])-299.792e6
+    conv = np.array(convolution)[sorting]
+    conv_std = np.array(convolution_std)[sorting]
+    
+    return velocity, conv, conv_std
     
 def GND(x,cen,amp,offset,wid,beta):
     """Based on Heitzmann+21"""
