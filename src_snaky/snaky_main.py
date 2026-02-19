@@ -1773,6 +1773,8 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
     del_outside maximam : True/False to delete the CCF outside the two bump in personal mask 
     """
 
+    start = time.time()
+
     ins = dir_root.split('/')[-2]
     jdb = get_jdb(files,dir_root)
 
@@ -1915,9 +1917,12 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
     if flux_err is not None:
         flux_err = flux_err[:,used_region]
 
+    start3 = time.time()
     vrad, ccf_power, ccf_power_std = myf.ccf(log_grid, flux, log_template, 
                                                 rv_range = rv_range, oversampling = ccf_oversampling, spec1_std = flux_err) #to compute on all the ccf simultaneously
     
+    end3 = time.time()
+    print(Fore.YELLOW+f"Execution time: {end3 - start3:.3f} seconds"+Fore.RESET)
     del flux
     del flux_err
 
@@ -2262,6 +2267,9 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
         summary['ccf_ct_'+ccf_name] = np.nan ; summary.loc[mask,'ccf_ct_'+ccf_name] = np.round(ccf_contrast.y,4)
         summary['ccf_fwhm_'+ccf_name] = np.nan ; summary.loc[mask,'ccf_fwhm_'+ccf_name] = np.round(ccf_fwhm.y,4)
         summary.to_csv(dir_root+'/WORKSPACE/Analyse_summary.csv')
+
+    end = time.time()
+    print(Fore.YELLOW+f"Execution time: {end - start:.3f} seconds"+Fore.RESET)
 
     if return_ccf:
         return output, vrad, ccf_shifted
