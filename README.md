@@ -146,7 +146,7 @@ job.compute_ccf()
 job.compute_master()
 job.compute_atmos()
 job.compute_resolution()
-job.compute_vsini(Prot=None, Rs=None) # if Prot and Rs are known by the user
+job.compute_vsini() 
 job.compute_abs_continuum()
 job.compute_activity()
 job.compute_mhk()

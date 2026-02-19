@@ -62,7 +62,7 @@ class start():
         template['Name'] = self.sy_starname
         pickle.dump(template,open(starinfo,'wb'))
 
-    def set_star(self, ra=None, dec=None, teff=None, prot=None, rs=None, ms=None):
+    def set_star(self, ra=None, dec=None, prot=None, rs=None, ms=None, teff=None, logg=None, feh=None):
         self.sy_user_object = {
             'star' : self.sy_starname,
             'ra'   : ra,
@@ -648,7 +648,7 @@ class start():
                 'Phase_pred':finch_output[5],
                 'Phase_pred_side':finch_output[6]}, 
                 open(dir_root.replace(ins+'/','ALLINS_MERGED/Pmag_FINCH_info.p'),'wb'))
-        except ValueError:
+        except:
             pass
 
     def cleaning(self):
