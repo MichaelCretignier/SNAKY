@@ -135,7 +135,7 @@ job.set_dataset('HD12345', 'HARPS_3.5', files)   # define the star + instrument 
 *We then initialized SNAKY which will create the directory tree + normalise the spectra with RASSINE:*
 
 ```python
-#initialization
+# initialization
 job.init_workspace() # 1) Create tree directories
 job.preprocess()     # 1) Run RASSINE to normalise spectra
 job.set_summary()    # 2) Create the summary table
@@ -145,7 +145,7 @@ job.check_spectra()  # 2) Quality flag control on the spectra
 *Now the data preprocessed, we can finally launch the SNAKY pipeline:*
 
 ```python
-#pipeline
+# pipeline
 job.compute_rv_sys()        # 3)  RV_sys + FWHM
 job.compute_ccf()           # 4)  Compute CCF with (G2, Garfield, Kitty)
 job.compute_master()        # 5)  Create a master spectrum
