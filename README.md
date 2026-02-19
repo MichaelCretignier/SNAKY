@@ -34,7 +34,11 @@ If you have any problem, please contact me at: michael.cretignier@physics.ox.ac.
 
 ## ③ Installation
 
-*Git Clone / Download this GitHub repository on your own machine.*
+*Git Clone / Download this GitHub repository on your own machine and move in the directory.*
+
+```bash
+cd .../GitHub/SNAKY/
+```
 
 *You can try with your own main Python environment since there are only
 a few libraries used (check the requirements file to see which ones). It is however recommanded to have the same `scikit-learn` version `1.7.2`. Otherwise use either the conda or the venv to create a python environment:*
