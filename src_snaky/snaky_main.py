@@ -40,7 +40,7 @@ SNAKY — Spectroscopic Novel Analysis Kit of Yarara
 
 """
 
-__version__ = '1.0.5' 
+__version__ = '1.0.6' 
 
 print(Fore.GREEN+"""\n[INFO SNAKY]
 [INFO USER] SNAKY version = """+__version__ +""" 

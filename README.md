@@ -1,4 +1,4 @@
-# SNAKY (a Spectroscopic Novel Analysis Kit of Yᴀʀᴀʀᴀ) v1.0.5
+# SNAKY (a Spectroscopic Novel Analysis Kit of Yᴀʀᴀʀᴀ) v1.0.6
 
 <p align="center">
   <img src="logo.png" alt="Project logo" width="400">
@@ -216,7 +216,7 @@ job.reduce(begin=1, end=6)
 job.reduce(begin=1, end=14, automatic_db=True)
 
 # To force re-running a step, disable automatic_db
-# Example: recompute inclination with manual Prot and Rs
+# Example: recompute inclination with user specified Prot and Rs
 job.set_star(prot=50,rs=1.0)
 job.reduce(begin=8, end=8, automatic_db=False)
 
@@ -239,7 +239,7 @@ $$
 
 *But, maybe you already have RASSINE spectra saved on your computer? (Such a wise decision!)*
 
-*To read them with SNAKY, you just have to specify manually in `.reduce()`the star coordinates (that are missing from the RASSINE metadata):*
+*To read them with SNAKY, you just have to specify manually with `.set_star()`the star coordinates (that are missing from the RASSINE metadata):*
 
 <a id="flag2"></a>
 
