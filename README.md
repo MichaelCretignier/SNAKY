@@ -316,7 +316,7 @@ NB: s1d spectra should always be preferred over e2ds/s2d spectra
 
 | ? | Yours! ☺ | SNAKY (1.0.1) | ??? | ???  | ???  |
 
-| DF1 | Intel i5 12600k (2021) | SNAKY (1.0.7) | 3.12.5_latest | 03 min 27 s  | 01 min 40 s  |
+| DF1 | Intel i5 12600k (2021) | SNAKY (1.0.7) | 3.12.5 | 03 min 25 s  | 03 min 28 s  |
 
 
 ## Uninstall
