@@ -181,7 +181,7 @@ job.reset(suppression='all')
 <a id="flag1"></a>
 
 ```python
-# Benchmark Dataset1
+# Benchmark Dataset1 (HARPS Epsilon Eridani)
 
 import src_snaky.run as snaky
 
@@ -190,7 +190,7 @@ files = snaky.glob.glob(snaky.myv.TEST_DATASET1)
 
 job = snaky.start()
 job.set_output_dir(output_dir)
-job.set_dataset('HD12345','HARPN_3.0.1',files) 
+job.set_dataset('HD123456','HARPS_3.5',files) 
 
 job.reduce(begin=1, end=14) # check the sequence number with: job.reduce?
 ```
@@ -211,7 +211,7 @@ files = snaky.glob.glob(snaky.myv.TEST_DATASET1)
 
 job = snaky.start()
 job.set_output_dir(output_dir)
-job.set_dataset('HD66666', 'HARPN_3.0.1', files)  # fake new dataset
+job.set_dataset('HD22049', 'HARPS_3.5', files)  # the real stellar name
 
 # Stop at step 6 (crash before atmospheric parameters, step 7)
 job.reduce(begin=1, end=6)
@@ -222,7 +222,7 @@ job.reduce(begin=1, end=14, automatic_db=True)
 
 # To force re-running a step, disable automatic_db
 # Example: recompute inclination with user specified Prot and Rs
-job.set_star(prot=50,rs=1.0)
+job.set_star(prot=11,rs=0.74)
 job.reduce(begin=8, end=8, automatic_db=False)
 
 
@@ -244,7 +244,7 @@ $$
 
 *But, maybe you already have RASSINE spectra saved on your computer? (Such a wise decision!)*
 
-*To read them with SNAKY, you just have to specify manually with `.set_star()`the star coordinates (that are missing from the RASSINE metadata):*
+*To read them with SNAKY, you just have to specify manually with `.set_star()`the stellar coordinates (that are missing from the RASSINE metadata):*
 
 <a id="flag2"></a>
 
@@ -296,7 +296,8 @@ to add a new instrument you only need 5 information from its header:
 Then create your own function `read_espresso()` in `snaky_main.py`
 and modify the `extract_header()` function too. 
 
-If only e2ds spectra exist and not s1d, follow NEID example.
+If only e2ds spectra exist and not s1d, follow the `read_neid()` example.
+NB: s1d spectra should always be preferred over e2ds/s2d spectra
 
 ## ⑨ BENCHMARK (Computation time)
 
