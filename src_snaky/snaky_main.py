@@ -1425,7 +1425,11 @@ def extract_header(files, instru, debug=False, ra=None, dec=None):
         missing_time = (summary['rjd']!=summary['rjd'])
         print(' [INFO] Nb of missing time = %.0f'%(np.sum(missing_time)))
         if np.sum(missing_time)!=0: #search ut in filename
-            uttime = np.array([f[-25:-2] for f in files])
+            if ins=='NEID':
+                uttime = np.array([f[-17:-2] for f in files])
+                uttime = np.array([f"{s[:4]}-{s[4:6]}-{s[6:8]}T{s[9:11]}:{s[11:13]}:{s[13:15]}" for s in uttime])
+            else:
+                uttime = np.array([f[-25:-2] for f in files])
             year = np.array([ut[0:4] for ut in uttime])
             year_num = np.array([float(y) if y.isdigit() else np.nan for y in year])
             valid = (year_num>1950)&(year_num<2050)
