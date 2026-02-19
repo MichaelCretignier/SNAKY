@@ -146,18 +146,18 @@ job.check_spectra()  # 2) Quality flag control on the spectra
 
 ```python
 #pipeline
-job.compute_rv_sys()        # 3)
-job.compute_ccf()           # 4)
-job.compute_master()        # 5)
-job.compute_atmos()         # 6)
-job.compute_resolution()    # 7)
-job.compute_vsini()         # 8)
-job.compute_abs_continuum() # 9)
-job.compute_activity()      # 10)
-job.compute_mhk()           # 11)
-job.compute_spectroscopy()  # 12)
+job.compute_rv_sys()        # 3)  RV_sys + FWHM
+job.compute_ccf()           # 4)  Compute CCF with (G2, Garfield, Kitty)
+job.compute_master()        # 5)  Create a master spectrum
+job.compute_atmos()         # 6)  Compute atmospheric parameters
+job.compute_resolution()    # 7)  Compute instrumental resolution
+job.compute_vsini()         # 8)  Compute stellar vsini
+job.compute_abs_continuum() # 9)  Correct the continuum in UV
+job.compute_activity()      # 10) Compute activity proxies
+job.compute_mhk()           # 11) Compute MHK 
+job.compute_spectroscopy()  # 12) Create the stellar spectrum in SRF
 job.compute_mag_cycle()     # 13) FINCH magnetic cycle
-job.cleaning()              # 14)
+job.cleaning()              # 14) Remove useless products
 ```
 *You can check the figures created in the output directory `...IMAGES/`* \
 *For now, let's erase our work with the `.reset()` method. For security, it is required to enter the command line twice in order to launch it:*
