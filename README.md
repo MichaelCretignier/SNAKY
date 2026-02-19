@@ -1,4 +1,4 @@
-# SNAKY (a Spectroscopic Novel Analysis Kit of Yarara) v1.0.5
+# SNAKY (a Spectroscopic Novel Analysis Kit of Y<small>ARARA</small>) v1.0.5
 
 <p align="center">
   <img src="logo.png" alt="Project logo" width="400">
@@ -69,7 +69,7 @@ pip install -r requirements_3.10.15.txt
 *SNAKY contains a table too heavy for GitHub that need to be merged using the build script `snaky_build.py`*
 
 ```bash
-cd ../SNAKY/src_snaky 
+cd ../SNAKY/src_snaky/
 python snaky_build.py
 ```
 
