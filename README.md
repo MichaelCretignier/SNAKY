@@ -217,13 +217,13 @@ job.set_dataset('HD22049', 'HARPS_3.5', files)  # the real stellar name
 job.reduce(begin=1, end=6)
 
 # Restart from the beginning
-# automatic_db=True (default) skips completed steps
+# automatic_db=True skips completed steps
 job.reduce(begin=1, end=14, automatic_db=True)
 
-# To force re-running a step, disable automatic_db
+# automatic_db is False by default in order to relaunch steps
 # Example: recompute inclination with user specified Prot and Rs
 job.set_star(prot=11,rs=0.74)
-job.reduce(begin=8, end=8, automatic_db=False) # Eps.Eridani inclination ~26° !
+job.reduce(begin=8, end=8) # Eps.Eridani inclination ~26° !
 
 
 ```

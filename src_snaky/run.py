@@ -755,7 +755,7 @@ class start():
     def reduce(self,
             begin=1,
             end=14,
-            automatic_db = True,
+            automatic_db = False,
             debug = False, 
             copy_files = True,
             ):
