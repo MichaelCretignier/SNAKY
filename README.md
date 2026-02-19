@@ -40,7 +40,7 @@ If you have any problem, please contact me at: michael.cretignier@physics.ox.ac.
 *You can try with your own main Python environment since there are only
 a few libraries used (check the requirements file to see which ones). It is however recommanded to have the same `scikit-learn` version. Otherwise use either the conda or the venv to create a python environment:*
 
-*Based on [benchmark](#flag3), the fastest version is the python 3.10.15:*
+*Based on [benchmark](#flag3), the fastest version is the python 3.10.15. Other tested `../SNAKY/requirements/requirement_PYTHON_VERSION.txt` libraries versioning are available if needed. For `Mac Intel Chip`, python version 3.8.8 is recommended.*
 
 ### [Option 1] Conda install (Python 3.10.15)
 
@@ -50,9 +50,7 @@ conda activate snaky
 pip install -r requirements_3.10.15.txt
 ```
 
-Other tested `../SNAKY/requirements/requirement_PYTHON_VERSION.txt` libraries versioning are available if needed. For `Mac Intel Chip`, python version 3.8.8 is recommended.
-
-Check if the snaky environment exists and is active:
+*Check if the snaky environment exists and is active:*
 
 ```bash
 conda env list
@@ -78,7 +76,7 @@ python snaky_build.py
 
 *You should now have a `../SNAKY/Material_snaky/template_star_SNAKY_3900_6800.npy` file.*
 
-The code is closed to be packaged. For the moment, if you want to run `snaky` everywhere on your machine without having to launch it inside the directory  `SNAKY/`, you can add `SNAKY/` to your sys path in your Python scripts:
+*The code is closed to be packaged. For the moment, if you want to run `snaky` everywhere on your machine without having to launch it inside the directory  `SNAKY/`, you can add `SNAKY/` to your sys path in your Python scripts:*
 
 ```python
 import sys

@@ -287,7 +287,8 @@ class start():
         star = self.sy_starname
 
         summary = mym.import_summary(dir_root)
-        files = np.array(summary['filename'])[summary['flag1']==0]
+        mask_flag0 = (summary['flag1']==0)
+        files = np.array(summary['filename'])[mask_flag0]
 
         teff,feh,fluxD,warning_hole = mym.yarara_flux_density(dir_root,files)
         
@@ -309,7 +310,7 @@ class start():
             if np.sum(~(mask_outliers>5))!=0:
                 mask = ~(mask_outliers>5)
         
-        anomalous = np.array(summary['anomalous'])[mask]
+        anomalous = np.array(summary['anomalous'])[mask_flag0][mask]
         spec  = mym.import_spectrum(files[mask][np.argmin(anomalous)],sub_dico=sub_dico)
         
         sb_flag2 = False

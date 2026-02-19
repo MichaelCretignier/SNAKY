@@ -1456,6 +1456,10 @@ def extract_header(files, instru, debug=False, ra=None, dec=None):
         summary['rjd'] = np.arange(len(summary))
         skip_berv = True
 
+    if debug:
+        print(summary)
+        print(summary.loc[0])
+
     summary['berv'] = np.round(summary['berv'].astype('float'),6)
     summary['snr'] = np.round(summary['snr'].astype('float'),1)
     ra_deg = np.nanmedian(summary['RA'])
