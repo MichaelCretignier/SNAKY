@@ -278,12 +278,12 @@ SNAKY can process spectra from the following spectrographs:
 
 | SPECTRO | DRS        | YEAR        |  SNAKY_CODE        | 
 |---------------|---------------|---------------|---------------|
-| SOPHIE | 0.5 (irrelevant) | - | SOPHIE_0.5 |
-| SOPHIE-HE | 0.5 (irrelevant) | - | SOPHIE-HE_0.5 |
-| HARPN | 3.0.1 (irrelevant) | - |  HARPN_3.0.1 |
-| ESPRESSO | 3.3.6 (irrelevant) | - |  ESPRESSO_3.3.6 |
-| NEID | 1.0 (irrelevant) | - |  NEID_1.0 |
-| NEID-HE | 1.0 (irrelevant) | - |  NEID-HE_1.0 |
+| SOPHIE | irrelevant | - | SOPHIE_0.5 |
+| SOPHIE-HE (high efficiency) | irrelevant | - | SOPHIE-HE_0.5 |
+| HARPN | irrelevant | - |  HARPN_3.0.1 |
+| ESPRESSO | irrelevant | - |  ESPRESSO_3.3.6 |
+| NEID | irrelevant | - |  NEID_1.0 |
+| NEID-HE (high efficiency) | irrelevant | - |  NEID-HE_1.0 |
 | HARPS03 | 3.5 (old) | - |  HARPS03_3.5 |
 | HARPS15 | 3.5 (old) | - |  HARPS15_3.5 |
 | HARPS03 | 3.3.6 (new) | - |  HARPS03_3.3.6 |
