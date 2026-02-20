@@ -590,7 +590,8 @@ def black_body_ratio(T0,teff,wave):
 def ccf(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=10, spec1_std=None):
     "CCF for a equidistant grid in log wavelength spec1 = spectrum, spec2 =  binary mask"   
 
-    save = {'wave':wave,'spec1':spec1,'spec2':spec2,'extended':extended,'rv_range':rv_range,'oversampling':oversampling}
+    if myv.DEV:
+        save = {'wave':wave,'spec1':spec1,'spec2':spec2,'extended':extended,'rv_range':rv_range,'oversampling':oversampling}
 
     dwave = np.median(np.diff(wave))
     
@@ -630,7 +631,9 @@ def ccf(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=10, spec1_s
 
     save['velocity'] = velocity
     save['conv'] = conv
-    pickle.dump(save,open('/Users/cretignier/Desktop/Snaky/%.0f.p'%(np.random.randint(100)),'wb'))
+    if myv.DEV:
+        pickle.dump(save,open('/Users/cretignier/Desktop/Snaky/%.0f.p'%(np.random.randint(100)),'wb'))
+    
     return velocity, conv, conv_std
     
 def ccf_dev(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=3, spec1_std=None):
