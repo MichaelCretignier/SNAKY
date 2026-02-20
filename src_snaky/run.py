@@ -305,8 +305,10 @@ class start():
 
         summary = mym.import_summary(dir_root)
         mask_flag0 = (summary['flag1']==0)
+        files = summary['filename'][mask_flag0]
+        files = (self.sy_sts_wave,self.sy_sts_flux[mask_flag0], files)
 
-        teff,feh,fluxD,warning_hole = mym.yarara_flux_density(dir_root,(self.sy_sts_wave,self.sy_sts_flux[mask_flag0]))
+        teff,feh,fluxD,warning_hole = mym.yarara_flux_density(dir_root,files)
         
         rv_sys = []
         for n in np.arange(len(summary)):
@@ -336,7 +338,7 @@ class start():
         if rv_sys_std>10: 
             print(Fore.YELLOW+' [WARNING] RV_SYS RMS high (%.1f km/s), SB flag'%(rv_sys_std)+Fore.RESET)
             sb_flag2 = True
-            pd.DataFrame(np.array([files,rv_sys]).T,columns=['files','rv_sys']).to_csv(dir_root+'WARNING/RV_SYS_JITTER.csv')
+            pd.DataFrame(np.array([files[-1],rv_sys]).T,columns=['files','rv_sys']).to_csv(dir_root+'WARNING/RV_SYS_JITTER.csv')
             rv_sys_approx = mym.yarara_rough_rv_sys(spec,teff=teff,verbose=self.debug)
         print('\n [INFO] RV_sys initial guess = %.1f +/- %.1f kms'%(rv_sys_approx,rv_sys_std))
         sinfo2,sb_flag1 = mym.yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag='')
@@ -1006,7 +1008,7 @@ class start():
 def benchmark1(output_dir):
     # Benchmark Dataset1 (HARPS Epsilon Eridani)
     files = glob.glob(myv.TEST_DATASET1)
-    
+
     job = start()
     job.set_output_dir(output_dir)
     job.set_dataset('HD123456','HARPS03_3.5',files) 
