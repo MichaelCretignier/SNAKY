@@ -14,6 +14,7 @@ The main outputs are:
 4) The stellar vsini (in validation...) + Stellar inclination
 
 SNAKY is **NOT** an RV pipeline aiming at EPRV precision like YARARA.\
+SNAKY is optimized for speed efficiency and star characterization, meaning steps may alter the EPRV precision.\
 SNAKY includes a packaged version of [RASSINE](https://github.com/MichaelCretignier/Rassine_public)
 
 ## ① Release Date (Soon...!)
