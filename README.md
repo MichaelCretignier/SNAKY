@@ -277,7 +277,7 @@ sbatch run_snaky_med.s HD128621 HARPS15_3.3.6 1 14
 SNAKY can process spectra from the following spectrographs:
 
 | SPECTRO | DRS        | YEAR        |  SNAKY_CODE        | 
-|---------------|---------------|---------------|---------------|--------------|--------------|
+|---------------|---------------|---------------|---------------|
 | SOPHIE | 0.5 (irrelevant) | - | SOPHIE_0.5 |
 | SOPHIE-HE | 0.5 (irrelevant) | - | SOPHIE-HE_0.5 |
 | HARPN | 3.0.1 (irrelevant) | - |  HARPN_3.0.1 |
