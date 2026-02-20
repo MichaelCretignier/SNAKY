@@ -629,9 +629,9 @@ def ccf(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=10, spec1_s
     conv = np.array(convolution)[sorting]
     conv_std = np.array(convolution_std)[sorting]
 
-    save['velocity'] = velocity
-    save['conv'] = conv
     if myv.DEV:
+        save['velocity'] = velocity
+        save['conv'] = conv
         pickle.dump(save,open('/Users/cretignier/Desktop/Snaky/%.0f.p'%(np.random.randint(100)),'wb'))
     
     return velocity, conv, conv_std
