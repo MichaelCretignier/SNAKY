@@ -162,7 +162,7 @@ job.cleaning()              # 14) Remove useless products
 *You can check the figures created in the output directory `...IMAGES/`* \
 *For now, let's erase our work with the `.reset()` method. For security, it is required to enter the command line twice in order to launch it:*
 
-**WARNING: Do not add new files by yourself inside the created `output_directory/Snaky/`.**
+**WARNING: Do not add new files by yourself inside the created `output_directory/`. This is a SNAKY workspace, not your directory.**
 
 ```python
 
