@@ -34,7 +34,7 @@ else:
 
         np.save(root+'/Material_snaky/'+filename,merged.astype(tp))
         print(' [INFO] The table was recreated: ',root+'/Material_snaky/'+filename)
-
+        
         print(' [INFO] The splited subparts will be erased...')
         for f in files:
             print(' [INFO] %s was deleted'%(f))
