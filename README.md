@@ -328,7 +328,7 @@ snaky.benchmark2(output_dir) #check "[INFO] Processing achieved in ..."
 |---------------|---------------|---------------|---------------|--------------|--------------|
 | MC1 | Apple M4 MAX (2024) | SNAKY (1.1.0) | 3.10.15 | 00 min 58 s  | 01 min 07 s  |
 | MC1 | Apple M4 MAX (2024) | SNAKY (1.1.0) | 3.12.5 | 01 min 51 s  | 01 min 43 s  |
-| MC2 | Intel Mac (2018) | SNAKY (1.1.0) | 3.8.8 | 04 min 24 s  | 08 min 18 s  |
+| MC2 | Intel Mac (2018) | SNAKY (1.1.0) | 3.8.8 | 04 min 20 s  | 08 min 18 s  |
 | DF1 | Intel i5 12600k (2021) | SNAKY (1.0.7) | 3.12.5 | 03 min 25 s  | 03 min 28 s  |
 | CC1 | Apple M4 PRO (2024) | SNAKY (1.0.1) | 3.10.15 | 01 min 30 s  | 01 min 05 s  |
 | ? | Yours! ☺ | SNAKY (1.0.1) | ??? | ???  | ???  |

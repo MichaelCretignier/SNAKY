@@ -93,6 +93,7 @@ instrument_res_kms = {
     #'UVES': 3.50,        # R ≈ 85 000
     'HARPS15': 3.47,      # R ≈ 86 000
     'HARPS03': 3.36,      # R ≈ 89 000
+    'HARPS': 3.41,        # R ≈ 89 000
     'NEID-HE': 4.23,      # R ≈ 71 000 (HE)
     'NEID': 3.19,         # R ≈ 94 000 (HR)
     'HARPN': 3.13,        # R ≈ 96 000
