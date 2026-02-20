@@ -240,7 +240,7 @@ $$
 \quad [\mathrm{s}]
 $$
 
-*But, maybe you already have RASSINE spectra saved on your computer? (Such a wise decision!)*
+*But, maybe you already have RASSINE spectra saved on your computer? (If not yet, soon you will!).*
 
 *To read them with SNAKY, you just have to specify manually with `.set_star()`the stellar coordinates (that are missing from the RASSINE metadata):*
 
