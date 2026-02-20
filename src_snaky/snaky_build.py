@@ -14,25 +14,28 @@ for f in files_to_compile:
     process.append([f,filename,splitting,axis])
 process = np.array(process)
 
-for p in np.unique(process[:,1]):
-    split_files = process[process[:,1]==p]
-    files = split_files[np.argsort(process[:,2])][:,0]
-    axis = np.unique(split_files[:,-1])[0]
-    filename = np.unique(split_files[:,1])[0]
-    merged = []
-    for f in files:
-        merged.append(np.load(f))
-    tp = type(merged[0][0,0])
+if len(process)==0:
+    print(' [INFO] No files were found to be merged. Did you already build the code?')
+else:
+    for p in np.unique(process[:,1]):
+        split_files = process[process[:,1]==p]
+        files = split_files[np.argsort(process[:,2])][:,0]
+        axis = np.unique(split_files[:,-1])[0]
+        filename = np.unique(split_files[:,1])[0]
+        merged = []
+        for f in files:
+            merged.append(np.load(f))
+        tp = type(merged[0][0,0])
 
-    if axis=='X':
-        merged = np.hstack(merged)
-    if axis=='Y':
-        merged = np.vstack(merged)
+        if axis=='X':
+            merged = np.hstack(merged)
+        if axis=='Y':
+            merged = np.vstack(merged)
 
-    np.save(root+'/Material_snaky/'+filename,merged.astype(tp))
-    print(' [INFO] The table was recreated: ',root+'/Material_snaky/'+filename)
+        np.save(root+'/Material_snaky/'+filename,merged.astype(tp))
+        print(' [INFO] The table was recreated: ',root+'/Material_snaky/'+filename)
 
-    print(' [INFO] The splited subparts will be erased...')
-    for f in files:
-        print(' [INFO] %s was deleted'%(f))
-        os.system('rm '+f)
+        print(' [INFO] The splited subparts will be erased...')
+        for f in files:
+            print(' [INFO] %s was deleted'%(f))
+            os.system('rm '+f)

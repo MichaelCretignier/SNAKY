@@ -960,7 +960,8 @@ class start():
         qc = mym.check_force_magcycle(dir_root)
 
         try:
-            mym.compare_snaky_atmos(stars=[star])
+            if end>6:
+                mym.compare_snaky_atmos(stars=[star])
         except:
             pass
 

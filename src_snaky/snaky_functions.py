@@ -639,7 +639,6 @@ def ccf(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=10, spec1_s
 def ccf_dev(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=3, spec1_std=None):
     "CCF for a equidistant grid in log wavelength spec1 = spectrum, spec2 =  binary mask"   
     
-    oversampling=3
     dwave = np.median(np.diff(wave))
     
     if spec1_std is None:
