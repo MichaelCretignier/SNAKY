@@ -303,6 +303,17 @@ NB: s1d spectra should always be preferred over e2ds/s2d spectra
 
 <a id="flag3"></a>
 
+```python
+import src_snaky.run as snaky
+
+output_dir = '/Users/cretignier/Desktop/Snaky/'
+
+snaky.benchmark1(output_dir) #check the time printed in blue
+snaky.benchmark2(output_dir) #check the time printed in blue
+
+```
+
+
 | Computer | Processor        | VERSION        | LIBRARIES       | [DATASET1](#flag1)    | [DATASET2](#flag2)     |
 |---------------|---------------|---------------|---------------|--------------|--------------|
 | MC1 | Apple M4 MAX (2024) | SNAKY (1.0.8) | 3.12.5 | 01 min 47 s  | 01 min 40 s  |

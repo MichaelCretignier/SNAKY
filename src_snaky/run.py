@@ -970,3 +970,26 @@ class start():
 
         if force_cleaning: #14
             self.cleaning()
+
+
+def benchmark1(output_dir):
+    # Benchmark Dataset1 (HARPS Epsilon Eridani)
+    files = glob.glob(myv.TEST_DATASET1)
+
+    job = start()
+    job.set_output_dir(output_dir)
+    job.set_dataset('HD123456','HARPS_3.5',files) 
+
+    job.reduce(begin=1, end=14)
+
+def benchmark2(output_dir):
+    # Benchmark Dataset2
+    files = snaky.glob.glob(myv.TEST_DATASET2)
+            
+    job = start()
+    job.set_output_dir(output_dir)
+    job.set_dataset('HD128621','HARPS15_3.3.6',files) 
+
+    job.set_star(ra=219.90, dec=-60.84, prot=36) # ra and dec in degrees (prot optional)
+    job.reduce(begin=1, end=14,  copy_files=True) 
+
