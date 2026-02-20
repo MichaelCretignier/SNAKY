@@ -1,4 +1,4 @@
-# SNAKY (a Spectroscopic Novel Analysis Kit of Yᴀʀᴀʀᴀ) v1.0.9
+# SNAKY (a Spectroscopic Novel Analysis Kit of Yᴀʀᴀʀᴀ) v1.1.0
 
 <p align="center">
   <img src="logo.png" alt="Project logo" width="400">
@@ -303,14 +303,15 @@ NB: s1d spectra should always be preferred over e2ds/s2d spectra
 
 <a id="flag3"></a>
 
+*You can test your installation and speed with the following benchmark command-lines:*
+
 ```python
 import src_snaky.run as snaky
 
 output_dir = '/Users/cretignier/Desktop/Snaky/'
 
-snaky.benchmark1(output_dir) #check the time printed in blue
-snaky.benchmark2(output_dir) #check the time printed in blue
-
+snaky.benchmark1(output_dir) #check "[INFO] Processing achieved in ..."
+snaky.benchmark2(output_dir) #check "[INFO] Processing achieved in ..."
 ```
 
 
