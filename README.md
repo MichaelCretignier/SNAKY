@@ -276,7 +276,7 @@ sbatch run_snaky_med.s HD128621 HARPS15_3.3.6 1 14
 
 <a id="flag4"></a>
 
-SNAKY can process spectra from the following spectrographs:
+SNAKY can process spectra from the following products from the following spectrographs:
 
 | SPECTRO | DRS        | PRODUCT        |  SNAKY_CODE        | 
 |---------------|---------------|---------------|---------------|
