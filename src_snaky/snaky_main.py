@@ -2724,7 +2724,7 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False, std_
         else:
             loc = myf.find_nearest(list(myv.instrument_res_kms.values()),ref_resolution)[0][0]
             ins_calib = list(myv.instrument_res_kms.keys())[loc]
-            print(' [INFO] %s is no part of the calibrated instrument, closest found: %s'%(ins,ins_calib))
+            print(Fore.YELLOW+' [WARNING] %s is no part of the calibrated instrument, closest found: %s'%(ins,ins_calib)+Fore.RESET)
 
         #print(np.round(np.median(fwhmG_raw),3),ins_res,ref_resolution)
         fwhmG = np.sqrt(fwhmG_raw**2 - ref_resolution**2) # correct the PSF deconvolve FWHM
