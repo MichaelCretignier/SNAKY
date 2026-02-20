@@ -280,14 +280,14 @@ SNAKY can process spectra from the following products from the following spectro
 
 | SPECTRO | DRS        | PRODUCT        |  SNAKY_CODE        | 
 |---------------|---------------|---------------|---------------|
-| SOPHIE | irrelevant | S1D | SOPHIE_0.5 |
-| SOPHIE-HE (high efficiency) | irrelevant | S1D | SOPHIE-HE_0.5 |
-| HARPN | irrelevant | S1D |  HARPN_3.0.1 |
-| ESPRESSO | irrelevant | S1D |  ESPRESSO_3.3.6 |
-| NEID | irrelevant | E2DS |  NEID_1.0 |
-| NEID-HE (high efficiency) | irrelevant | ED2S |  NEID-HE_1.0 |
-| HARPS03 | 3.5 (old) | S1D |  HARPS03_3.5 |
-| HARPS15 | 3.5 (old) | S1D |  HARPS15_3.5 |
+| [SOPHIE](http://atlas.obs-hp.fr/sophie/) | irrelevant | S1D | SOPHIE_0.5 |
+| [SOPHIE-HE](http://atlas.obs-hp.fr/sophie/) (high efficiency) | irrelevant | S1D | SOPHIE-HE_0.5 |
+| [HARPN](http://archives.ia2.inaf.it/tng/) | irrelevant | S1D |  HARPN_3.0.1 |
+| [ESPRESSO](https://archive.eso.org/scienceportal/home) | irrelevant | S1D |  ESPRESSO_3.3.6 |
+| [NEID](https://neid.ipac.caltech.edu) | irrelevant | E2DS |  NEID_1.0 |
+| [NEID-HE](https://neid.ipac.caltech.edu) (high efficiency) | irrelevant | ED2S |  NEID-HE_1.0 |
+| [HARPS03](https://archive.eso.org/scienceportal/home) | 3.5 (old) | S1D |  HARPS03_3.5 |
+| [HARPS15](https://archive.eso.org/scienceportal/home) | 3.5 (old) | S1D |  HARPS15_3.5 |
 | HARPS03 | 3.3.6 (new) | S1D |  HARPS03_3.3.6 |
 | HARPS15 | 3.3.6 (new) | S1D |  HARPS15_3.3.6 |
 
