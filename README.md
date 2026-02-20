@@ -288,8 +288,8 @@ SNAKY can process spectra from the following products from the following spectro
 | [NEID-HE](https://neid.ipac.caltech.edu) (high efficiency) | irrelevant | ED2S |  NEID-HE_1.0 |
 | [HARPS03](https://archive.eso.org/scienceportal/home) | 3.5 (old) | S1D |  HARPS03_3.5 |
 | [HARPS15](https://archive.eso.org/scienceportal/home) | 3.5 (old) | S1D |  HARPS15_3.5 |
-| HARPS03 | 3.3.6 (new) | S1D |  HARPS03_3.3.6 |
-| HARPS15 | 3.3.6 (new) | S1D |  HARPS15_3.3.6 |
+| [HARPS03](https://dace.unige.ch) | 3.3.6 (new) | S1D |  HARPS03_3.3.6 |
+| [HARPS15](https://dace.unige.ch) | 3.3.6 (new) | S1D |  HARPS15_3.3.6 |
 
 HARPS spectra before and after the fiber upgrade (2015-05-23) have to be processed independently as respectively HARPS03 and HARPS15 spectra and the DRS version has to be correctly specified.
 
