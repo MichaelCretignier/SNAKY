@@ -291,9 +291,9 @@ SNAKY can process spectra from the following spectrographs:
 | HARPS03 | 3.3.6 (new) | - |  HARPS03_3.3.6 |
 | HARPS15 | 3.3.6 (new) | - |  HARPS15_3.3.6 |
 
-HARPS spectra before and after the fiber upgrade (2015-05-23) have to be processed independently. 
+HARPS spectra before and after the fiber upgrade (2015-05-23) have to be processed independently as respectively HARPS03 and HARPS15 spectra. 
 
-to add a new instrument you only need 5 information from its header:
+To add a new instrument you only need 5 information from its header:
 1) jdb   [!mandatory!]
 2) alpha [!mandatory!]
 3) dec   [!mandatory!]
