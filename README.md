@@ -128,7 +128,7 @@ files = snaky.glob.glob(snaky.myv.TEST_DATASET1)
 #output_dir = '/Users/cretignier/Desktop/Snaky/'
 
 job = snaky.start()
-job.set_output_dir(output_dir)                   # define output dir 
+job.set_output_dir(output_dir)                     # define output dir 
 job.set_dataset('HD12345', 'HARPS03_3.5', files)   # define the star + instrument + list of spectra
 ```
 
@@ -181,8 +181,6 @@ job.reset(suppression='all')
 <a id="flag1"></a>
 
 ```python
-# Benchmark Dataset1 (HARPS Epsilon Eridani)
-
 import src_snaky.run as snaky
 
 files = snaky.glob.glob(snaky.myv.TEST_DATASET1)
@@ -249,8 +247,6 @@ $$
 <a id="flag2"></a>
 
 ```python
-# Benchmark Dataset2
-
 # Let's use the Alpha Cen B RASSINE dataset
 import src_snaky.run as snaky
 
@@ -324,7 +320,7 @@ snaky.benchmark2(output_dir) #check "[INFO] Processing achieved in ..."
 ```
 
 
-| Computer | Processor        | VERSION        | LIBRARIES       | [DATASET1](#flag1)    | [DATASET2](#flag2)     |
+| Computer | Processor        | VERSION        | LIBRARIES       | DATASET1    | DATASET2    |
 |---------------|---------------|---------------|---------------|--------------|--------------|
 | MC1 | Apple M4 MAX (2024) | SNAKY (1.1.0) | 3.10.15 | 00 min 58 s  | 01 min 07 s  |
 | MC1 | Apple M4 MAX (2024) | SNAKY (1.1.0) | 3.12.5 | 01 min 51 s  | 01 min 43 s  |
