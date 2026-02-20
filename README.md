@@ -310,7 +310,9 @@ import src_snaky.run as snaky
 
 output_dir = '/Users/cretignier/Desktop/Snaky/'
 
+#dataset1
 snaky.benchmark1(output_dir) #check "[INFO] Processing achieved in ..."
+#dataset2
 snaky.benchmark2(output_dir) #check "[INFO] Processing achieved in ..."
 ```
 
