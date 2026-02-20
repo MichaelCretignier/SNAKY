@@ -984,7 +984,7 @@ def benchmark1(output_dir):
 
 def benchmark2(output_dir):
     # Benchmark Dataset2
-    files = snaky.glob.glob(myv.TEST_DATASET2)
+    files = glob.glob(myv.TEST_DATASET2)
             
     job = start()
     job.set_output_dir(output_dir)
