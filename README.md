@@ -278,18 +278,18 @@ sbatch run_snaky_med.s HD128621 HARPS15_3.3.6 1 14
 
 SNAKY can process spectra from the following spectrographs:
 
-| SPECTRO | DRS        | YEAR        |  SNAKY_CODE        | 
+| SPECTRO | DRS        | PRODUCT        |  SNAKY_CODE        | 
 |---------------|---------------|---------------|---------------|
-| SOPHIE | irrelevant | - | SOPHIE_0.5 |
-| SOPHIE-HE (high efficiency) | irrelevant | - | SOPHIE-HE_0.5 |
-| HARPN | irrelevant | - |  HARPN_3.0.1 |
-| ESPRESSO | irrelevant | - |  ESPRESSO_3.3.6 |
-| NEID | irrelevant | - |  NEID_1.0 |
-| NEID-HE (high efficiency) | irrelevant | - |  NEID-HE_1.0 |
-| HARPS03 | 3.5 (old) | - |  HARPS03_3.5 |
-| HARPS15 | 3.5 (old) | - |  HARPS15_3.5 |
-| HARPS03 | 3.3.6 (new) | - |  HARPS03_3.3.6 |
-| HARPS15 | 3.3.6 (new) | - |  HARPS15_3.3.6 |
+| SOPHIE | irrelevant | S1D | SOPHIE_0.5 |
+| SOPHIE-HE (high efficiency) | irrelevant | S1D | SOPHIE-HE_0.5 |
+| HARPN | irrelevant | S1D |  HARPN_3.0.1 |
+| ESPRESSO | irrelevant | S1D |  ESPRESSO_3.3.6 |
+| NEID | irrelevant | E2DS |  NEID_1.0 |
+| NEID-HE (high efficiency) | irrelevant | ED2S |  NEID-HE_1.0 |
+| HARPS03 | 3.5 (old) | S1D |  HARPS03_3.5 |
+| HARPS15 | 3.5 (old) | S1D |  HARPS15_3.5 |
+| HARPS03 | 3.3.6 (new) | S1D |  HARPS03_3.3.6 |
+| HARPS15 | 3.3.6 (new) | S1D |  HARPS15_3.3.6 |
 
 HARPS spectra before and after the fiber upgrade (2015-05-23) have to be processed independently as respectively HARPS03 and HARPS15 spectra. 
 
