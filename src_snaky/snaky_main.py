@@ -35,13 +35,15 @@ except:
 MATERIAL_DIR = myv.MATERIAL_DIR
 interp_degree = myv.interp_degree
 
+import inspect
+
 """
 
 SNAKY — Spectroscopic Novel Analysis Kit of Yarara
 
 """
 
-__version__ = '1.1.1' 
+__version__ = '1.2.0' 
 
 print(Fore.GREEN+"""\n[INFO SNAKY]
 [INFO USER] SNAKY version = """+__version__ +""" 
@@ -1105,7 +1107,11 @@ def import_spectrum(file,sub_dico='matching_diff'):
     return spec
 
 def master_spectrum(files, rv_shift, rv_sys, plot=False, sub_dico='matching_diff'):
-    wave_grid, sts, sts_err = import_sts(files, sub_dico=sub_dico)
+    
+    #wave_grid, sts, sts_err = import_sts(files, sub_dico=sub_dico)
+    wave_grid = files[0]/100.
+    sts = files[1]/10000.
+    
     rv_syst = rv_sys*1000
     shift_ms = rv_shift + rv_syst
         
@@ -1124,35 +1130,66 @@ def master_spectrum(files, rv_shift, rv_sys, plot=False, sub_dico='matching_diff
 
 def import_sts(files, rv_shift=None, err=False, sub_dico='matching_diff'):
     "rv_shift in m/s"
-    wmin = []
-    wmax = []
-    for f in files:
-        spec = import_spectrum(f, sub_dico=sub_dico)
-        wmin.append(np.nanmin(spec.x))
-        wmax.append(np.nanmax(spec.x))
-    wmin = np.round(np.nanmax(wmin)+10,2)
-    wmax = np.round(np.nanmin(wmax)-10,2)
 
-    wave_grid = np.round(np.arange(wmin,wmax,0.01),4)
-    if rv_shift is None:
-        rv_shift = np.zeros(len(files))
+    importation = 'npy'
+    if type(files[0])==str:
+        importation = 'file'
+        wmin = []
+        wmax = []
+        for f in files:
+            spec = import_spectrum(f, sub_dico=sub_dico)
+            wmin.append(np.nanmin(spec.x))
+            wmax.append(np.nanmax(spec.x))
+        wmin = np.round(np.nanmax(wmin)+10,2)
+        wmax = np.round(np.nanmin(wmax)-10,2)
 
-    sts = []
-    sts_err = []
-    for f, rv in zip(files,rv_shift):
-        spec = import_spectrum(f, sub_dico=sub_dico)
-        if rv!=0:
-            spec.x = myf.doppler_r(spec.x,rv)[1]
-        spec.interpolate(new_grid=wave_grid,method='linear',replace=True,fill_value=1)
-        sts.append(spec.y)
-        if err:
-            sts_err.append(spec.yerr)
-    sts = np.array(sts)
-    sts_err = np.array(sts_err)
-    if len(sts_err)==0:
-        sts_err = None
+        wave_grid = np.round(np.arange(wmin,wmax,0.01),4)
+        if rv_shift is None:
+            rv_shift = np.zeros(len(files))
+        
+        sts = []
+        sts_err = []
+        for f, rv in zip(files,rv_shift):
+            spec = import_spectrum(f, sub_dico=sub_dico)
+            if rv!=0:
+                spec.x = myf.doppler_r(spec.x,rv)[1]
+            spec.interpolate(new_grid=wave_grid,method='linear',replace=True,fill_value=1)
+            sts.append(spec.y)
+            if err:
+                sts_err.append(spec.yerr)
+        sts = np.array(sts)
+        sts_err = np.array(sts_err)
+        if len(sts_err)==0:
+            sts_err = None
+    else:
+        wave_grid = np.round(files[0]/100.,2)
+        sts = files[1]/10000.
+        sts_err = sts*0
+        if rv_shift is None:
+            rv_shift = np.zeros(len(sts))
+        count = -1
+        for f, rv in zip(sts,rv_shift):
+            count+=1
+            if rv!=0:
+                spec = myc.tableXY(myf.doppler_r(wave_grid,rv)[1], f,0*f)
+                spec.interpolate(new_grid=wave_grid,method='linear',replace=True,fill_value=1)
+                sts[count] = spec.y
 
     return wave_grid, sts, sts_err    
+
+def create_sts(files, grid = np.round(np.arange(3900,6830.001,0.01),2)):
+    sts = []
+    print(' [INFO] Creating the npy Spectrum time-series...')
+    for f in files:
+        rassine_file = pd.read_pickle(f)
+        spec_norm = rassine_file['flux']/rassine_file['matching_diff']['continuum_linear']
+        wave = rassine_file['wave']
+        spec = myc.tableXY(wave,spec_norm,0*spec_norm)
+        spec.interpolate(new_grid=grid,method='linear',fill_value=0)
+        spec.y[spec.y>2] = 1
+        sts.append((10000*spec.y).astype('int16'))
+    
+    return (grid*100).astype('int'),np.array(sts)
 
 def read_neid(file,dir_root,force=False,debug=False):
     fname = file.split('/')[-1]
@@ -1486,9 +1523,13 @@ def yarara_flux_density(dir_root,files,sub_dico='matching_diff',smooth=7):
     count = -1
     warning = 0
     plt.figure('flux_density',figsize=(7,7))
+
+    grid = files[0]/100.
+    files = files[1]/10000.
     for j in tqdm(files):
         count+=1
-        spec = import_spectrum(j,sub_dico=sub_dico)
+        #spec = import_spectrum(j,sub_dico=sub_dico)
+        spec = myc.tableXY(grid,j,0*grid)
         if smooth!=1:
             spec.smooth(box_pts=smooth,shape='savgol')
         mask = (spec.x<6250)&(spec.x>4000)
@@ -1776,7 +1817,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
     start = time.time()
 
     ins = dir_root.split('/')[-2]
-    jdb = get_jdb(files,dir_root)
+    jdb = get_jdb(files[-1],dir_root)
 
     print(' [INFO] RV sys : %.2f [km/s] '%(rv_sys))
     rv_sys = 1000*rv_sys
@@ -1811,7 +1852,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
         mask = np.array([np.array(mask['freq_mask0']).astype('float'),np.array(mask[mask_col]).astype('float')]).T
         mask_name = 'ManualDF'
 
-    shift_rv = np.zeros(len(files))
+    shift_rv = np.zeros(len(files[-1]))
     if type(rv_shift)==np.ndarray:
         shift_rv = rv_shift
     
@@ -1837,6 +1878,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
     print(' [INFO] Wave min : %.0f AA | Wave max : %.0f AA'%(mask_min,mask_max))
 
     #supress useless part of the spectra to speed up the CCF
+
     grid_min = int(myf.find_nearest(grid,myf.doppler_r(mask_min,-100000)[0])[0][0])
     grid_max = int(myf.find_nearest(grid,myf.doppler_r(mask_max,100000)[0])[0][0])
     grid = grid[grid_min:grid_max]
@@ -1844,7 +1886,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
     if flux_err is not None:
         flux_err = flux_err[:,grid_min:grid_max]
 
-    log_grid = np.linspace(np.log10(grid).min(),np.log10(grid).max(),len(grid))
+    log_grid = np.linspace(np.log10(grid[0]),np.log10(grid[-1]),len(grid))
     dgrid = log_grid[1] - log_grid[0]
     #dv = (10**(dgrid)-1)*299.792e6    
 
@@ -1897,7 +1939,8 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
     now = datetime.datetime.now()
     print('\n Computing CCFs (Current time %.0fh%.0fm%.0fs) \n'%(now.hour, now.minute, now.second))
     
-    for j,i in enumerate(files):   
+    # TBD optimize take 9s for N=360
+    for j,i in enumerate(files[-1]):   
         if flux_err is None:
             f_err = 0*flux[j]
         else:
@@ -1921,9 +1964,12 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
     vrad, ccf_power, ccf_power_std = myf.ccf(log_grid, flux, log_template, 
                                                 rv_range = rv_range, oversampling = ccf_oversampling, spec1_std = flux_err) #to compute on all the ccf simultaneously
     
-    end3 = time.time()
+    end = time.time()
     if myv.DEV:
-        print(Fore.YELLOW+f"Execution time: {end3 - start3:.3f} seconds"+Fore.RESET)
+        counter_dev+=1
+        print(f"Line number: {inspect.currentframe().f_lineno}")
+        print(Fore.YELLOW+f"Execution time {counter_dev}: {end - start:.3f} seconds"+Fore.RESET)
+
     del flux
     del flux_err
 
@@ -1956,7 +2002,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
     print(' [INFO] Beta value of GND = %.2f'%(beta0))
     if (beta0>2.5)&(analytical_model=='gaussian'):
         print(' \n [WARNING] Significant Kurtosis detected.')
-
+    
     dccf2 = (ccf_power-ccf_ref[:,np.newaxis])[top_ccf]/np.mean(ccf_power[continuum_ccf])*100
     dccf2 -= np.median(dccf2,axis=0)
     ccf_snr = 1/np.std(dccf2,axis=0)*100
@@ -1996,7 +2042,14 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
     ccf_power = ccf_power*factor
     ccf_power_std = ccf_power*factor
 
-    for j,i in enumerate(files):
+    end = time.time()
+    if myv.DEV:
+        counter_dev+=1
+        print(f"Line number: {inspect.currentframe().f_lineno}")
+        print(Fore.YELLOW+f"Execution time {counter_dev}: {end - start:.3f} seconds"+Fore.RESET)
+
+    # TBD optimize take 9s for N=360
+    for j,i in enumerate(files[-1]):
         ccf_power_old = ccf_power[:,j]
         ccf_power_old_std = ccf_power_std[:,j]
         ccf = myc.tableXY(vrad/1000,ccf_power_old,ccf_power_old_std)
@@ -2017,7 +2070,6 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
             model_parametric = 'GND%.1f'%(beta0)
         
         plt.close('debug')
-
 
         ccf.yerr = np.sqrt(abs(ccf.y))
         
@@ -2159,6 +2211,12 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
                                 'offset':offset_ccf,'offset_std':offset_ccf_std,
                                 'vspan':rv_ccf - para_center,'vspan_std':bisspan_ccf_std}
     
+    end = time.time()
+    if myv.DEV:
+        counter_dev+=1
+        print(f"Line number: {inspect.currentframe().f_lineno}")
+        print(Fore.YELLOW+f"Execution time {counter_dev}: {end - start:.3f} seconds"+Fore.RESET)
+
     rvs_std = svrad_phot2['rv']
     fwhms = np.array(fwhms).astype('float')*2.355
     fwhms_std = np.array(fwhms_std).astype('float')*2.355
@@ -2169,7 +2227,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
         warning_rv_borders = True
     
     if jdb is None:
-        jdb = np.arange(len(files))
+        jdb = np.arange(len(files[-1]))
     ccf_rv = myc.tableXY(jdb,np.array(rvs)*1000,np.array(rvs_std)*1000)
     ccf_centers = myc.tableXY(jdb,np.array(centers)*1000,np.array(centers_std)*1000)        
     ccf_contrast = myc.tableXY(jdb,np.array(amplitudes)*100,np.array(amplitudes_std)*100)
@@ -2180,7 +2238,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
     ccf_timeseries = np.array([ew,ew_std,amplitudes,amplitudes_std,rvs,rvs_std,svrad_phot2['rv'],fwhms,fwhms_std,centers,centers_std,depths,depths_std,bisspan,bisspan_std])
     ccf_infos = pd.DataFrame(ccf_timeseries.T,columns=['ew','ew_std','contrast','contrast_std','rv','rv_std','rv_std_phot','fwhm','fwhm_std','center','center_std','depth','depth_std','bisspan','bisspan_std'])
     ccf_infos['jdb'] = jdb
-    ccf_infos['filename'] = files
+    ccf_infos['filename'] = files[-1]
 
     #Update to remove nan value in RV 02.05.25
     ccf_rv.yerr[ccf_rv.y!=ccf_rv.y] = np.nanmedian(ccf_rv.yerr[ccf_rv.y!=ccf_rv.y])
@@ -2263,15 +2321,11 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
 
     if save:
         summary = import_summary(dir_root)
-        mask = myf.in1d(np.array(summary['filename']),files)
+        mask = myf.in1d(np.array(summary['filename']),files[-1])
         summary['ccf_rv_'+ccf_name] = np.nan ; summary.loc[mask,'ccf_rv_'+ccf_name] = np.round(ccf_rv.y,0) # DONT USE RV FROM SNAKY, PRECISION NOT BETTER THAN 3 M/S
         summary['ccf_ct_'+ccf_name] = np.nan ; summary.loc[mask,'ccf_ct_'+ccf_name] = np.round(ccf_contrast.y,4)
         summary['ccf_fwhm_'+ccf_name] = np.nan ; summary.loc[mask,'ccf_fwhm_'+ccf_name] = np.round(ccf_fwhm.y,4)
         summary.to_csv(dir_root+'/WORKSPACE/Analyse_summary.csv')
-
-    end = time.time()
-    if myv.DEV:
-        print(Fore.YELLOW+f"Execution time: {end - start:.3f} seconds"+Fore.RESET)
 
     if return_ccf:
         return output, vrad, ccf_shifted
@@ -3160,8 +3214,8 @@ def yarara_activity_index(files, rv_sys, shift_rv, fwhm=6.0, material=None, sub_
     
     for n in all_prox_names:
         if n not in save.keys():
-            save[n] = np.zeros(len(files))
-            save[n+'_std'] = np.zeros(len(files))
+            save[n] = np.zeros(len(files[-1]))
+            save[n+'_std'] = np.zeros(len(files[-1]))
         
     del ratio
     
@@ -3191,7 +3245,7 @@ def yarara_activity_index(files, rv_sys, shift_rv, fwhm=6.0, material=None, sub_
     save['RHK_std'] = np.nan
     
     tab = pd.DataFrame(save)
-    tab['filename'] = files
+    tab['filename'] = files[-1]
 
     #teff from Ha and NaD EW
     C = np.nanpercentile(save['NaDC'],50)
@@ -3434,7 +3488,7 @@ def yarara_instrumental_resolution(dir_root, files, shift_rv, berv, sub_dico='ma
     grid, flux, err_flux = import_sts(files, rv_shift=shift_rv, err=False, sub_dico=sub_dico) 
     missing_values = (berv!=berv)
     if (sub_dico=='matching_diff')&(sum(missing_values)!=0):
-        berv_computed = yarara_measure_berv(dir_root,files[missing_values],sub_dico='matching_diff')
+        berv_computed = yarara_measure_berv(dir_root,files[-1][missing_values],sub_dico='matching_diff')
         berv[missing_values] = berv_computed
         
     berv_mad = myf.mad(berv)
@@ -3473,7 +3527,7 @@ def yarara_instrumental_resolution(dir_root, files, shift_rv, berv, sub_dico='ma
     flux_ref[flux_ref>1] = 1
 
     flux = flux/(flux_ref+1e-8)
-    for i in tqdm(np.arange(len(files))):
+    for i in tqdm(np.arange(len(files[-1]))):
         f = myc.tableXY(myf.doppler_r(grid,berv[i]*1000)[1],flux[i],0*grid)
         f.interpolate(new_grid=grid,method='linear',fill_value=1)
         flux[i] = f.y
@@ -3503,7 +3557,7 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
     
     myf.print_box('\n---- RECIPE : NEW MHK EXTRACTION ----\n')
 
-    jdb = get_jdb(files,dir_root)
+    jdb = get_jdb(files[-1],dir_root)
     photosphere = pd.read_pickle(MATERIAL_DIR+'/Photospheric_profiles_V.p')
     chromosphere = myf.touch_pickle(MATERIAL_DIR+'/Chromospheric_profiles_V.p')
     
@@ -3633,7 +3687,7 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
         error = 1#np.median(quiet_obs[mask_error]/db.y[mask_error])
         #print(' [INFO] Error in continuum detected at %.2f'%(error))
         db.y[~np.isnan(db.y)] = db.y[~np.isnan(db.y)]*error
-        if len(files)>5:
+        if len(files[-1])>5:
             db.y[np.isnan(db.y)] = np.median(mat.table,axis=0)[np.isnan(db.y)]
         else:
             db.y[np.isnan(db.y)] = quiet.y_interp[np.isnan(db.y)]
@@ -3660,7 +3714,7 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
         offset_std = myf.mad(mat2.table[:,wings_uncertainties],axis=1)
         mat2.table = mat2.table - offset[:,np.newaxis]
 
-        if len(files)>5:
+        if len(files[-1])>5:
             uncertainties = mat2.table-np.median(mat2.table,axis=0)
         else:
             uncertainties = mat2.table-quiet.y_interp
@@ -3809,7 +3863,7 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
     mhk = [np.nanpercentile(save['CaII']['index'],i) for i in [16,50,86]]
     print('\n [INFO] M-index = %.2f +/- %.2f [%.2f -> %.2f] \n'%(mhk[1],np.median(index_std),mhk[0],mhk[2]))
 
-    dico = {'filename':files}
+    dico = {'filename':files[-1]}
     dico['MHK'] = index
     dico['MHK_std'] = index_std
 

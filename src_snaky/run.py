@@ -261,15 +261,17 @@ class start():
             else:
                 for f,w0,dw in zip(files,cval1,cdelta1):
                     mym.read_static(f,dir_root,w0,dw,force=True)
+            self.sy_rassine_files = np.sort(glob.glob(dir_root+'WORKSPACE/RASSINE*.p'))
         else:
             print(' [INFO] No preprocessing needed, spectra already in RASSINE format.')
-
-        self.sy_rassine_files = np.sort(glob.glob(dir_root+'WORKSPACE/RASSINE*.p'))
-
+            self.sy_rassine_files = self.sy_files
+    
     def check_spectra(self):
         files = self.sy_rassine_files
         sub_dico = self.sy_sub_dico
         summary = mym.import_summary(self.sy_dir_root)
+
+        files = (self.sy_sts_wave,self.sy_sts_flux,files)
 
         wave_grid, sts, sts_err = mym.import_sts(files, sub_dico=sub_dico)
         anomalous = np.sum((sts>1.02)|(sts<0),axis=1)*100/len(wave_grid)
@@ -303,13 +305,13 @@ class start():
 
         summary = mym.import_summary(dir_root)
         mask_flag0 = (summary['flag1']==0)
-        files = np.array(summary['filename'])[mask_flag0]
 
-        teff,feh,fluxD,warning_hole = mym.yarara_flux_density(dir_root,files)
+        teff,feh,fluxD,warning_hole = mym.yarara_flux_density(dir_root,(self.sy_sts_wave,self.sy_sts_flux[mask_flag0]))
         
         rv_sys = []
-        for f in files:
-            spec = mym.import_spectrum(f,sub_dico=sub_dico)
+        for n in np.arange(len(summary)):
+            #spec = mym.import_spectrum(f,sub_dico=sub_dico)
+            spec = myc.tableXY(self.sy_sts_wave/100.,self.sy_sts_flux[n]/10000.,0*self.sy_sts_wave)
             rv_sys1 = mym.yarara_rough_rv_sys(spec,teff=teff,verbose=self.debug)
             rv_sys.append(rv_sys1)
         rv_sys = np.array(rv_sys)
@@ -326,8 +328,10 @@ class start():
                 mask = ~(mask_outliers>5)
         
         anomalous = np.array(summary['anomalous'])[mask_flag0][mask]
-        spec  = mym.import_spectrum(files[mask][np.argmin(anomalous)],sub_dico=sub_dico)
-        
+
+        #spec  = mym.import_spectrum(files[mask][np.argmin(anomalous)],sub_dico=sub_dico)
+        spec = myc.tableXY(self.sy_sts_wave/100.,self.sy_sts_flux[mask][np.argmin(anomalous)]/10000.,0*self.sy_sts_wave)
+
         sb_flag2 = False
         if rv_sys_std>10: 
             print(Fore.YELLOW+' [WARNING] RV_SYS RMS high (%.1f km/s), SB flag'%(rv_sys_std)+Fore.RESET)
@@ -400,8 +404,10 @@ class start():
         rv_sys = sinfo['Rv_sys']['SNAKY']
         beta_gnd = sinfo['CCF_beta']['SNAKY']
         if sum(kept)!=0:
-            sub = summary.loc[summary['flag1']==0]
+            mask = np.array(summary['flag1']==0)
+            sub = summary.loc[mask]
             files = np.array(sub['filename'])
+            files = (self.sy_sts_wave,self.sy_sts_flux[mask], files)
             ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'G2', debug=self.debug, sub_dico=sub_dico, ccf_tag='', save=False)
             ct = ccf_output['contrast'].y
             med_ct = np.nanmedian(ct)
@@ -418,7 +424,9 @@ class start():
         summary = mym.import_summary(dir_root)
         kept = np.array(1-summary['flag1'])*np.array(1-summary['flag2'])
         if sum(kept)!=0:
-            files = np.array(summary.loc[kept==1,'filename'])
+            mask = np.array(kept==1)
+            files = np.array(summary.loc[mask,'filename'])
+            files = (self.sy_sts_wave,self.sy_sts_flux[mask],files)
             ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Magicat', debug=self.debug, sub_dico=sub_dico, ccf_tag='')
             ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'G2', debug=self.debug, sub_dico=sub_dico, ccf_tag='')
             sinfo['FWHM']['G2'] = np.round(np.nanmedian(ccf_output['fwhm'].y),2)
@@ -435,15 +443,20 @@ class start():
 
     def compute_master(self):
         dir_root = self.sy_dir_root
+        summary = mym.import_summary(dir_root)
+        files = summary['filename']
         try:
             ccf_output = mym.import_ccf(dir_root,'G2')
-            files = ccf_output['filename']
+            files2 = ccf_output['filename']
+            mask = myf.in1d(files,files2)
             rv = ccf_output['rv'].y
+            files = files2
         except:
-            summary = mym.import_summary(dir_root)
             rv_sys = mym.import_star_info(dir_root)['Rv_sys']['SNAKY']
-            files = summary['filename']
             rv = np.ones(len(files))*rv_sys
+            mask = np.ones(len(files)).astype('bool')
+            
+        files = (self.sy_sts_wave,self.sy_sts_flux[mask],self.sy_sts_flux[mask]*0,files)
         master = mym.master_spectrum(files,rv,0)
         material = {'wave':master.x,'reference_spectrum':master.y}
         pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
@@ -496,16 +509,21 @@ class start():
 
         sinfo = mym.import_star_info(dir_root)
         summary = mym.import_summary(dir_root)
+        files = summary['filename']
+
         try:
-            files = mym.import_ccf(dir_root,'G2')['filename']
+            files2 = mym.import_ccf(dir_root,'G2')['filename']
+            mask = myf.in1d(files,files2)
         except:
-            files = summary['filename']
+            mask = np.ones(len(summary)).astype('bool')
         berv = np.array(summary.loc[myf.in1d(summary['filename'],files),'berv'])
+
+        files = (self.sy_sts_wave,self.sy_sts_flux[mask],files[mask])
         fwhm_ins, berv_output = mym.yarara_instrumental_resolution(dir_root, files, np.zeros(len(berv)), berv.copy())
         summary = mym.import_summary(dir_root) # to reload updated table
         if np.sum(berv!=berv_output)!=0:
-            summary.loc[myf.in1d(np.array(summary['filename']),files),'berv_computed'] = berv_output
-        output = np.array([files,fwhm_ins]).T
+            summary.loc[myf.in1d(np.array(summary['filename']),files[-1]),'berv_computed'] = berv_output
+        output = np.array([files[-1],fwhm_ins]).T
         if ins[0:6]=='SOPHIE':
             newins = np.array([[ins.replace('-HE',''),ins.replace('-HE','').replace('_','-HE_')][int(i>5)] for i in fwhm_ins])
             output[:,-1] = newins
@@ -549,10 +567,14 @@ class start():
         sinfo = mym.import_star_info(dir_root)
         rv_sys = sinfo['Rv_sys']['SNAKY']
         fwhm = sinfo['FWHM']['fixed']
-        kept = np.array(1-summary['flag1'])*np.array(1-summary['flag2'])
-        files = np.array(summary.loc[kept==1,'filename'])
+        
         ccf_output = mym.import_ccf(dir_root,'G2')
-        tab_proxies, CT, mask_activity = mym.yarara_activity_index(ccf_output['filename'], rv_sys, ccf_output['rv'].y, material=material, fwhm=fwhm)
+        files = ccf_output['filename']
+
+        mask = myf.in1d(summary['filename'],files)
+        files = (self.sy_sts_wave,self.sy_sts_flux[mask],files)
+
+        tab_proxies, CT, mask_activity = mym.yarara_activity_index(files, rv_sys, ccf_output['rv'].y, material=material, fwhm=fwhm)
         material['activity_proxies'] = mask_activity
         pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
 
@@ -579,9 +601,13 @@ class start():
         teff = sinfo['Teff']['SNAKY']
         material = mym.import_material(dir_root)
         ccf_output = mym.import_ccf(dir_root,'G2')   
-        summary = mym.import_summary(dir_root)
-        proxy = np.array(summary.loc[myf.in1d(summary['filename'],ccf_output['filename']),'CaII'])
-        dico, rhk, mhk = mym.yarara_activity_mhk(dir_root, ccf_output['filename'], rv_sys, ccf_output['rv'].y, teff, material, proxy)
+
+        files = ccf_output['filename']
+        mask = myf.in1d(summary['filename'],files)
+        files = (self.sy_sts_wave,self.sy_sts_flux[mask],files)
+
+        proxy = np.array(summary.loc[mask,'CaII'])
+        dico, rhk, mhk = mym.yarara_activity_mhk(dir_root, files, rv_sys, ccf_output['rv'].y, teff, material, proxy)
         
         for kw in ['RHK','RHK_std','MHK','MHK_std']:
             if kw in summary.keys():
@@ -887,6 +913,10 @@ class start():
         except:
             pass
 
+        self.sy_rassine_files = np.array(summary['filename'])
+        self.sy_sts_wave, self.sy_sts_flux = mym.create_sts(self.sy_rassine_files)
+
+
         if force_summary: #2
             self.check_spectra()
             self.write_progress(2, 'summary', savefile=filename_time)
@@ -976,20 +1006,24 @@ class start():
 def benchmark1(output_dir):
     # Benchmark Dataset1 (HARPS Epsilon Eridani)
     files = glob.glob(myv.TEST_DATASET1)
-
+    
     job = start()
     job.set_output_dir(output_dir)
     job.set_dataset('HD123456','HARPS03_3.5',files) 
+    job.warning_printed = 1
+    job.reset(suppression='all')
 
     job.reduce(begin=1, end=14)
 
 def benchmark2(output_dir):
     # Benchmark Dataset2
     files = glob.glob(myv.TEST_DATASET2)
-            
+    
     job = start()
     job.set_output_dir(output_dir)
     job.set_dataset('HD128621','HARPS15_3.3.6',files) 
+    job.warning_printed = 1
+    job.reset(suppression='all')
 
     job.set_star(ra=219.90, dec=-60.84, prot=36) # ra and dec in degrees (prot optional)
     job.reduce(begin=1, end=14,  copy_files=True) 

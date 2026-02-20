@@ -23,7 +23,7 @@ PRD_EXT = ''
 
 SKLEARN_VERSION = ['_sklearn_0.24.1','_sklearn_1.7.2'][int(version("scikit-learn")!='0.24.1')]
 DEV = False
-interp_degree = 'cubic'
+interp_degree = 'linear'
 
 # =============================================================================
 # ACTIVITY PROXY

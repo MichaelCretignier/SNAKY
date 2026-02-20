@@ -587,7 +587,7 @@ def black_body_ratio(T0,teff,wave):
         planck_factor = (np.exp(myv.h_planck*myv.c_lum/(myv.k_boltz*T0*wave*1e-10))-1)/(np.exp(myv.h_planck*myv.c_lum/(myv.k_boltz*teff*wave*1e-10))-1)
     return planck_factor
 
-def ccf(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=10, spec1_std=None):
+def ccf_deprecated(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=10, spec1_std=None):
     "CCF for a equidistant grid in log wavelength spec1 = spectrum, spec2 =  binary mask"   
 
     if myv.DEV:
@@ -636,51 +636,46 @@ def ccf(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=10, spec1_s
     
     return velocity, conv, conv_std
     
-def ccf_dev(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=3, spec1_std=None):
+def ccf(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=3, spec1_std=None):
     "CCF for a equidistant grid in log wavelength spec1 = spectrum, spec2 =  binary mask"   
-    
+
     dwave = np.median(np.diff(wave))
-    
-    if spec1_std is None:
-        spec1_std = np.zeros(np.shape(spec1))
-    
+        
     if len(np.shape(spec1))==1:
         spec1 = spec1[:,np.newaxis].T
-    if len(np.shape(spec1_std))==1:
-        spec1_std = spec1_std[:,np.newaxis].T
     #spec1 = np.hstack([np.ones(extended),spec1,np.ones(extended)])
     
     spec1 = np.hstack([np.ones((len(spec1),extended)),spec1,np.ones((len(spec1),extended))])
     spec2 = np.hstack([np.zeros(extended),spec2,np.zeros(extended)])
-    spec1_std = np.hstack([np.zeros((len(spec1_std),extended)), spec1_std, np.zeros((len(spec1_std),extended))])
     wave = np.hstack([np.arange(-extended*dwave+wave.min(),wave.min(),dwave),wave,np.arange(wave.max()+dwave,(extended+1)*dwave+wave.max(),dwave)])
     shift = np.linspace(0,dwave,oversampling+1)[:-1]
     shift_save = []
     sum_spec = np.nansum(spec2)
     convolution = []
-    convolution_std = []
-    
-    spec2_shifted = []
-    for j in tqdm(shift):
-        new_spec = interp1d(wave+j,spec2,kind='linear', bounds_error=False, fill_value='extrapolate')(wave)
-        spec2_shifted.append(new_spec)
-    spec2_shifted = np.array(spec2_shifted)
 
-    print(np.shape(spec2_shifted))
-    print(np.shape(spec1))
-    pouet
+    new_spec = []
+    for j in shift:
+        spec2_s = interp1d(wave+j,spec2,kind='linear', bounds_error=False, fill_value='extrapolate')(wave)
+        new_spec.append(spec2_s)
+    new_spec = np.array(new_spec)
+
+    spec1[spec1!=spec1] = 0
+    new_spec[new_spec!=new_spec] = 0
 
     rv_max = int(np.log10((rv_range/299.792e3)+1)/dwave)
-    for k in np.arange(-rv_max,rv_max+1,1):
-        convolution.append(np.nansum(new_spec2*spec1,axis=1)/sum_spec)
-        convolution_std.append(np.sqrt(np.abs(np.nansum(new_spec2*spec1_std**2,axis=1)))/sum_spec)
-        shift_save.append(j+k*dwave)
-    shift_save = np.array(shift_save)
-    sorting = np.argsort(shift_save)
+    rv_shift = np.arange(-rv_max,rv_max+1,1)
+    for k in tqdm(rv_shift):
+        new_spec2 = np.hstack([new_spec[:,-k:],new_spec[:,:-k]])
+        result = spec1 @ new_spec2.T
+        result /= sum_spec
+        convolution.append(result)
+    convolution = np.hstack(np.array(convolution)).T
 
-    velocity = (299.792e6*10**shift_save[sorting])-299.792e6
-    conv = np.array(convolution)[sorting]
-    conv_std = np.array(convolution_std)[sorting]
+    shift_save = (shift[None, :] + rv_shift[:, None] * dwave).ravel()
+    velocity = (299.792e6*10**shift_save)-299.792e6
+
+    conv = convolution
+    conv_std = np.zeros(np.shape(conv))
 
     return velocity, conv, conv_std
 
