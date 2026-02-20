@@ -286,8 +286,8 @@ SNAKY can process spectra from the following spectrographs:
 | NEID-HE | 1.0 (irrelevant) | - |  NEID-HE_1.0 |
 | HARPS03 | 3.5 (old) | - |  HARPS03_3.5 |
 | HARPS15 | 3.5 (old) | - |  HARPS15_3.5 |
-| HARPS03 | 3.3.6 (new) |  HARPS03_3.3.6 |
-| HARPS15 | 3.3.6 (new) |  HARPS15_3.3.6 |
+| HARPS03 | 3.3.6 (new) | - |  HARPS03_3.3.6 |
+| HARPS15 | 3.3.6 (new) | - |  HARPS15_3.3.6 |
 
 
 
