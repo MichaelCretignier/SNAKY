@@ -276,11 +276,20 @@ sbatch run_snaky_med.s HD128621 HARPS15_3.3.6 1 14
 
 SNAKY can process spectra from the following spectrographs:
 
-1) ESPRESSO 
-2) HARPS (HARPS03 = before fiber upgrade / HARPS15 = after fibre upgrade)
-3) HARPN 
-4) SOPHIE 
-5) NEID 
+| SPECTRO | DRS        | YEAR        |  SNAKY_CODE        | 
+|---------------|---------------|---------------|---------------|--------------|--------------|
+| SOPHIE | 0.5 (irrelevant) | - | SOPHIE_0.5 |
+| SOPHIE-HE | 0.5 (irrelevant) | - | SOPHIE-HE_0.5 |
+| HARPN | 3.0.1 (irrelevant) | - |  HARPN_3.0.1 |
+| ESPRESSO | 3.3.6 (irrelevant) | - |  ESPRESSO_3.3.6 |
+| NEID | 1.0 (irrelevant) | - |  NEID_1.0 |
+| NEID-HE | 1.0 (irrelevant) | - |  NEID-HE_1.0 |
+| HARPS03 | 3.5 (old) | - |  HARPS03_3.5 |
+| HARPS15 | 3.5 (old) | - |  HARPS15_3.5 |
+| HARPS03 | 3.3.6 (new) |  HARPS03_3.3.6 |
+| HARPS15 | 3.3.6 (new) |  HARPS15_3.3.6 |
+
+
 
 to add a new instrument you only need 5 information from its header:
 1) jdb   [!mandatory!]
