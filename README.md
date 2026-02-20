@@ -129,7 +129,7 @@ files = snaky.glob.glob(snaky.myv.TEST_DATASET1)
 
 job = snaky.start()
 job.set_output_dir(output_dir)                   # define output dir 
-job.set_dataset('HD12345', 'HARPS_3.5', files)   # define the star + instrument + list of spectra
+job.set_dataset('HD12345', 'HARPS03_3.5', files)   # define the star + instrument + list of spectra
 ```
 
 *We then initialized SNAKY which will create the directory tree + normalise the spectra with RASSINE:*
@@ -190,7 +190,7 @@ files = snaky.glob.glob(snaky.myv.TEST_DATASET1)
 
 job = snaky.start()
 job.set_output_dir(output_dir)
-job.set_dataset('HD123456','HARPS_3.5',files) 
+job.set_dataset('HD123456','HARPS03_3.5',files)  #HARPS03 = before fibre upgrade in 2015
 
 job.reduce(begin=1, end=14) # check the sequence number with: job.reduce?
 ```
@@ -211,7 +211,7 @@ files = snaky.glob.glob(snaky.myv.TEST_DATASET1)
 
 job = snaky.start()
 job.set_output_dir(output_dir)
-job.set_dataset('HD22049', 'HARPS_3.5', files)  # the real stellar name
+job.set_dataset('HD22049', 'HARPS03_3.5', files)  # the real stellar name
 
 # Stop at step 6 (crash before atmospheric parameters, step 7)
 job.reduce(begin=1, end=6)
@@ -259,7 +259,7 @@ files = snaky.glob.glob(snaky.myv.TEST_DATASET2)
 
 job = snaky.start()
 job.set_output_dir(output_dir)
-job.set_dataset('HD128621','HARPS15_3.3.6',files) 
+job.set_dataset('HD128621','HARPS15_3.3.6',files) #HARPS15 = after fibre upgrade in 2015
 
 job.set_star(ra=219.90, dec=-60.84, prot=36) # ra and dec in degrees (prot optional)
 job.reduce(begin=1, end=14,  copy_files=True) 
@@ -281,7 +281,7 @@ sbatch run_snaky_med.s HD128621 HARPS15_3.3.6 1 14
 SNAKY can process spectra from the following spectrographs:
 
 1) ESPRESSO 
-2) HARPS 
+2) HARPS (HARPS03 = before fiber upgrade / HARPS15 = after fibre upgrade)
 3) HARPN 
 4) SOPHIE 
 5) NEID 

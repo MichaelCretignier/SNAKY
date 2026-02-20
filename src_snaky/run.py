@@ -978,7 +978,7 @@ def benchmark1(output_dir):
 
     job = start()
     job.set_output_dir(output_dir)
-    job.set_dataset('HD123456','HARPS_3.5',files) 
+    job.set_dataset('HD123456','HARPS03_3.5',files) 
 
     job.reduce(begin=1, end=14)
 

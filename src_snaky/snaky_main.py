@@ -2724,8 +2724,12 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False, std_
         else:
             loc = myf.find_nearest(list(myv.instrument_res_kms.values()),ref_resolution)[0][0]
             ins_calib = list(myv.instrument_res_kms.keys())[loc]
-            print(Fore.YELLOW+' [WARNING] %s is no part of the calibrated instrument, closest found: %s'%(ins,ins_calib)+Fore.RESET)
-
+            print(Fore.YELLOW+'\n [WARNING] %s is no part of the calibrated instrument'%(ins))
+            print(' [WARNING] The list of existing instruments is:')
+            for ins in myv.instrument_res_kms.keys():
+                print(' ○ ',ins)
+            print(' [WARNING] Closest instrument found based on resolution: %s'%(ins_calib))
+            print("\n"+Fore.RESET)
         #print(np.round(np.median(fwhmG_raw),3),ins_res,ref_resolution)
         fwhmG = np.sqrt(fwhmG_raw**2 - ref_resolution**2) # correct the PSF deconvolve FWHM
         fwhmG = fwhmG * np.random.choice(ratio[mask],1000,replace=False)[:,np.newaxis] #transform Kitty in Garfield or keep Garfield
