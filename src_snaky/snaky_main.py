@@ -1922,7 +1922,8 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
                                                 rv_range = rv_range, oversampling = ccf_oversampling, spec1_std = flux_err) #to compute on all the ccf simultaneously
     
     end3 = time.time()
-    print(Fore.YELLOW+f"Execution time: {end3 - start3:.3f} seconds"+Fore.RESET)
+    if myv.DEV:
+        print(Fore.YELLOW+f"Execution time: {end3 - start3:.3f} seconds"+Fore.RESET)
     del flux
     del flux_err
 
@@ -2269,7 +2270,8 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
         summary.to_csv(dir_root+'/WORKSPACE/Analyse_summary.csv')
 
     end = time.time()
-    print(Fore.YELLOW+f"Execution time: {end - start:.3f} seconds"+Fore.RESET)
+    if myv.DEV:
+        print(Fore.YELLOW+f"Execution time: {end - start:.3f} seconds"+Fore.RESET)
 
     if return_ccf:
         return output, vrad, ccf_shifted
