@@ -209,6 +209,7 @@ class start():
         os.system('cp '+yarara_root+'DACE_TABLE/Dace_extracted_table.csv '+dir_root+'DACE_TABLE')
         os.system('cp '+yarara_root+'WORKSPACE/Analyse_summary.csv '+dir_root+'WORKSPACE')
         os.system('cp '+yarara_root+'STAR_INFO/Stellar_info_%s.p '%(star)+dir_root+'STAR_INFO')
+
         summary = mym.import_summary(dir_root)
         if 'snr_computed' in summary.keys():
             summary['snr'] = summary['snr_computed']
@@ -230,15 +231,20 @@ class start():
         if 'DRS' in sinfo['Ra'].keys():
             sinfo['Ra']['fixed'] = sinfo['Ra']['DRS']
             sinfo['Dec']['fixed'] = sinfo['Dec']['DRS']
-            pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
             ra = sinfo['Ra']['DRS']
             dec = sinfo['Dec']['DRS']
         else:
             ra = mym.ra_to_deg(sinfo['Ra']['fixed'].replace(' ',''))
             dec = mym.dec_to_deg(sinfo['Dec']['fixed'].replace(' ',''))
         dace_summary = pd.read_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv',index_col=0)
-        dace_summary['RA'] = np.round(ra,6) ; dace_summary['DEC'] = np.round(dec,6)
+        dace_summary['RA'] = np.round(ra,6)
+        dace_summary['DEC'] = np.round(dec,6)
         dace_summary.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
+
+        for kw in myv.star_info:
+            if kw not in sinfo.keys():
+                sinfo[kw] = myv.star_info[kw]
+        pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
     def preprocess(self):
         ins = self.sy_instrument
