@@ -281,6 +281,9 @@ SNAKY can process spectra from the following products from the following spectro
 
 | SPECTRO | DRS        | PRODUCT        |  SNAKY_CODE        | 
 |---------------|---------------|---------------|---------------|
+| CORALIE98 | irrelevant | S1D | CORALIE98_3.3 |
+| CORALIE07 | irrelevant | S1D | CORALIE07_3.4 |
+| CORALIE14 | irrelevant | S1D | CORALIE14_3.8 |
 | [SOPHIE](http://atlas.obs-hp.fr/sophie/) | irrelevant | S1D | SOPHIE_0.5 |
 | [SOPHIE-HE](http://atlas.obs-hp.fr/sophie/) (high efficiency) | irrelevant | S1D | SOPHIE-HE_0.5 |
 | [HARPN](http://archives.ia2.inaf.it/tng/) | irrelevant | S1D |  HARPN_3.0.1 |

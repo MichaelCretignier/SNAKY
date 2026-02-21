@@ -1468,6 +1468,7 @@ def extract_header(files, instru, debug=False, ra=None, dec=None):
                 uttime = np.array([f"{s[:4]}-{s[4:6]}-{s[6:8]}T{s[9:11]}:{s[11:13]}:{s[13:15]}.000" for s in uttime])
             else:
                 uttime = np.array([f[-25:-2] for f in files])
+            print(uttime)
             year = np.array([ut[0:4] for ut in uttime])
             year_num = np.array([float(y) if y.isdigit() else np.nan for y in year])
             valid = (year_num>1950)&(year_num<2050)
@@ -3426,6 +3427,9 @@ def yarara_correct_continuum_absorption(dir_root):
             extra_correction2[mask_line] = 1/model
         correction = correction*extra_correction*extra_correction2
 
+    correction[correction==np.inf] = 1
+    correction[correction!=correction] = 1
+
     plt.plot(grid,correction,color='orange')
     plt.subplot(2,1,2,sharex=ax,sharey=ax)
     plt.title('After correction',fontsize=16)
@@ -3625,7 +3629,7 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
         med_line = np.median(line,axis=0)
         if (np.shape(line)[0]>10):
             line[mask_z>10] = (med_line*np.ones(np.shape(line)[0])[:,np.newaxis])[mask_z>10] #
-        
+
         temp_correction.interpolate(new_grid=line_wave,replace=False)
         line = line*temp_correction.y_interp
         line_std = line_std*temp_correction.y_interp
@@ -3637,7 +3641,7 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
             ref = np.nanpercentile(line,50,axis=0)
             ref_std = np.nanstd(line,axis=0)
         else:
-            ref = np.mean(line,axis=0)
+            ref = np.nanmean(line,axis=0)
             ref_std = 0*ref+0.01
 
         plt.axes(ax[0])
@@ -3741,6 +3745,8 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
         std_res = 0
         std_res2 = 0
 
+        index_extracted_std[index_extracted_std==0] = 2*np.median(index_extracted_std[index_extracted_std!=0])
+        
         std = index_extracted_std*np.ones(len(line_wave))[:,np.newaxis]/100
         weights = 1/std**2
         N_bootstrap=30

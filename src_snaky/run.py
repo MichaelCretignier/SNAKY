@@ -314,7 +314,7 @@ class start():
         for n in np.arange(len(summary)):
             #spec = mym.import_spectrum(f,sub_dico=sub_dico)
             spec = myc.tableXY(self.sy_sts_wave/100.,self.sy_sts_flux[n]/10000.,0*self.sy_sts_wave)
-            rv_sys1 = mym.yarara_rough_rv_sys(spec,teff=teff,verbose=self.debug)
+            rv_sys1 = mym.yarara_rough_rv_sys(spec,teff=teff,verbose=False)
             rv_sys.append(rv_sys1)
         rv_sys = np.array(rv_sys)
 
@@ -329,7 +329,7 @@ class start():
             if np.sum(~(mask_outliers>5))!=0:
                 mask = ~(mask_outliers>5)
         
-        anomalous = np.array(summary['anomalous'])[mask_flag0][mask]
+        anomalous = np.array(summary['anomalous'])[mask]
 
         #spec  = mym.import_spectrum(files[mask][np.argmin(anomalous)],sub_dico=sub_dico)
         spec = myc.tableXY(self.sy_sts_wave/100.,self.sy_sts_flux[mask][np.argmin(anomalous)]/10000.,0*self.sy_sts_wave)
@@ -518,13 +518,13 @@ class start():
             mask = myf.in1d(files,files2)
         except:
             mask = np.ones(len(summary)).astype('bool')
-        berv = np.array(summary.loc[myf.in1d(summary['filename'],files),'berv'])
+        berv = np.array(summary.loc[mask,'berv'])
 
         files = (self.sy_sts_wave,self.sy_sts_flux[mask],files[mask])
         fwhm_ins, berv_output = mym.yarara_instrumental_resolution(dir_root, files, np.zeros(len(berv)), berv.copy())
         summary = mym.import_summary(dir_root) # to reload updated table
         if np.sum(berv!=berv_output)!=0:
-            summary.loc[myf.in1d(np.array(summary['filename']),files[-1]),'berv_computed'] = berv_output
+            summary.loc[mask,'berv_computed'] = berv_output
         output = np.array([files[-1],fwhm_ins]).T
         if ins[0:6]=='SOPHIE':
             newins = np.array([[ins.replace('-HE',''),ins.replace('-HE','').replace('_','-HE_')][int(i>5)] for i in fwhm_ins])
@@ -575,8 +575,9 @@ class start():
 
         mask = myf.in1d(summary['filename'],files)
         files = (self.sy_sts_wave,self.sy_sts_flux[mask],files)
+        rv = ccf_output['rv'].y
 
-        tab_proxies, CT, mask_activity = mym.yarara_activity_index(files, rv_sys, ccf_output['rv'].y, material=material, fwhm=fwhm)
+        tab_proxies, CT, mask_activity = mym.yarara_activity_index(files, rv_sys, rv, material=material, fwhm=fwhm)
         material['activity_proxies'] = mask_activity
         pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
 
@@ -594,6 +595,7 @@ class start():
         star = self.sy_starname
         summary = mym.import_summary(dir_root)
         sinfo = mym.import_star_info(dir_root)
+        material = mym.import_material(dir_root)
 
         ccf_output = mym.import_ccf(dir_root,'G2')
         rv = ccf_output['rv'].y
@@ -601,15 +603,13 @@ class start():
 
         rv_sys = sinfo['Rv_sys']['SNAKY'] - rv_sys_correction
         teff = sinfo['Teff']['SNAKY']
-        material = mym.import_material(dir_root)
-        ccf_output = mym.import_ccf(dir_root,'G2')   
 
         files = ccf_output['filename']
         mask = myf.in1d(summary['filename'],files)
         files = (self.sy_sts_wave,self.sy_sts_flux[mask],files)
 
-        proxy = np.array(summary.loc[mask,'CaII'])
-        dico, rhk, mhk = mym.yarara_activity_mhk(dir_root, files, rv_sys, ccf_output['rv'].y, teff, material, proxy)
+        proxy = np.array(summary.loc[mask,'CaII'])        
+        dico, rhk, mhk = mym.yarara_activity_mhk(dir_root, files, rv_sys, rv, teff, material, proxy)
         
         for kw in ['RHK','RHK_std','MHK','MHK_std']:
             if kw in summary.keys():
@@ -726,6 +726,9 @@ class start():
 
     def write_progress(self, stage, step, savefile=None):
 
+        if self.sy_end==14: 
+            plt.close('all') 
+
         #monitoring memory
         self.monitor_ram(stage=stage)
         myf.print_ram(step=step+'='+str(stage))
@@ -838,6 +841,9 @@ class start():
         if end<begin:
             end=begin
 
+        self.sy_begin = begin
+        self.sy_end = end
+
         steps = np.arange(begin,end+1,1).astype('int')
 
         tracemalloc.start()
@@ -900,7 +906,7 @@ class start():
 
         self.write_progress(0, 'init', savefile=filename_time)
         if force_pre: #1
-            self.init_workspace(ra=ra, dec=dec)
+            self.init_workspace(ra=ra, dec=dec, copy_files=copy_files)
             self.preprocess()
             self.write_progress(1, 'pre', savefile=filename_time)
         qc = mym.check_force_pre(dir_root)
