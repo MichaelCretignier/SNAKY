@@ -41,7 +41,7 @@ If you have any problem, please contact me at: michael.cretignier@physics.ox.ac.
 cd .../GitHub/SNAKY/
 ```
 
-*You may use your existing Python environment, as SNAKY depends on only a few libraries (see the `requirements` files for details).   However, it is **strongly recommended** to use `scikit-learn==1.7.2` to ensure full compatibility.
+*You may use your existing Python environment, as SNAKY depends on only a few libraries (see the `requirements` files for details).   However, it is **strongly recommended** to use `scikit-learn==1.7.2` to ensure full compatibility.*
 
 *Based on [benchmark](#flag3), the fastest version is the python 3.10.15. \
 Other tested `../SNAKY/requirements/requirement_PYTHON_VERSION.txt` libraries versioning are available if needed. \
