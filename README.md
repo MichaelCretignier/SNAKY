@@ -111,7 +111,7 @@ cd .../GitHub/SNAKY/
 ipython
 ```
 
-*To run SNAKY on your spectra, you just need to specify:*
+*SNAKY considers a dataset as **a collection of spectra for a given star and given instrument**. To run SNAKY on your spectra, you just need to specify:*
 
 1) An output directory 
 
