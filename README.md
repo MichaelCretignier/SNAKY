@@ -356,7 +356,7 @@ snaky.benchmark2(output_dir) #check "[INFO] Processing achieved in ..."
 
 $$
 \text{Total RAM} =
-4.2 + 0.72 \times \left( \frac{N}{100} \right) [GB]
+4.2 + 0.72 \times \left( \frac{N}{100} \right) \quad [GB]
 $$
 
 ## Uninstall
