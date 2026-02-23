@@ -31,8 +31,6 @@ from colorama import Fore
 from collections import namedtuple
 from typing import TypeVar
 
-from numpy.typing import NDArray
-
 MATERIAL_DIR = myv.MATERIAL_DIR
 
 try:
@@ -643,7 +641,7 @@ def ccf_deprecated(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=
     
 DType = TypeVar("DType", bound=np.generic)
 
-def pad(arr: NDArray[DType], amount: int, pad_value: float = 0) -> NDArray[DType]:
+def pad(arr, amount: int, pad_value: float = 0):
     if arr.ndim == 1:
         result = np.full(
             arr.shape[0] + 2 * amount, fill_value=pad_value, dtype=arr.dtype
@@ -664,7 +662,7 @@ def process_convolution(
     spectrums,
     shifts: int,
     center: np.float64,
-    new_spec: NDArray[np.bool_],
+    new_spec,
     true_value_amout: np.intp,
 ) -> ConvolutionReturn:
     speed_of_light = 299.792e3
