@@ -43,7 +43,7 @@ SNAKY — Spectroscopic Novel Analysis Kit of Yarara
 
 """
 
-__version__ = '1.2.0' 
+__version__ = '1.2.1' 
 
 print(Fore.GREEN+"""\n[INFO SNAKY]
 [INFO USER] SNAKY version = """+__version__ +""" 
@@ -1584,6 +1584,14 @@ def yarara_flux_density(dir_root,files,sub_dico='matching_diff',smooth=7):
         plt.figure('warning')
         plt.savefig(dir_root+'WARNING/WARNING_Flux_density'+myv.PRD_EXT+'.png')
         plt.close()
+
+    del model
+    del xgb_obj
+    del flux_norm
+    del spec
+    del mask
+    del grid
+    del files
 
     return (Teff_rough_est,FeH_rough_est,np.round(all_flux_density,3),warning)
 
@@ -3348,6 +3356,9 @@ def yarara_correct_continuum_absorption(dir_root):
     resolution = resolution_grid[np.argmin(res)]
     print('\n [INFO] Resolution found R=%.0f \n'%(resolution))
 
+    del s1
+    del s2
+
     template_flux = myf.instrBroadGaussFast(template.x,template.y,resolution,maxsig=5.0)
     smooth = pd.DataFrame(template.y).rolling(100,min_periods=1,center=True).quantile(0.9)
     smooth= np.array(smooth).T[0]
@@ -3368,6 +3379,9 @@ def yarara_correct_continuum_absorption(dir_root):
     template.x_max = template.x_max[match[:,1]]
     template.y_max = template.y_max[match[:,1]]
     
+    del match
+    del anchor_idx
+
     master.y[master.y>10] = 0 #absurd values
 
     for zone in force_zones:
@@ -3404,6 +3418,8 @@ def yarara_correct_continuum_absorption(dir_root):
     local.smooth(box_pts=1000,shape='savgol',replace=True)
     correction = local.y_smoothed        
 
+    del local
+
     if ins[0:4]=='NEID': # because S1D from E2DS without flat field
         template_empi = import_stellar_template(teff,logg=logg,feh=feh,model='SNAKY',rv_sys=rv_sys)
         template_empi.interpolate(master.x,method='linear',fill_value=np.nan)
@@ -3426,6 +3442,8 @@ def yarara_correct_continuum_absorption(dir_root):
             model = np.polyval(calib.poly_coefficient,(master.x-c)[mask_line])
             extra_correction2[mask_line] = 1/model
         correction = correction*extra_correction*extra_correction2
+        del extra_correction2
+        del extra_correction
 
     correction[correction==np.inf] = 1
     correction[correction!=correction] = 1
@@ -3453,6 +3471,9 @@ def yarara_correct_continuum_absorption(dir_root):
         myf.only_axis()
     plt.savefig(dir_root+'IMAGES/Correction_absolute_continuum'+myv.PRD_EXT+'.png')
     
+    del master
+    del grid
+
     return template_flux, correction
 
 def yarara_measure_berv(dir_root,files,sub_dico='matchinf_diff'):

@@ -436,12 +436,15 @@ class start():
             files = np.array(summary.loc[mask,'filename'])
             files = (self.sy_sts_wave,self.sy_sts_flux[mask],files)
             ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Magicat', debug=self.debug, sub_dico=sub_dico, ccf_tag='')
+            del ccf_output
             ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'G2', debug=self.debug, sub_dico=sub_dico, ccf_tag='')
             sinfo['FWHM']['G2'] = np.round(np.nanmedian(ccf_output['fwhm'].y),2)
             ccf_output1 = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Kitty', ccf_oversampling=3, debug=self.debug, sub_dico=sub_dico, ccf_tag='',rv_shift=ccf_output['rv'].y)
             sinfo['FWHM']['KITTY'] = np.round(np.nanmedian(ccf_output1['fwhm'].y),2)
+            del ccf_output1
             ccf_output2 = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Garfield', ccf_oversampling=3, debug=self.debug, sub_dico=sub_dico, ccf_tag='',rv_shift=ccf_output['rv'].y)
             sinfo['FWHM']['GARFIELD'] = np.round(np.nanmedian(ccf_output2['fwhm'].y),2)
+            del ccf_output2
             if (np.std(ccf_output['rv'].y)>1000)&(np.median(ccf_output['fwhm'].y)<30):
                 sinfo = myf.update_info_lvl2(sinfo,'SB2','SNAKY',1)
                 print(Fore.YELLOW+' [EMERGENCY STOP] Spectroscopy binary detected'+Fore.RESET)
@@ -483,6 +486,8 @@ class start():
         ccf_output = mym.import_ccf(dir_root,'G2')
         rv = ccf_output['rv'].y
         rv_sys_correction = np.nanmedian(rv)/1000
+
+        del ccf_output
 
         rv_sys = sinfo['Rv_sys']['SNAKY'] - rv_sys_correction
         CT,EW = mym.yarara_iron_lines(dir_root, master, fwhm, rv_sys=rv_sys)
@@ -567,6 +572,10 @@ class start():
         material['correction_factor'] = correction
         pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
 
+        del template_flux
+        del correction
+        del material
+
     def compute_activity(self):
         dir_root = self.sy_dir_root
         star = self.sy_starname
@@ -583,9 +592,13 @@ class start():
         files = (self.sy_sts_wave,self.sy_sts_flux[mask],files)
         rv = ccf_output['rv'].y
 
+        del ccf_output
+
         tab_proxies, CT, mask_activity = mym.yarara_activity_index(files, rv_sys, rv, material=material, fwhm=fwhm)
         material['activity_proxies'] = mask_activity
         pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
+
+        del material
 
         for kw in CT.keys():
             sinfo['Contrast'][kw] = np.round(CT[kw],5)
@@ -694,11 +707,12 @@ class start():
             os.system('rm -f '+self.sy_dir_root+'/WORKSPACE/Analyse_*')
             os.system('rm -f '+self.sy_dir_root+'/WARNING/*.png')
             os.system('rm -f '+self.sy_dir_root+'/STAR_INFO/*')
-            os.system('rm -f '+self.sy_dir_root+'/REDUCTION_INFO/*')
+            os.system('rm -f '+self.sy_dir_root+'/REDUCTION_INFO/*.txt')
             os.system('rm -f '+self.sy_dir_root+'/CCF_MASK/*.fits')
             if suppression=='all':
                 os.system('rm -f '+self.sy_dir_root+'/WORKSPACE/RASSINE*')
                 os.system('rm -f '+self.sy_dir_root+'/DACE_TABLE/*.csv')
+                os.system('rm -f '+self.sy_dir_root+'/REDUCTION_INFO/*')
             self.warning_printed = 0
             print(' [INFO] Reduction reset, you can now relaunch the reduction.')
         else:
@@ -755,6 +769,8 @@ class start():
 
         table_time[['time_step_min','frac_time','RAM_gb','RAM_peak_gb','RAM_all_gb']] = np.round(table_time[['time_step_min','frac_time','RAM_gb','RAM_peak_gb','RAM_all_gb']],2)
 
+        os.makedirs('/'.join(savefile.split('/')[:-1]), exist_ok=True)
+
         if savefile is not None:
             table_time.to_csv(savefile)
 
@@ -778,7 +794,10 @@ class start():
             plt.grid()
 
             RAM_max = np.max(np.array(table_time[['RAM_peak_gb','RAM_all_gb']]))
-            plt.title('Total time = %s minutes | RAM maximum = %.1f Gb | N files = %.0f'%(tag_duration,RAM_max, len(self.sy_files)))
+            RAM_max1 = np.max(np.array(table_time['RAM_peak_gb']))
+            RAM_max2 = np.max(np.array(table_time['RAM_all_gb']))
+            Ntot = len(self.sy_files)
+            plt.title('Total time = %s minutes | RAM maximum = %.1f Gb | N files = %.0f'%(tag_duration, RAM_max, Ntot))
 
             plt.subplot(2,1,2) ; plt.ylabel('RAM [GB]')
             plt.plot(np.arange(len(table_time)),table_time['RAM_peak_gb'].values,marker='o',color='k')
@@ -787,7 +806,7 @@ class start():
             plt.tick_params(direction='inout',top=True,right=True)
             plt.grid()
             plt.subplots_adjust(bottom=0.15,top=0.95,hspace=0.10)
-            plt.savefig(savefile.replace('csv','png'))
+            plt.savefig(savefile.replace('.csv','_N%s_TIME%s_GBP%.1f_GBT%.1f.png'%(str(Ntot).zfill(4),tag_duration,RAM_max1,RAM_max2)))
 
     def reduce(self,
             begin=1,
@@ -850,6 +869,13 @@ class start():
         self.sy_begin = begin
         self.sy_end = end
 
+        star = self.sy_starname
+        ins = self.sy_instrument
+        dir_root = self.sy_dir_root
+
+        timestamp_reduction = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
+        filename_time = dir_root + '/REDUCTION_INFO/Time_informations_reduction_snaky_B%.0fE%.0f_%s.csv'%(begin,end,timestamp_reduction)
+
         steps = np.arange(begin,end+1,1).astype('int')
 
         tracemalloc.start()
@@ -857,18 +883,12 @@ class start():
         self.memory_history = [[-99.9,0,0,0]]
         begin = time.time()
         self.time_step = {'begin':begin}
-        timestamp_reduction = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
 
-        star = self.sy_starname
-        ins = self.sy_instrument
-        dir_root = self.sy_dir_root
         self.debug = debug
 
         myf.print_box('\n---- Launching reduction %s with instrument %s  ----\n'%(star,ins))
         time_start = time.time()
         
-        filename_time = dir_root + '/REDUCTION_INFO/Time_informations_reduction_snaky_%s.csv'%(timestamp_reduction)
-
         force_pre = bool(np.sum(steps==1))
         force_summary = bool(np.sum(steps==2))
         force_rvsys = bool(np.sum(steps==3))
@@ -911,6 +931,7 @@ class start():
         Rs = self.sy_user_object['rs']
 
         self.write_progress(0, 'init', savefile=filename_time)
+        
         if force_pre: #1
             self.init_workspace(ra=ra, dec=dec, copy_files=copy_files)
             self.preprocess()

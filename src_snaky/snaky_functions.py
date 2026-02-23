@@ -28,6 +28,11 @@ import psutil
 import functools
 from colorama import Fore
 
+from collections import namedtuple
+from typing import TypeVar
+
+from numpy.typing import NDArray
+
 MATERIAL_DIR = myv.MATERIAL_DIR
 
 try:
@@ -636,7 +641,113 @@ def ccf_deprecated(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=
     
     return velocity, conv, conv_std
     
-def ccf(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=3, spec1_std=None):
+DType = TypeVar("DType", bound=np.generic)
+
+def pad(arr: NDArray[DType], amount: int, pad_value: float = 0) -> NDArray[DType]:
+    if arr.ndim == 1:
+        result = np.full(
+            arr.shape[0] + 2 * amount, fill_value=pad_value, dtype=arr.dtype
+        )
+        result[amount : amount + arr.shape[0]] = arr
+    else:
+        result = np.full(
+            (arr.shape[0], arr.shape[1] + 2 * amount),
+            fill_value=pad_value,
+            dtype=arr.dtype,
+        )
+        result[:, amount : amount + arr.shape[1]] = arr
+    return result
+
+ConvolutionReturn = namedtuple("ConvolutionReturn", ("pixel_shifts", "convolution"))
+
+def process_convolution(
+    spectrums,
+    shifts: int,
+    center: np.float64,
+    new_spec: NDArray[np.bool_],
+    true_value_amout: np.intp,
+) -> ConvolutionReturn:
+    speed_of_light = 299.792e3
+    max_shift = int(np.log10((shifts / speed_of_light) + 1) / center)
+    pixel_shifts = np.arange(-max_shift, max_shift + 1, 1)
+
+    all_shifts = np.array([np.roll(new_spec, k, axis=1) for k in tqdm(pixel_shifts)])
+    convolution = (
+        spectrums @ all_shifts.transpose(0, 2, 1) / true_value_amout
+    )#.squeeze()
+    return ConvolutionReturn(pixel_shifts, convolution)
+
+CCFReturn = namedtuple("CCFReturn", ["velocity", "convolution", "convolution_errors"])
+
+def ccf(
+    wavelengths,
+    spectrums,
+    mask,
+    extended: int = 1500,
+    rv_range: int = 45,
+    oversampling: int = 10,
+    method='cubic',
+    spec1_std=None):
+
+    "CCF for a equidistant grid in log wavelength spec1 = spectrum, spec2 =  binary mask"
+
+    dwave = np.median(np.diff(wavelengths))
+
+    if len(np.shape(spectrums)) == 1:
+        spectrums = spectrums[:, np.newaxis].T
+    # spec1 = np.hstack([np.ones(extended),spec1,np.ones(extended)])
+
+    spectrums = pad(spectrums, extended, 1)
+    mask = pad(mask, extended, 0)
+
+    min: np.float64 = wavelengths.min().astype(wavelengths.dtype)
+    max: np.float64 = wavelengths.max().astype(wavelengths.dtype)
+    extended_left = np.linspace(
+        min - extended * dwave, min - dwave, extended, dtype=wavelengths.dtype
+    )
+    extended_right = np.linspace(
+        max + dwave, max + extended * dwave, extended, dtype=wavelengths.dtype
+    )
+    wavelengths = np.hstack(
+        [
+            extended_left,
+            wavelengths,
+            extended_right,
+        ]
+    )
+
+    #shift = np.linspace(0, dwave, oversampling + 1)[:-1]
+    shift = np.linspace(0, dwave, 2)[:-1] #oversample the product now
+
+    new_spec = np.empty((len(shift), len(wavelengths)), dtype=mask.dtype)
+    for i, j in enumerate(shift):
+        new_spec[i] = np.interp(wavelengths, wavelengths + j, mask)
+
+    spectrums[spectrums != spectrums] = 0
+    new_spec[new_spec != new_spec] = 0
+
+    sum_spec = np.nansum(mask)
+
+    rv_shift, convolution = process_convolution(
+        spectrums, rv_range, center=dwave, new_spec=new_spec, true_value_amout=sum_spec
+    )
+
+    shift_save = (shift[None, :] + rv_shift[:, None] * dwave).ravel()
+    velocity = (299.792e6 * 10**shift_save) - 299.792e6
+
+    convolution = np.hstack(convolution).T
+
+    if oversampling!=1:
+        vel_oversamp = np.arange(0,np.max(velocity)+0.001,np.diff(velocity)[0]/oversampling)
+        vel_oversamp = np.array(list(-vel_oversamp[1:][::-1])+list(vel_oversamp))
+        convolution = np.array([interp1d(velocity,conv,kind=method, bounds_error=False, fill_value='extrapolate')(vel_oversamp) for conv in convolution.T]).T
+        velocity = vel_oversamp
+
+    conv_std = np.zeros(np.shape(convolution))
+
+    return velocity, convolution, conv_std
+
+def ccf(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=3, spec1_std=None, method='cubic'):
     "CCF for a equidistant grid in log wavelength spec1 = spectrum, spec2 =  binary mask"   
 
     dwave = np.median(np.diff(wave))
@@ -648,16 +759,14 @@ def ccf(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=3, spec1_st
     spec1 = np.hstack([np.ones((len(spec1),extended)),spec1,np.ones((len(spec1),extended))])
     spec2 = np.hstack([np.zeros(extended),spec2,np.zeros(extended)])
     wave = np.hstack([np.arange(-extended*dwave+wave.min(),wave.min(),dwave),wave,np.arange(wave.max()+dwave,(extended+1)*dwave+wave.max(),dwave)])
-    shift = np.linspace(0,dwave,oversampling+1)[:-1]
+    #shift = np.linspace(0, dwave, oversampling + 1)[:-1]
+    shift = np.linspace(0, dwave, 2)[:-1] #oversample the product now
+
     shift_save = []
     sum_spec = np.nansum(spec2)
     convolution = []
 
-    new_spec = []
-    for j in shift:
-        spec2_s = interp1d(wave+j,spec2,kind='linear', bounds_error=False, fill_value='extrapolate')(wave)
-        new_spec.append(spec2_s)
-    new_spec = np.array(new_spec)
+    new_spec = np.array([interp1d(wave+j,spec2,kind='linear', bounds_error=False, fill_value='extrapolate')(wave) for j in shift])
 
     spec1[spec1!=spec1] = 0
     new_spec[new_spec!=new_spec] = 0
@@ -674,10 +783,15 @@ def ccf(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=3, spec1_st
     shift_save = (shift[None, :] + rv_shift[:, None] * dwave).ravel()
     velocity = (299.792e6*10**shift_save)-299.792e6
 
-    conv = convolution
-    conv_std = np.zeros(np.shape(conv))
+    if oversampling!=1:
+        vel_oversamp = np.arange(0,np.max(velocity)+0.001,np.diff(velocity)[0]/oversampling)
+        vel_oversamp = np.array(list(-vel_oversamp[1:][::-1])+list(vel_oversamp))
+        convolution = np.array([interp1d(velocity,conv,kind=method, bounds_error=False, fill_value='extrapolate')(vel_oversamp) for conv in convolution.T]).T
+        velocity = vel_oversamp
 
-    return velocity, conv, conv_std
+    conv_std = np.zeros(np.shape(convolution))
+
+    return velocity, convolution, conv_std
 
 def GND(x,cen,amp,offset,wid,beta):
     """Based on Heitzmann+21"""

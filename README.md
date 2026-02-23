@@ -1,4 +1,4 @@
-# SNAKY (a Spectroscopic Novel Analysis Kit of Yᴀʀᴀʀᴀ) v1.2.0
+# SNAKY (a Spectroscopic Novel Analysis Kit of Yᴀʀᴀʀᴀ) v1.2.1
 
 <p align="center">
   <img src="logo.png" alt="Project logo" width="400">
@@ -234,14 +234,14 @@ job.reduce(begin=8, end=8) # Eps.Eridani inclination ~26° !
 
 ## ⑥ Launching a RASSINE dataset
 
-*SNAKY itself is very fast and scales approximately as O(N). However, within the reduction pipeline, RASSINE is the most time-consuming step (about 20–30% of the total execution time in the previous single-spectrum example). RASSINE typically requires ~15 seconds per spectrum and can quickly dominate the total runtime, exceeding the SNAKY processing time by orders of magnitude when many (N>300) spectra are processed:*
+*SNAKY itself is very fast and scales approximately as O(N). However, within the reduction pipeline, RASSINE is the most time-consuming step (about 20–30% of the total execution time in the previous single-spectrum example). RASSINE typically requires ~15 seconds per spectrum and can quickly dominate the total runtime, exceeding the SNAKY processing time by orders of magnitude when many (N>50) spectra are processed:*
 
 $$
 \text{Total Execution Time} =
 \underbrace{15 N}_{\text{RASSINE}} 
 + 
 \underbrace{
-116 + 0.76 N \times \left(\frac{\mathrm{FWHM}}{7.3}\right)}_{\text{SNAKY}}
+60 +  0.38 * N \times}_{\text{SNAKY}}
 \quad [\mathrm{s}]
 $$
 
@@ -332,6 +332,11 @@ snaky.benchmark1(output_dir) #check "[INFO] Processing achieved in ..."
 
 *Benchmark Dataset 2 (N=20,RASSINE files already exist):*
 
+$$
+\text{Total RAM} =
+4.2 +  0.72 * N/100 [GB]
+$$
+
 ```python
 import src_snaky.run as snaky
 
@@ -341,13 +346,15 @@ snaky.benchmark2(output_dir) #check "[INFO] Processing achieved in ..."
 
 | Computer | Processor        | VERSION        | LIBRARIES       | DATASET1    | DATASET2    |
 |---------------|---------------|---------------|---------------|--------------|--------------|
-| MC1 | Apple M4 MAX (2024) | SNAKY (1.2.0) | 3.10.15 | 00 min 58 s  | 00 min 57 s  |
-| MC1 | Apple M4 MAX (2024) | SNAKY (1.2.0) | 3.12.5 | 01 min 57 s  | 01 min 39 s  |
+| MC1 | Apple M4 MAX (2024) | SNAKY (1.2.1) | 3.10.15 | 00 min 54 s  | 00 min 54 s  |
+| MC1 | Apple M4 MAX (2024) | SNAKY (1.2.1) | 3.12.5 | 01 min 45 s  | 01 min 30 s  |
 | SA1 | Apple M2 (2022) | SNAKY (1.1.1) | 3.10.15 | 01 min 13 s  | 01 min 28 s  |
 | MC2 | Intel Mac (2018) | SNAKY (1.1.1) | 3.8.8 | 04 min 20 s  | 08 min 18 s  |
 | DF1 | Intel i5 12600k (2021) | SNAKY (1.0.7) | 3.12.5 | 03 min 25 s  | 03 min 28 s  |
 | CC1 | Apple M4 PRO (2024) | SNAKY (1.0.1) | 3.10.15 | 01 min 30 s  | 01 min 05 s  |
 | ? | Yours! ☺ | SNAKY (1.0.1) | ??? | ???  | ???  |
+
+
 
 ## Uninstall
 

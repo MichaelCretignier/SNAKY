@@ -3,7 +3,7 @@ requires = ["setuptools", "wheel"] # setuptools and wheel are necessary for the 
 
 [project]
 name = "snaky"
-version = "1.2.0"
+version = "1.2.1"
 description = "A package to extract the stellar atmospheric parameters from high-resolution spectra"
 authors = [
     {name = "Michael Cretignier", email = "michael.cretignier@physics.ox.ac.uk"}
