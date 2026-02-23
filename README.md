@@ -350,7 +350,9 @@ snaky.benchmark2(output_dir) #check "[INFO] Processing achieved in ..."
 | CC1 | Apple M4 PRO (2024) | SNAKY (1.0.1) | 3.10.15 | 01 min 30 s  | 01 min 05 s  |
 | ? | Yours! ☺ | SNAKY (1.0.1) | ??? | ???  | ???  |
 
-*The RAM requirement for SNAKY (without RASSINE preprocessing) scales as O(N) for HARPS spectra (300):*
+### RAM requirement
+
+*The RAM requirement for SNAKY (without RASSINE preprocessing) scales as O(N) for HARPS spectra (~300k wavelength bins):*
 
 $$
 \text{Total RAM} =
