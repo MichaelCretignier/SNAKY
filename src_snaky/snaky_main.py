@@ -2590,7 +2590,7 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
         teff,feh,logg = output.values[0]
         teff_rough = sinfo['Teff']['FluxD']
 
-        if (sinfo['Teff']['FluxD']>6500)|(abs(teff-teff_rough)>600): #outside calibration range
+        if (sinfo['Teff']['FluxD']>6500): #outside calibration range
             if abs(teff-teff_rough)>600:
                 print(Fore.YELLOW + '\n [WARNING] Too much difference (dT=%.0fK) in Teff (%.0fK) with FluxD (%.0fK). XGB skipped.'%(abs(teff-teff_rough),teff,teff_rough)+Fore.RESET)
             else:
