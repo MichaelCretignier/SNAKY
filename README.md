@@ -72,6 +72,8 @@ pip install -r requirements_3.10.15.txt
 conda env list
 ```
 
+*You can at every time [uninstall](#flag_uninstall) the environment, if needed.
+
 ### [Option 2] Venv install (Python 3.10.15)
 
 ```bash
@@ -374,7 +376,7 @@ $$
 
 ## Analysing SNAKY DB
 
-*While SNAKY can perfectly be used for single-based star analysis, the code was developed for large DB processing.Dealing with databases can rapidly becomes a chaos, hopefully SNAKY contains some useful functionality. Assuming you ran the two [benchmarks](#flag3) already:*
+*While SNAKY can perfectly be used for single-based star analysis, the code was developed for large DB processing Dealing with databases can rapidly becomes a chaos, hopefully SNAKY contains some useful functionality. Assuming you ran the [two benchmarks](#flag3) above already:*
 
 ```python
 import src_snaky.run as snaky
@@ -419,6 +421,8 @@ snaky_db.plot_starinfo(output_dir, ins='*', xvar='Teff_SNAKY', yvar='FWHM_G2')
 
 
 ## Uninstall
+
+<a id="flag_uninstall"></a>
 
 *You can delete the snaky Python environment with:*
 
