@@ -28,7 +28,11 @@ SNAKY is **NOT** an RV pipeline aiming at EPRV precision like YARARA.\
 SNAKY is optimized for speed efficiency and star characterization, meaning steps may alter the EPRV precision.\
 SNAKY includes a packaged version of [RASSINE](https://github.com/MichaelCretignier/Rassine_public)
 
-## ① Citations
+## ① Contact Me
+
+If you have any problem, please contact me at: michael.cretignier@physics.ox.ac.uk
+
+## ② Citations
 
 Please cite the relevant works:
 
@@ -39,10 +43,6 @@ Please cite the relevant works:
 - **MHK activity index** — [Cretignier et al. 2024a](https://ui.adsabs.harvard.edu/abs/2024MNRAS.527.2940C/abstract) + [Cretignier et al. 2024b](https://ui.adsabs.harvard.edu/abs/2024MNRAS.535.2562C/abstract)
 
 - **VSINI** — Cretignier et al. (in prep.)
-
-## ② Contact Me
-
-If you have any problem, please contact me at: michael.cretignier@physics.ox.ac.uk
 
 ## ③ Installation
 
