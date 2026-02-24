@@ -14,7 +14,8 @@ By complete, we mean:
 4) Mass (from 1. + 2. + 3.)
 5) Radius (from 1. + 2. + 3.)
 6) MHK Activity Level
-7) Sin(i) Inclination (if rotational period user-specified)
+7) Vsin(i) projected equatorial velocity
+8) Sin(i) Inclination (if rotational period user-specified)
 
 The main useful outputs of SNAKY are: 
 
