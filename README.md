@@ -122,13 +122,15 @@ cd .../GitHub/SNAKY/
 ipython
 ```
 
-*SNAKY considers a dataset as **a collection of spectra for a given star and given instrument**. To run SNAKY on your spectra, you just need to specify:*
+*SNAKY considers a dataset as **a collection of spectra for a given star and given instrument (including the [DRS version](#flag4))**. To run SNAKY on your spectra, you just need to specify:*
 
 1) An output directory 
 
 ```python
 output_dir = '/Users/cretignier/Desktop/Snaky/'
 ```
+
+The `output_dir` will be the same for all your stars and instrument. SNAKY is dealing to properly creating a tree for each of them. 
 
 2) A list of spectra you want to process
 3) The starname and the instrument
@@ -327,7 +329,19 @@ and modify the `extract_header()` function too.
 If only e2ds spectra exist and not s1d, follow the `read_neid()` example.
 NB: s1d spectra should always be preferred over e2ds/s2d spectra
 
-## ⑨ BENCHMARK (Computation time)
+## ⑨ Analysing SNAKY DB
+
+In dev...
+
+```python
+import src_snaky.run as snaky
+import src_snaky.run_db_analysis as snaky_db
+
+
+
+```
+
+## BENCHMARK (Computation time)
 
 <a id="flag3"></a>
 
