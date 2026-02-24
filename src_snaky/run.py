@@ -108,7 +108,7 @@ class start():
         starname,ins = mym.create_snaky_dir(self.sy_output_dir,starname,ins)
         self.sy_starname = starname
         self.sy_instrument = ins
-        self.sy_dir_root = self.sy_output_dir+starname+'/data/s1d/'+ins+'/'
+        self.sy_dir_root = self.sy_output_dir+'/'+starname+'/data/s1d/'+ins+'/'
         dir_root = self.sy_dir_root
        
         self.set_star()
