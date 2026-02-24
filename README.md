@@ -132,7 +132,7 @@ output_dir = '/Users/cretignier/Desktop/Snaky/'
 
 The `output_dir` will be the same for all your stars and instruments. SNAKY is dealing to properly creating a tree for each of them. 
 
-2) A list of spectra you want to process
+2) A list of spectra you want to process `files = [...]`
 3) The starname and the instrument
 
 *SNAKY considers a dataset as **a collection of spectra for a given star and given instrument (including the [DRS version](#flag4))**. This information is specified by:*
