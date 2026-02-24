@@ -8,14 +8,14 @@ SNAKY is a fast execution code aiming to determine in a complete way an observed
 
 By complete, we mean:
 
-1) Temperature
-2) Log(g)
-3) [Fe/H]
+1) Teff temperature
+2) Log(g) surface gravity
+3) [Fe/H] metallicity
 4) Mass (from 1. + 2. + 3.)
 5) Radius (from 1. + 2. + 3.)
-6) MHK Activity Level
+6) MHK activity Level
 7) Vsin(i) projected equatorial velocity
-8) Sin(i) Inclination (if rotational period user-specified)
+8) Sin(i) inclination (if rotational period user-specified)
 
 The main useful outputs of SNAKY are: 
 
