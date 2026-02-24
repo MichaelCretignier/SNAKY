@@ -56,7 +56,11 @@ def check_snaky_processing(output_dir,instrument='*'):
         print('total = %.0f'%(nb_stars))
         for kw in kws:
             nb = int(nb_stars-np.sum(all_info[kw.split('_')[1][0:5]]=='XXXX'))
-            print('%s = %.0f (%.1f%%)'%(kw,nb,100*nb/(nb_stars+1e-6)))
+            percentage = 100*nb/(nb_stars+1e-6)
+            if percentage>99:
+                print(Fore.GREEN+'%s = %.0f (%.1f%%)'%(kw,nb,percentage)+Fore.RESET)
+            else:
+                print(Fore.YELLOW+'%s = %.0f (%.1f%%)'%(kw,nb,percentage)+Fore.RESET)
 
         print('\n[INFO] File DB created: '+output_dir+'/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
         all_info.to_csv(output_dir+'/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
@@ -154,7 +158,8 @@ def create_snaky_db(output_dir, filename='All_stars', stars=['*'], branch=None):
     print(infos)
 
     print('\n [INFO] %.0f datasets'%(len(infos)))
-    print('\n [INFO] Nb unique stars processed = %.0f (%.0f%%)\n'%(nb_processed,100*nb_processed/ntot))
+    percentage = 100*nb_processed/ntot
+    print('\n [INFO] Nb unique stars processed = %.0f (%.0f%%)\n'%(nb_processed,percentage))
 
     infos.to_csv(output_dir+'/database/'+filename+'_summary_infos.csv')
 
