@@ -127,7 +127,7 @@ ipython
 1) An output directory 
 
 ```python
-output_dir = '/Users/cretignier/Desktop/Snaky/'
+output_dir = '/Users/cretignier/Desktop/Snaky'
 ```
 
 The `output_dir` will be the same for all your stars and instruments. SNAKY is dealing to properly creating a tree for each of them. 
@@ -142,7 +142,7 @@ import src_snaky.run as snaky
 
 # let's use the SNAKY test dataset
 files = snaky.glob.glob(snaky.myv.TEST_DATASET1)
-#output_dir = '/Users/cretignier/Desktop/Snaky/'
+#output_dir = '/Users/cretignier/Desktop/Snaky'
 
 job = snaky.start()
 job.set_output_dir(output_dir)                     # define output dir 
@@ -202,7 +202,7 @@ job.reset(suppression='all')
 import src_snaky.run as snaky
 
 files = snaky.glob.glob(snaky.myv.TEST_DATASET1)
-#output_dir = '/Users/cretignier/Desktop/Snaky/'
+#output_dir = '/Users/cretignier/Desktop/Snaky'
 
 job = snaky.start()
 job.set_output_dir(output_dir)
@@ -226,7 +226,7 @@ Thanks to this trigger mechanism, `.reduce()` can automatically restart the pipe
 import src_snaky.run as snaky
 
 files = snaky.glob.glob(snaky.myv.TEST_DATASET1)
-#output_dir = '/Users/cretignier/Desktop/Snaky/'
+#output_dir = '/Users/cretignier/Desktop/Snaky'
 
 job = snaky.start()
 job.set_output_dir(output_dir)
@@ -269,7 +269,7 @@ $$
 import src_snaky.run as snaky
 
 files = snaky.glob.glob(snaky.myv.TEST_DATASET2)
-#output_dir = '/Users/cretignier/Desktop/Snaky/'
+#output_dir = '/Users/cretignier/Desktop/Snaky'
 
 job = snaky.start()
 job.set_output_dir(output_dir)
@@ -337,7 +337,7 @@ NB: s1d spectra should always be preferred over e2ds/s2d spectra
 import src_snaky.run as snaky
 import src_snaky.run_db_analysis as snaky_db
 
-#output_dir = '/Users/cretignier/Desktop/Snaky/'
+#output_dir = '/Users/cretignier/Desktop/Snaky'
 snaky_db.check_snaky_processing(output_dir,instrument='*')
 ```
 
@@ -349,7 +349,7 @@ snaky_db.check_snaky_processing(output_dir,instrument='*')
 
 import src_snaky.run_db_analysis as snaky_db
 
-#output_dir = '/Users/cretignier/Desktop/Snaky/'
+#output_dir = '/Users/cretignier/Desktop/Snaky'
 snaky_db.create_snaky_db(output_dir, filename='All_stars_summary_infos.csv', stars=['*'])
 ```
 
@@ -365,7 +365,7 @@ snaky_db.create_snaky_db(output_dir, filename='All_stars_summary_infos.csv', sta
 ```python
 import src_snaky.run as snaky
 
-#output_dir = '/Users/cretignier/Desktop/Snaky/'
+#output_dir = '/Users/cretignier/Desktop/Snaky'
 snaky.benchmark1(output_dir) #check "[INFO] Processing achieved in ..."
 ```
 
@@ -374,7 +374,7 @@ snaky.benchmark1(output_dir) #check "[INFO] Processing achieved in ..."
 ```python
 import src_snaky.run as snaky
 
-#output_dir = '/Users/cretignier/Desktop/Snaky/'
+#output_dir = '/Users/cretignier/Desktop/Snaky'
 snaky.benchmark2(output_dir) #check "[INFO] Processing achieved in ..."
 ```
 

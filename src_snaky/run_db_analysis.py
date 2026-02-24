@@ -60,16 +60,16 @@ def check_snaky_processing(output_dir,instrument='*'):
         all_info.to_csv(output_dir+'/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
 
 
-def create_snaky_db(output_dir, filename='All_stars_summary_infos.csv', stars=['*']):
+def create_snaky_db(output_dir, filename='All_stars', stars=['*']):
     os.makedirs(output_dir+'/database', exist_ok=True)
-    
-    ntot = len(stars)
 
     files = []
     for s in stars:
         files.append(glob.glob(output_dir+'/'+s+'/data/s1d/*/STAR_INFO/Stellar_info*.p'))
     files = np.sort(np.hstack(files))
     files = np.sort(np.unique(files))
+
+    ntot = len(files)
 
     qc = np.array([len(f.split('/STAR_INFO')[0].split('/')[-1].split('_')) for f in files])
     files = files[qc==2]
@@ -148,14 +148,14 @@ def create_snaky_db(output_dir, filename='All_stars_summary_infos.csv', stars=['
     print('\n [INFO] %.0f datasets'%(len(infos)))
     print('\n [INFO] Nb unique stars processed = %.0f (%.0f%%)\n'%(nb_processed,100*nb_processed/ntot))
 
-    infos.to_csv(output_dir+'/database/'+filename)
+    infos.to_csv(output_dir+'/database/'+filename+'_summary_infos.csv')
 
     return infos
 
-def compare_snaky_atmos(stars=['*']):
+def compare_snaky_atmos(output_dir, stars=['*']):
     all_files = []
     for s in stars:
-        files = glob.glob(root+'/Snaky/'+s+'/data/s1d/*/WORKSPACE/Analyse_samples.csv')
+        files = glob.glob(output_dir+'/'+s+'/data/s1d/*/WORKSPACE/Analyse_samples.csv')
         all_files.append(files)
     all_files = np.hstack(all_files)
 
@@ -163,7 +163,7 @@ def compare_snaky_atmos(stars=['*']):
 
     for s in tqdm(stars):
         count = -1
-        files = glob.glob(root+'/Snaky/'+s+'/data/s1d/*/WORKSPACE/Analyse_samples.csv')
+        files = glob.glob(output_dir+'/'+s+'/data/s1d/*/WORKSPACE/Analyse_samples.csv')
         plt.figure(figsize=(18,6))
         plt.subplots_adjust(left=0.06,right=0.96,hspace=0.60,top=0.95,bottom=0.15,wspace=0.30)
         for f in files:
@@ -191,45 +191,44 @@ def compare_snaky_atmos(stars=['*']):
                 plt.title('%s = %.2f +/- %.2f'%(kw,np.median(save[kw]),myf.mad(np.ravel(save[kw]))))
             plt.xticks(rotation=90,ha='center')
 
-            plt.savefig(root+'/Snaky/'+s+'/data/s1d/ALLINS_MERGED/Atmos_all_instrument.pdf')
+            plt.savefig(output_dir+'/'+s+'/data/s1d/ALLINS_MERGED/Atmos_all_instrument.pdf')
         if len(stars)>5:
             plt.close('all')
 
 
-def create_snaky_finch_db(filename='All_stars', stars=['*'], infos=None):
+def create_snaky_finch_db(output_dir, filename='All_stars', stars=['*'], infos=None):
     if infos is None:
-        infos = create_snaky_db(filename=filename, stars=stars, branch='Snaky')
+        infos = create_snaky_db(output_dir, filename=filename, stars=stars, branch='Snaky')
     stars = np.sort(np.unique(infos['star']))
 
     tgrid = 61041+182.5*np.arange(21)
     infos = []
     for s in tqdm(stars):
-        if os.path.exists(root+'/Snaky/'+s+'/data/s1d/ALLINS_MERGED/Pmag_FINCH_info.p'):
-            info = pd.read_pickle(root+'/Snaky/'+s+'/data/s1d/ALLINS_MERGED/Pmag_FINCH_info.p')
+        if os.path.exists(output_dir+'/'+s+'/data/s1d/ALLINS_MERGED/Pmag_FINCH_info.p'):
+            info = pd.read_pickle(output_dir+'/'+s+'/data/s1d/ALLINS_MERGED/Pmag_FINCH_info.p')
             if 'Phase_side' in info.keys():
                 info['Phase_pred_side'] = info['Phase_side']
-            Pmag_model = pd.read_csv(root+'/Snaky/'+s+'/data/s1d/ALLINS_MERGED/Finch_MHK_GP_model.csv',index_col=0)
+            Pmag_model = pd.read_csv(output_dir+'/'+s+'/data/s1d/ALLINS_MERGED/Finch_MHK_GP_model.csv',index_col=0)
             model = myc.tableXY(Pmag_model['jdb'],Pmag_model['proxy'],Pmag_model['proxy_std'])
             model.interpolate(new_grid=tgrid,method='linear')
             liste = [s,info['Pmag'],info['Kmag_mean'],info['Kmag_amp'],info['Kmag_pred'],info['Phase_pred'],info['Phase_pred_side']]
             liste = liste + list(np.round(model.y,1)) + list(np.round(model.yerr,1))
             infos.append(liste)
     table = pd.DataFrame(infos,columns=['star','Pmag','Kmean','Kamp','Kpred','Lpred','Lside']+['MHK_%.1f'%(i) for i in np.arange(2026,2036.1,0.5)]+['MHK_err_%.1f'%(i) for i in np.arange(2026,2036.1,0.5)])
-    table.to_csv(root+'/Snaky/database/'+filename+'_FINCH_mag.csv')
+    table.to_csv(output_dir+'/database/'+filename+'_FINCH_mag.csv')
 
     infos2 = []
     for s in tqdm(stars):
-        if os.path.exists(root+'/Snaky/'+s+'/data/s1d/ALLINS_MERGED/Finch_MHK.csv'):
-            tab = pd.read_csv(root+'/Snaky/'+s+'/data/s1d/ALLINS_MERGED/Finch_MHK.csv',index_col=0)
+        if os.path.exists(output_dir+'/'+s+'/data/s1d/ALLINS_MERGED/Finch_MHK.csv'):
+            tab = pd.read_csv(output_dir+'/'+s+'/data/s1d/ALLINS_MERGED/Finch_MHK.csv',index_col=0)
             tab['star'] = s
             tab = tab[['star','species','jdb','proxy','proxy_std','qc']]
             infos2.append(tab)
     infos2 = pd.concat(infos2)
-    infos2.to_csv(root+'/Snaky/database/PRIVATE_'+filename+'_FINCH.csv')
+    infos2.to_csv(output_dir+'/database/PRIVATE_'+filename+'_FINCH.csv')
 
 
-
-def create_snaky_rv_db(filename='All_stars', stars=['*'], infos=None, anonymous=False):
+def create_snaky_rv_db(output_dir,filename='All_stars', stars=['*'], infos=None, anonymous=False):
     if infos is None:
         infos = create_snaky_db(filename=filename, stars=stars, branch='Snaky')
     stars = np.sort(np.unique(infos['star']))
@@ -238,7 +237,7 @@ def create_snaky_rv_db(filename='All_stars', stars=['*'], infos=None, anonymous=
     for s in tqdm(stars):
         infos2 = []
         plt.figure('rv')
-        for f in glob.glob(root+'/Snaky/'+s+'/data/s1d/*/STAR_INFO/Stellar_info_*p'): 
+        for f in glob.glob(output_dir+'/'+s+'/data/s1d/*/STAR_INFO/Stellar_info_*p'): 
             info = pd.read_pickle(f)
             star = f.split('/data')[0].split('/')[-1]
             instrument = f.split('/STAR_INFO')[0].split('/')[-1]
@@ -292,10 +291,10 @@ def create_snaky_rv_db(filename='All_stars', stars=['*'], infos=None, anonymous=
                 infos2['jdb'] = infos2['jdb']+np.random.randn(len(infos2))*1
                 plt.scatter(infos2['jdb'],infos2['rv'],color='k',zorder=10)
             infos_p.append(infos2)
-            plt.savefig(root+'/Snaky/'+s+'/data/s1d/ALLINS_MERGED/RV.png')
+            plt.savefig(output_dir+'/'+s+'/data/s1d/ALLINS_MERGED/RV.png')
             plt.close('rv')
             
-            infos2[['ins','jdb','rv','rv_std']].to_csv(root+'/Snaky/'+s+'/data/s1d/ALLINS_MERGED/RV_anonymous.csv')
+            infos2[['ins','jdb','rv','rv_std']].to_csv(output_dir+'/'+s+'/data/s1d/ALLINS_MERGED/RV_anonymous.csv')
 
 
     infos_p = pd.concat(infos_p)
@@ -306,11 +305,14 @@ def create_snaky_rv_db(filename='All_stars', stars=['*'], infos=None, anonymous=
     infos = infos.reset_index(drop=True)
     infos.to_csv(root+'/Snaky/database/PRIVATE_'+filename+'_RV_infos.csv')
 
-def create_snaky_ccf_db(filename='All_stars', stars=['*'], branch='Snaky', infos=None):
+def create_snaky_ccf_db(output_dir, filename='All_stars_ccf.npy', stars=['*'], infos=None):
+    root = '/'.join(output_dir.split('/')[:-1])
+    if branch is None:
+        branch = output_dir.split('/')[-2]
 
     if infos is None:
-        s = create_snaky_db(filename=filename, stars=stars, branch=branch)
-    files = [root+'/'+branch+'/'+i+'/data/s1d/'+j+'_'+k+'/STAR_INFO/Stellar_info*.p' for i,j,k in np.array(infos[['star','ins','drs']])]
+        s = create_snaky_db(output_dir, filename=filename, stars=stars)
+    files = [output_dir+'/'+i+'/data/s1d/'+j+'_'+k+'/STAR_INFO/Stellar_info*.p' for i,j,k in np.array(infos[['star','ins','drs']])]
 
     vgrid = np.arange(0,150000,538)
     vgrid = np.hstack([-vgrid[::-1],vgrid[1:]])
@@ -337,11 +339,15 @@ def create_snaky_ccf_db(filename='All_stars', stars=['*'], branch='Snaky', infos
             ccf.interpolate(new_grid=vgrid,fill_value=1)
             all_ccf.append(ccf.y)
     all_ccf = (np.array(all_ccf)*1e4).astype('int16')
-    np.save(root+'/Snaky/database/'+filename+'_ccf.npy',all_ccf)
+    np.save(output_dir+'/database/'+filename,all_ccf)
 
-def create_snaky_spec_db(filename='All_stars', stars=['*'], branch='Snaky', infos=None, wave_min=6100,wave_max=6200):
+def create_snaky_spec_db(output_dir, filename='All_stars', stars=['*'], infos=None, wave_min=6100,wave_max=6200, branch=None):
+    root = '/'.join(output_dir.split('/')[:-1])
+    if branch is None:
+        branch = output_dir.split('/')[-2]
+
     if infos is None:
-        infos = create_snaky_db(filename=filename, stars=stars, branch=branch)
+        infos = create_snaky_db(output_dir, filename=filename, stars=stars, branch=branch)
     files = [root+'/'+branch+'/'+i+'/data/s1d/'+j+'_'+k+'/STAR_INFO/Stellar_info*.p' for i,j,k in np.array(infos[['star','ins','drs']])]
 
     wgrid = np.round(np.arange(wave_min,wave_max,0.01),2)
@@ -360,10 +366,14 @@ def create_snaky_spec_db(filename='All_stars', stars=['*'], branch='Snaky', info
             spec.interpolate(new_grid=wgrid,fill_value=np.nan,method='linear')
             all_spec.append(spec.y)
     all_spec = (np.array(all_spec)*1e4).astype('int16')
-    np.save(root+'/Snaky/database/'+filename+'_spec_%.0f_%.0f.npy'%(wave_min,wave_max),all_spec)
+    np.save(output_dir+'/database/'+filename+'_spec_%.0f_%.0f.npy'%(wave_min,wave_max),all_spec)
 
 
-def plot_starinfo(branch='Snaky', ins='*', xvar='Teff_SNAKY', yvar='FWHM_G2', cvar=None, svar=None):
+def plot_starinfo(output_dir, ins='*', xvar='Teff_SNAKY', yvar='FWHM_G2', cvar=None, svar=None, branch=None):
+    root = '/'.join(output_dir.split('/')[:-1])
+    if branch is None:
+        branch = output_dir.split('/')[-2]
+
     all_files = np.sort(glob.glob(root+'/'+branch+'/*/data/s1d/'+ins+'/STAR_INFO/Stellar_info*.p'))
     output = []
     for f in all_files:
