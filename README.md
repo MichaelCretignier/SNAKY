@@ -11,10 +11,10 @@ By complete, we mean:
 1) T_{eff}
 2) Log(g)
 3) [Fe/H]
-4) Mass (from 1,2,3)
-5) Radius (from 1,2,3)
-6) Activity Level
-7) Inclination (if Prot user-specified)
+4) Mass (from 1. + 2. + 3.)
+5) Radius (from 1. + 2. + 3.)
+6) MHK Activity Level
+7) Sin(i) Inclination (if Prot user-specified)
 
 The main outputs are: 
 
