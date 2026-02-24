@@ -239,7 +239,7 @@ job.reduce(begin=1, end=6)
 # automatic_db=True skips completed steps
 job.reduce(begin=1, end=14, automatic_db=True)
 
-# automatic_db is False by default in order to relaunch steps
+# automatic_db is False by default in order to relaunch specific steps
 # Example: recompute inclination with user specified Prot and Rs
 job.set_star(prot=11,rs=0.74)
 job.reduce(begin=8, end=8) # Eps.Eridani inclination ~26° !
