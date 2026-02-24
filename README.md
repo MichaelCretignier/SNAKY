@@ -9,8 +9,8 @@ SNAKY is a fast execution code aiming to determine in a complete way an observed
 By complete, we mean:
 
 1) Temperature
-2) Logg
-3) FeH
+2) Log(g)
+3) [Fe/H]
 4) Mass (from 1,2,3)
 5) Radius (from 1,2,3)
 6) Activity Level
