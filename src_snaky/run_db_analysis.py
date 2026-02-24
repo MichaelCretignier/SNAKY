@@ -10,16 +10,14 @@ from . import snaky_functions as myf
 from . import snaky_classes as myc
 from . import snaky_variables as myv
 
-root = myv.DIR_DB
+def check_snaky_processing(output_dir,instrument='*'):
 
-def check_snaky_processing(instrument='*'):
-
-    os.makedirs(root+'/database', exist_ok=True)
-    instruments = glob.glob(root+'/*/data/s1d/'+instrument+'/RAW')
+    os.makedirs(output_dir+'/database', exist_ok=True)
+    instruments = glob.glob(output_dir+'/*/data/s1d/'+instrument+'/RAW')
     instruments = np.unique([i.split('/')[-2] for i in instruments])
     for instrument in instruments:
         print('\n[INFO] Summary for the instrument : %s \n'%(instrument))
-        all_dir = glob.glob(root+'/*/data/s1d/'+instrument+'/RAW')
+        all_dir = glob.glob(output_dir+'/*/data/s1d/'+instrument+'/RAW')
         stars = [d.split('/data')[0].split('/')[-1] for d in all_dir]
         ins = [d.split('/RAW')[0].split('/')[-1] for d in all_dir]
         code = [i+'_'+j for i,j in zip(stars,ins)]
@@ -43,7 +41,7 @@ def check_snaky_processing(instrument='*'):
             ]
         
         for kw in kws:
-            all_files2 = glob.glob(root+'/Snaky/*/data/s1d/'+instrument+'/REDUCTION_INFO/'+kw+'.txt')
+            all_files2 = glob.glob(output_dir+'/*/data/s1d/'+instrument+'/REDUCTION_INFO/'+kw+'.txt')
             stars2 = [d.split('/data')[0].split('/')[-1] for d in all_files2]
             ins2 = [d.split('/REDUCTION_INFO')[0].split('/')[-1] for d in all_files2]
             code2 = [i+'_'+j for i,j in zip(stars2,ins2)]
@@ -58,8 +56,8 @@ def check_snaky_processing(instrument='*'):
             nb = int(nb_stars-np.sum(all_info[kw.split('_')[1][0:5]]=='XXXX'))
             print('%s = %.0f (%.1f%%)'%(kw,nb,100*nb/(nb_stars+1e-6)))
 
-        print(root+'/Snaky/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
-        all_info.to_csv(root+'/Snaky/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
+        print(' [INFO] File DB created: '+output_dir+'/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
+        all_info.to_csv(output_dir+'/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
 
 
 def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
