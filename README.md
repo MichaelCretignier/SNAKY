@@ -110,7 +110,7 @@ import src_snaky.run as snaky
 
 ### Step-by-step
 
-*If you haven't add `SNAKY/` to your sys.path, first enter into your local git clone `SNAKY/` directory:*
+*If you haven't add `SNAKY/` to your `sys.path`, first enter into your local git clone `SNAKY/` directory:*
 
 ```bash
 cd .../GitHub/SNAKY/
@@ -122,7 +122,7 @@ cd .../GitHub/SNAKY/
 ipython
 ```
 
-*SNAKY considers a dataset as **a collection of spectra for a given star and given instrument (including the [DRS version](#flag4))**. To run SNAKY on your spectra, you just need to specify:*
+*SNAKY considers a dataset as **a collection of spectra for a given star and given instrument (including the [DRS version](#flag4))**. To run SNAKY on your spectra, you just need to specify 3 elements:*
 
 1) An output directory 
 
@@ -130,7 +130,7 @@ ipython
 output_dir = '/Users/cretignier/Desktop/Snaky/'
 ```
 
-The `output_dir` will be the same for all your stars and instrument. SNAKY is dealing to properly creating a tree for each of them. 
+The `output_dir` will be the same for all your stars and instruments. SNAKY is dealing to properly creating a tree for each of them. 
 
 2) A list of spectra you want to process
 3) The starname and the instrument
