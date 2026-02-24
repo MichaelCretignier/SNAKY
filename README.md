@@ -251,7 +251,7 @@ job.reduce(begin=8, end=8) # Eps.Eridani inclination ~26° !
 
 $$
 \text{Total Execution Time} =
-\underbrace{15 N}_{\text{RASSINE}} 
+\underbrace{15 \times N}_{\text{RASSINE}} 
 + 
 \underbrace{
 60 +  0.38 \times N}_{\text{SNAKY}}
