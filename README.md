@@ -72,7 +72,7 @@ pip install -r requirements_3.10.15.txt
 conda env list
 ```
 
-*You can at every time [uninstall](#flag_uninstall) the environment, if needed.
+*You can uninstall the environment at any time if needed (see [Uninstall](#flag_uninstall)).*
 
 ### [Option 2] Venv install (Python 3.10.15)
 
