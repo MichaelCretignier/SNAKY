@@ -1,4 +1,4 @@
-# SNAKY (a Spectroscopic Novel Analysis Kit of Yᴀʀᴀʀᴀ) v1.2.3
+# SNAKY (a Spectroscopic Novel Analysis Kit of Yᴀʀᴀʀᴀ) v1.2.4
 
 <p align="center">
   <img src="logo.png" alt="Project logo" width="400">
