@@ -1,10 +1,20 @@
-# SNAKY (a Spectroscopic Novel Analysis Kit of Yᴀʀᴀʀᴀ) v1.2.2
+# SNAKY (a Spectroscopic Novel Analysis Kit of Yᴀʀᴀʀᴀ) v1.2.3
 
 <p align="center">
   <img src="logo.png" alt="Project logo" width="400">
 </p>
 
 SNAKY is a fast execution code aiming to determine in a complete way an observed star from high resolution spectra in the visible (R>50'000).
+
+By complete, we mean:
+
+1) Temperature
+2) Logg
+3) FeH
+4) Mass (from 1,2,3)
+5) Radius (from 1,2,3)
+6) Activity Level
+7) Inclination (if Prot user-specified)
 
 The main outputs are: 
 

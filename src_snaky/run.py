@@ -649,7 +649,7 @@ class start():
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
         mym.plot_mhk(dir_root)
-        mym.create_finch_db(dir_root=dir_root)
+        mym.create_finch_db(dir_root)
 
     def compute_spectroscopy(self):
         dir_root = self.sy_dir_root
@@ -694,6 +694,46 @@ class start():
                 open(dir_root.replace(ins+'/','ALLINS_MERGED/Pmag_FINCH_info.p'),'wb'))
         except:
             pass
+
+    def compare_snaky_atmos(self):
+
+        dir_root = self.sy_dir_root
+        star = self.sy_starname
+        ins = self.sy_instrument
+
+        parent_dir = '/'.join(dir_root.split('/')[:-2])
+
+        count = -1
+        files = glob.glob(parent_dir+'/*/WORKSPACE/Analyse_samples.csv')
+
+        plt.figure(figsize=(18,6))
+        plt.subplots_adjust(left=0.06,right=0.96,hspace=0.60,top=0.95,bottom=0.15,wspace=0.30)
+        for f in files:
+            ins = f.split('/WORKSPACE')[0].split('/')[-1]
+            code = ins[0]+ins.split('_')[0][-2:]+'_'+ins.split('_')[1]
+            count += 1
+            table = pd.read_csv(f,index_col=0)
+            borders = {'ms':[0,3],'rs':[0,3],'teff':[3000,8000],'logg':[3.5,5.0],'feh':[-1.5,0.5],'vsini':[0,10],'mhk':[-50,200],'rhk':[-6,-4]}
+            variables = ['ms','rs','teff','logg','feh','vsini','mhk','rhk']
+            save = {kw:[] for kw in variables}
+            for j,kw in enumerate(variables):
+                if kw in table.keys():
+                    plt.subplot(2,4,j+1)
+                    plt.boxplot(np.array(table[kw]),positions=[count],showfliers=False,labels=[code],widths=[0.5])
+                    plt.ylabel(kw,fontsize=14)
+                    plt.xticks(rotation=45,ha='right')
+                    save[kw].append(np.array(table[kw]))
+
+        for j,kw in enumerate(variables):
+            plt.subplot(2,4,j+1)
+            plt.boxplot(np.ravel(save[kw]),positions=[count+2],showfliers=False,labels=['ALL'],widths=[0.5],patch_artist=True,boxprops=dict(facecolor='lightsteelblue',edgecolor='black',linewidth=1.))
+            if kw=='teff':
+                plt.title('%s = %.0f +/- %.0f'%(kw,np.median(save[kw]),myf.mad(np.ravel(save[kw]))))
+            else:
+                plt.title('%s = %.2f +/- %.2f'%(kw,np.median(save[kw]),myf.mad(np.ravel(save[kw]))))
+            plt.xticks(rotation=90,ha='center')
+
+            plt.savefig(parent_dir+'/ALLINS_MERGED/Atmos_all_instrument.pdf')
 
     def cleaning(self):
         mym.clean_light_dir(self.sy_dir_root)
@@ -1023,7 +1063,7 @@ class start():
 
         try:
             if end>6:
-                mym.compare_snaky_atmos(stars=[star])
+                self.compare_snaky_atmos()
         except:
             pass
 

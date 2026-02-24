@@ -14,6 +14,8 @@ from importlib.metadata import version
 ROOT_DIR = str(Path(__file__).resolve().parent.parent)
 SRC_DIR = str(Path(__file__).resolve().parent)
 MATERIAL_DIR = ROOT_DIR + "/Material_snaky"
+DB_DIR = ""
+
 WORKSPACE = ROOT_DIR + "/Snaky_data"
 TEST_DATADIR1 = ROOT_DIR + "/Snaky_data/MY_STAR/data/s1d/"
 TEST_DATADIR2 = ROOT_DIR + "/Snaky_data/RASSINE_STAR/data/s1d/"
