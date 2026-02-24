@@ -329,48 +329,7 @@ and modify the `extract_header()` function too.
 If only e2ds spectra exist and not s1d, follow the `read_neid()` example.
 NB: s1d spectra should always be preferred over e2ds/s2d spectra
 
-## ⑨ Analysing SNAKY DB
-
-*Dealing with databases can rapidly becomes a chaos, hopefully SNAKY contains some useful functionality. Assuming you ran the two [benchmarks](#flag3) already:*
-
-```python
-import src_snaky.run as snaky
-import src_snaky.run_db_analysis as snaky_db
-
-#output_dir = '/Users/cretignier/Desktop/Snaky'
-snaky_db.check_snaky_processing(output_dir,instrument='*')
-```
-
-*You can notice you have 1 dataset with HARPS03_3.5 and one with HARPS15_3.3.6. The one on HARPS03_3.5 did not pass the magnetic cycle function which is expected since this dataset is made of a single spectrum, inefficient to fit a magnetic cycle. You can also have a look to the created table `..output_dir/database/Snaky_processing_db_HARPS03_3.5.csv`.*
-
-*Let's see other functionality:*
-
-```python
-
-import src_snaky.run_db_analysis as snaky_db
-
-#output_dir = '/Users/cretignier/Desktop/Snaky'
-
-#create a summary DB table
-snaky_db.create_snaky_db(output_dir, filename='All_stars', stars=['*'])
-
-#create the FINCH DB table
-snaky_db.create_snaky_finch_db(output_dir, filename='All_stars', stars=['*'])
-
-#create the RV DB table
-snaky_db.create_snaky_rv_db(output_dir,filename='All_stars', stars=['*']):
-
-#create the CCF DB file
-snaky_db.create_snaky_ccf_db(output_dir, filename='All_stars', stars=['*'])
-
-#create the spectra DB file
-snaky_db.create_snaky_spec_db(output_dir, filename='All_stars', stars=['*'], wave_min=6100, wave_max=6200)
-
-
-```
-
-
-## BENCHMARK (Computation time)
+## ⑨ BENCHMARK (Computation time)
 
 <a id="flag3"></a>
 
@@ -412,6 +371,52 @@ $$
 \text{Total RAM} =
 4.2 + 0.72 \times \left( \frac{N}{100} \right) \quad [GB]
 $$
+
+## Analysing SNAKY DB
+
+*While SNAKY can perfectly be used for single-based star analysis, the code was developed for large DB processing.Dealing with databases can rapidly becomes a chaos, hopefully SNAKY contains some useful functionality. Assuming you ran the two [benchmarks](#flag3) already:*
+
+```python
+import src_snaky.run as snaky
+import src_snaky.run_db_analysis as snaky_db
+
+#output_dir = '/Users/cretignier/Desktop/Snaky'
+snaky_db.check_snaky_processing(output_dir,instrument='*')
+```
+
+*You can notice you have 1 dataset with HARPS03_3.5 and one with HARPS15_3.3.6. The one on HARPS03_3.5 did not pass the magnetic cycle function which is expected since this dataset is made of a single spectrum, inefficient to fit a magnetic cycle. You can also have a look to the created table `..output_dir/database/Snaky_processing_db_HARPS03_3.5.csv`.*
+
+*Let's see other functionality:*
+
+```python
+
+import src_snaky.run_db_analysis as snaky_db
+
+#output_dir = '/Users/cretignier/Desktop/Snaky'
+
+filename = 'All_stars'
+
+#create a summary DB table
+snaky_db.create_snaky_db(output_dir, filename=filename)
+
+#create the FINCH DB table
+snaky_db.create_snaky_finch_db(output_dir, filename=filename)
+
+#create the RV DB table
+snaky_db.create_snaky_rv_db(output_dir,filename=filename)
+
+#create the CCF DB file
+snaky_db.create_snaky_ccf_db(output_dir, filename=filename)
+
+#create the spectra DB file
+snaky_db.create_snaky_spec_db(output_dir, filename=filename, wave_min=6100, wave_max=6200)
+
+#plot some SNAK parameters
+snaky_db.plot_starinfo(output_dir, ins='*', xvar='Teff_SNAKY', yvar='FWHM_G2')
+
+
+```
+
 
 ## Uninstall
 
