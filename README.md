@@ -14,9 +14,9 @@ By complete, we mean:
 4) Mass (from 1. + 2. + 3.)
 5) Radius (from 1. + 2. + 3.)
 6) MHK Activity Level
-7) Sin(i) Inclination (if Prot user-specified)
+7) Sin(i) Inclination (if rotational period user-specified)
 
-The main outputs are: 
+The main useful outputs of SNAKY are: 
 
 1) The master spectrum in stellar rest-frame
 2) The stellar atmospheric parameters
