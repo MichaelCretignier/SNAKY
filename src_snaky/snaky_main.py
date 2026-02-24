@@ -665,12 +665,12 @@ def import_sts(files, rv_shift=None, err=False, sub_dico='matching_diff'):
 
     return wave_grid, sts, sts_err    
 
-def create_sts(files, grid = np.round(np.arange(3900,6830.001,0.01),2)):
+def create_sts(files, grid = np.round(np.arange(3900,6830.001,0.01),2), sub_dico='matching_diff'):
     sts = []
     print(' [INFO] Creating the npy Spectrum time-series...')
     for f in files:
         rassine_file = pd.read_pickle(f)
-        spec_norm = rassine_file['flux']/rassine_file['matching_diff']['continuum_linear']
+        spec_norm = rassine_file['flux']/rassine_file[sub_dico]['continuum_linear']
         wave = rassine_file['wave']
         spec = myc.tableXY(wave,spec_norm,0*spec_norm)
         spec.interpolate(new_grid=grid,method='linear',fill_value=0)
@@ -2134,7 +2134,7 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
     samples_logg = np.random.randn(99999)*0.07+logg
 
     samples = pd.DataFrame(np.array([samples_ms, samples_rs, samples_teff, samples_logg, samples_feh]).T,columns=['ms','rs','teff','logg','feh'])
-    samples.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv')
+    samples.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv.gz',index=False)
 
     if logg<3.5:
         logg=3.5
@@ -2167,7 +2167,7 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False, std_
     feh = sinfo['FeH']['SNAKY']
     ins_res = sinfo['FWHM']['O2']
 
-    samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv',index_col=0)
+    samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv.gz')
     teff = samples_table['teff']
     logg = samples_table['logg']
     feh = samples_table['feh']
@@ -2378,9 +2378,9 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False, std_
     plt.savefig(dir_root+'IMAGES/Vsini_CCF_sts'+myv.PRD_EXT+'.pdf')
 
     samples = np.random.choice(samples,99999)
-    samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv',index_col=0)
+    samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv.gz')
     samples_table['vsini'] = samples
-    samples_table.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv')
+    samples_table.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv.gz',index=False)
 
     plt.figure('dust')
     infos = plt.hist(samples,bins=100,density=True,histtype='step',cumulative=True)
@@ -2411,7 +2411,7 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
     vsun = 1.87 ; psun = 27.5
 
     vmax_veq = 2*pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stell*')[0])['FWHM']['G2']
-    samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv',index_col=0)
+    samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv.gz')
 
     sample_Rs = np.array(samples_table['rs'])
     sample_vsini = np.array(samples_table['vsini'])
@@ -2576,13 +2576,13 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
     plt.subplots_adjust(left=0.05,right=0.97)
     plt.savefig(dir_root+'IMAGES/Vsini_inclination'+myv.PRD_EXT+'.pdf')
 
-    samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv',index_col=0)
+    samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv.gz')
     if Prot is not None:
         samples_table['prot'] = sample_prot_known
     else:
         samples_table['prot'] = sample_prot
     samples_table['sini'] = np.random.choice(sample_sininc,99999)
-    samples_table.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv')
+    samples_table.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv.gz',index=False)
 
     if Prot is not None:
         plt.figure(figsize=(8,8))
@@ -3355,7 +3355,7 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
         'index_p10':q1, 'index_p50':q2, 'index_p90':q3, 'fmodel':fmodel}
         
         plt.subplots_adjust(left=0.07,right=0.98,top=0.90,bottom=0.08,hspace=0.35)
-        plt.savefig(dir_root+'IMAGES/Activity_profiles_%s_%s'%(name,fmodel)+myv.PRD_EXT+'.pdf')
+        plt.savefig(dir_root+'IMAGES/Activity_profiles_%s_%s'%(name,fmodel)+myv.PRD_EXT+'.png')
 
     #CaII
 
@@ -3465,10 +3465,10 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
     plt.savefig(dir_root+'IMAGES/MHK_samples'+myv.PRD_EXT+'.pdf')
     
     if len(samples_mhk)&len(samples_rhk):
-        samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv',index_col=0)
+        samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv.gz')
         samples_table['mhk'] = np.random.choice(samples_mhk,99999)
         samples_table['rhk'] = np.random.choice(samples_rhk,99999)
-        samples_table.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv')
+        samples_table.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv.gz',index=False)
 
     return dico, RHK_mean, MHK_mean
 
@@ -3487,7 +3487,7 @@ def create_finch_db(dir_root,sub_dico='matching_diff'):
             spectro = instrument.split('_')[0]
             drs = instrument.split('_')[1]
             pipeline = f.split('/'+star)[0].split('/')[-1]
-            processing = ['YV0','YVA'][int(sub_dico=='matching_mad')] 
+            processing = {'matching_diff':'YV0','matching_instrument':'YVA','matching_mad':'YV1'}[sub_dico] 
             code = star+'_'+spectro+'_'+drs+'_'+pipeline
             
             teff = np.round(myf.get_info_lvl2(info,'Teff',pipeline.upper()),0)

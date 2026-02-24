@@ -114,6 +114,10 @@ class start():
         self.set_star()
 
         print(Fore.CYAN+" [INFO] (root directory) dir_root = '"+dir_root+"' \n"+Fore.RESET)
+        if sub_dico=='matching_mad':
+            print(Fore.CYAN+" [INFO] Processing YV1 dataset! \n"+Fore.RESET)        
+        elif sub_dico=='matching_instrument':
+            print(Fore.CYAN+" [INFO] Processing YVA dataset! \n"+Fore.RESET)        
 
         self.sy_files = files
         self.sy_sub_dico = sub_dico
@@ -306,7 +310,6 @@ class start():
         
     def compute_rv_sys(self):
         dir_root = self.sy_dir_root
-        sub_dico = self.sy_sub_dico
         star = self.sy_starname
 
         summary = mym.import_summary(dir_root)
@@ -318,7 +321,6 @@ class start():
         
         rv_sys = []
         for n in np.arange(len(summary)):
-            #spec = mym.import_spectrum(f,sub_dico=sub_dico)
             spec = myc.tableXY(self.sy_sts_wave/100.,self.sy_sts_flux[n]/10000.,0*self.sy_sts_wave)
             rv_sys1 = mym.yarara_rough_rv_sys(spec,teff=teff,verbose=False)
             rv_sys.append(rv_sys1)
@@ -704,7 +706,7 @@ class start():
         parent_dir = '/'.join(dir_root.split('/')[:-2])
 
         count = -1
-        files = glob.glob(parent_dir+'/*/WORKSPACE/Analyse_samples.csv')
+        files = glob.glob(parent_dir+'/*/WORKSPACE/Analyse_samples*')
 
         plt.figure(figsize=(18,6))
         plt.subplots_adjust(left=0.06,right=0.96,hspace=0.60,top=0.95,bottom=0.15,wspace=0.30)
@@ -986,8 +988,7 @@ class start():
             pass
 
         self.sy_rassine_files = np.array(summary['filename'])
-        self.sy_sts_wave, self.sy_sts_flux = mym.create_sts(self.sy_rassine_files)
-
+        self.sy_sts_wave, self.sy_sts_flux = mym.create_sts(self.sy_rassine_files, sub_dico=self.sy_sub_dico)
 
         if force_summary: #2
             self.check_spectra()
@@ -1056,10 +1057,13 @@ class start():
             self.write_progress(12, 'spectroscopy', savefile=filename_time)
         qc = mym.check_force_spectroscopy(dir_root)
 
-        if force_magcycle: #13
-            self.compute_mag_cycle()
-            self.write_progress(13, 'mag_cycle', savefile=filename_time)
-        qc = mym.check_force_magcycle(dir_root)
+        try: #Until a proper test condition is implemented
+            if force_magcycle: #13
+                self.compute_mag_cycle()
+                self.write_progress(13, 'mag_cycle', savefile=filename_time)
+            qc = mym.check_force_magcycle(dir_root)
+        except:
+            pass
 
         try:
             if end>6:

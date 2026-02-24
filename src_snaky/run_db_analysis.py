@@ -69,6 +69,8 @@ def create_snaky_db(output_dir, filename='All_stars', stars=['*'], branch=None):
     if branch is None:
         branch = output_dir.split('/')[-1]
 
+    sub_dico = 'matching_diff'
+
     files = []
     for s in stars:
         files.append(glob.glob(root+'/'+branch+'/'+s+'/data/s1d/*/STAR_INFO/Stellar_info*.p'))
@@ -88,7 +90,7 @@ def create_snaky_db(output_dir, filename='All_stars', stars=['*'], branch=None):
         spectro = instrument.split('_')[0]
         drs = instrument.split('_')[1]
         pipeline = f.split('/'+star)[0].split('/')[-1]
-        processing = 'YV0' #TBD add the info if matching_diff or matching_mad
+        processing = {'matching_diff':'YV0','matching_instrument':'YVA','matching_mad':'YV1'}[sub_dico] 
         code = star+'_'+spectro+'_'+drs+'_'+pipeline
 
         ra = np.round(myf.get_info_lvl2(info,'Ra','SNAKY'),6)
