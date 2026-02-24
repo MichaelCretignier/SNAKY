@@ -271,6 +271,7 @@ def clean_light_dir(dir_root):
         del material['stellar_template']
     pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
 
+    print(Fore.GREEN+' [INFO] The final cleaning of the output products was done.'+Fore.RESET) ; QC=1
 
 def plot_master(dir_root, srf=False, color='k', alpha=1.0, offset=0, print_info=True, figname='master', branch='Snaky', debug=False):
     """srf: Stellar-rest-frame, will use the Analyse_spectroscopy file"""
