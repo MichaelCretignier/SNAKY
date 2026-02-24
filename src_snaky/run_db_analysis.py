@@ -56,18 +56,18 @@ def check_snaky_processing(output_dir,instrument='*'):
             nb = int(nb_stars-np.sum(all_info[kw.split('_')[1][0:5]]=='XXXX'))
             print('%s = %.0f (%.1f%%)'%(kw,nb,100*nb/(nb_stars+1e-6)))
 
-        print(' [INFO] File DB created: '+output_dir+'/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
+        print('\n[INFO] File DB created: '+output_dir+'/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
         all_info.to_csv(output_dir+'/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
 
 
-def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
-    os.makedirs(root+'/Snaky/database', exist_ok=True)
+def create_snaky_db(output_dir, filename='All_stars_summary_infos.csv', stars=['*']):
+    os.makedirs(output_dir+'/database', exist_ok=True)
     
     ntot = len(stars)
 
     files = []
     for s in stars:
-        files.append(glob.glob(root+'/'+branch+'/'+s+'/data/s1d/*/STAR_INFO/Stellar_info*.p'))
+        files.append(glob.glob(output_dir+'/'+s+'/data/s1d/*/STAR_INFO/Stellar_info*.p'))
     files = np.sort(np.hstack(files))
     files = np.sort(np.unique(files))
 
@@ -148,7 +148,7 @@ def create_snaky_db(filename='All_stars', stars=['*'], branch='Snaky'):
     print('\n [INFO] %.0f datasets'%(len(infos)))
     print('\n [INFO] Nb unique stars processed = %.0f (%.0f%%)\n'%(nb_processed,100*nb_processed/ntot))
 
-    infos.to_csv(root+'/Snaky/database/'+filename.replace('*','')+'_summary_infos.csv')
+    infos.to_csv(output_dir+'/database/'+filename)
 
     return infos
 
