@@ -343,14 +343,30 @@ snaky_db.check_snaky_processing(output_dir,instrument='*')
 
 *You can notice you have 1 dataset with HARPS03_3.5 and one with HARPS15_3.3.6. The one on HARPS03_3.5 did not pass the magnetic cycle function which is expected since this dataset is made of a single spectrum, inefficient to fit a magnetic cycle. You can also have a look to the created table `..output_dir/database/Snaky_processing_db_HARPS03_3.5.csv`.*
 
-*Let's now create a DB table summarizing what your SNAKY directory contains:*
+*Let's see other functionality:*
 
 ```python
 
 import src_snaky.run_db_analysis as snaky_db
 
 #output_dir = '/Users/cretignier/Desktop/Snaky'
-snaky_db.create_snaky_db(output_dir, filename='All_stars_summary_infos.csv', stars=['*'])
+
+#create a summary DB table
+snaky_db.create_snaky_db(output_dir, filename='All_stars', stars=['*'])
+
+#create the FINCH DB table
+snaky_db.create_snaky_finch_db(output_dir, filename='All_stars', stars=['*'])
+
+#create the RV DB table
+snaky_db.create_snaky_rv_db(output_dir,filename='All_stars', stars=['*']):
+
+#create the CCF DB file
+snaky_db.create_snaky_ccf_db(output_dir, filename='All_stars', stars=['*'])
+
+#create the spectra DB file
+snaky_db.create_snaky_spec_db(output_dir, filename='All_stars', stars=['*'], wave_min=6100, wave_max=6200)
+
+
 ```
 
 

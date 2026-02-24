@@ -271,66 +271,6 @@ def clean_light_dir(dir_root):
         del material['stellar_template']
     pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
 
-def fix_dir_root(instrument='SOPHIE-HE_1.0',stars='*'):
-    a = glob.glob(root+'/Snaky/'+stars+'/data/s1d/*/WORKSPACE/Analyse_summary.csv')
-    for file in a:
-        star = file.split('/data')[0].split('/')[-1]
-        dir_root = file.split('WORKSPACE')[0]
-        ins = dir_root.split('/')[-2]
-        summary = pd.read_csv(file,index_col=0)
-        dace_file = file.replace('WORKSPACE/Analyse_summary.csv','DACE_TABLE/Dace_extracted_table.csv')
-        dace = pd.read_csv(dace_file,index_col=0)
-        mask = (np.array(summary['ins'])==instrument)
-
-        if os.path.exists(dace['fileroot'][0]):
-            raw_visible = True
-        else:
-            raw_visible = False
-            print(Fore.YELLOW+' [INFO] The path root of the RAW is not more visible'+Fore.RESET)
-
-        if (sum(mask)!=0)&(ins!=instrument):
-            print(Fore.YELLOW+' [WARNING] Some spectra with the wrong instrument found for %s'%(star)+Fore.RESET)
-            create_snaky_dir(star,instrument)
-            pickle.dump(import_star_info(dir_root),open(dir_root.replace(ins,instrument)+'/STAR_INFO/Stellar_info_'+star+'.p','wb'))
-            os.system('touch '+root+'/Snaky/'+star+'/data/s1d/'+instrument+'/REDUCTION_INFO/force_pre.txt')
-            
-            if raw_visible:
-                all_files = []
-                for f in np.array(summary.loc[mask,'filename']):
-                    b = pd.read_pickle(f)
-                    arc = b['parameters']['arcfiles']
-                    for ar in arc:
-                        os.system('mv '+ar+' '+ar.replace('/'+ins+'/','/'+instrument+'/'))
-                        all_files.append(ar)
-                    arc2 = [n.replace('/'+ins+'/','/'+instrument+'/') for n in arc]
-                    b['parameters']['arcfiles'] = arc2
-                    pickle.dump(b,open(f.replace('/'+ins+'/','/'+instrument+'/'),'wb'))
-
-                mask_dace = myf.in1d(dace['fileroot'],np.array(all_files))
-
-                new_dace = dace.loc[mask_dace].reset_index(drop=True)
-                new_dace['ins'] = instrument
-                new_dace['fileroot'] = np.array([n.replace('/'+ins+'/','/'+instrument+'/') for n in new_dace['fileroot']])
-                new_dace.to_csv(dace_file.replace('/'+ins+'/','/'+instrument+'/'))
-                
-                old_dace = dace.loc[~mask_dace].reset_index(drop=True)
-                old_dace.to_csv(dace_file)
-
-            new_summary = summary.loc[mask].reset_index(drop=True)
-            new_summary['filename'] = np.array([n.replace('/'+ins+'/','/'+instrument+'/') for n in new_summary['filename']])
-            new_summary.to_csv(file.replace('/'+ins+'/','/'+instrument+'/'))
-
-            old_summary = summary.loc[~mask].reset_index(drop=True)
-            old_summary.to_csv(file)
-
-            rassine_files = glob.glob(file.replace('Analyse_summary.csv','RASSINE*.p'))
-            for k in np.setdiff1d(rassine_files,np.array(old_summary['filename'])):
-                os.system('rm '+k)
-            
-            if np.sum(~mask_dace)==0:
-                print(star)
-                os.system('rm -rf '+file.split('/WORKSPACE')[0])
-
 
 def plot_master(dir_root, srf=False, color='k', alpha=1.0, offset=0, print_info=True, figname='master', branch='Snaky', debug=False):
     """srf: Stellar-rest-frame, will use the Analyse_spectroscopy file"""
@@ -3532,7 +3472,7 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
 
     return dico, RHK_mean, MHK_mean
 
-def create_finch_db(dir_root):
+def create_finch_db(dir_root,sub_dico='matching_diff'):
 
     files = [dir_root+'WORKSPACE/Analyse_summary.csv']
 
@@ -3547,7 +3487,7 @@ def create_finch_db(dir_root):
             spectro = instrument.split('_')[0]
             drs = instrument.split('_')[1]
             pipeline = f.split('/'+star)[0].split('/')[-1]
-            processing = 'YV0' #TBD add the info if matching_diff or matching_mad
+            processing = ['YV0','YVA'][int(sub_dico=='matching_mad')] 
             code = star+'_'+spectro+'_'+drs+'_'+pipeline
             
             teff = np.round(myf.get_info_lvl2(info,'Teff',pipeline.upper()),0)
@@ -3558,6 +3498,7 @@ def create_finch_db(dir_root):
             summary['star'] = star
             summary['ins'] = instrument
             summary['source'] = pipeline.upper()
+            summary['yvx'] = processing
             summary['finch_offset'] = 0.0
             summary['smw'] = 0.0
             summary['teff'] = teff
@@ -3567,7 +3508,7 @@ def create_finch_db(dir_root):
             summary['flag'] = summary['flag2']
             summary = summary.rename(columns={'RHK':'rhk','RHK_std':'rhk_std','MHK':'mhk','MHK_std':'mhk_std'})
             summary['mhk_cleaned'] = 0.0 ; summary['mhk_cleaned_std'] = 0.0
-            summary = summary[['star','jdb','mhk','mhk_std','mhk_cleaned','mhk_cleaned_std','rhk','rhk_std','ins','source','flag','finch_offset','smw','teff','logg','feh','rv_sys']]
+            summary = summary[['star','jdb','mhk','mhk_std','mhk_cleaned','mhk_cleaned_std','rhk','rhk_std','ins','source','yvx','flag','finch_offset','smw','teff','logg','feh','rv_sys']]
             summary['mhk'] = np.round(summary['mhk'],3)
             summary['mhk_std'] = np.round(summary['mhk_std'],3)
             summary['rhk'] = np.round(summary['rhk'],4)

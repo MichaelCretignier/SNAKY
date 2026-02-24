@@ -5,10 +5,12 @@ import pandas as pd
 import pickle
 from tqdm import tqdm
 import glob as glob
+from colorama import Fore
 
 from . import snaky_functions as myf
 from . import snaky_classes as myc
 from . import snaky_variables as myv
+from . import snaky_main as mym
 
 def check_snaky_processing(output_dir,instrument='*'):
 
@@ -60,12 +62,16 @@ def check_snaky_processing(output_dir,instrument='*'):
         all_info.to_csv(output_dir+'/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
 
 
-def create_snaky_db(output_dir, filename='All_stars', stars=['*']):
+def create_snaky_db(output_dir, filename='All_stars', stars=['*'], branch=None):
     os.makedirs(output_dir+'/database', exist_ok=True)
+
+    root = '/'.join(output_dir.split('/')[:-1])
+    if branch is None:
+        branch = output_dir.split('/')[-1]
 
     files = []
     for s in stars:
-        files.append(glob.glob(output_dir+'/'+s+'/data/s1d/*/STAR_INFO/Stellar_info*.p'))
+        files.append(glob.glob(root+'/'+branch+'/'+s+'/data/s1d/*/STAR_INFO/Stellar_info*.p'))
     files = np.sort(np.hstack(files))
     files = np.sort(np.unique(files))
 
@@ -196,10 +202,14 @@ def compare_snaky_atmos(output_dir, stars=['*']):
             plt.close('all')
 
 
-def create_snaky_finch_db(output_dir, filename='All_stars', stars=['*'], infos=None):
+def create_snaky_finch_db(output_dir, filename='All_stars', stars=['*'], infos=None, branch=None):
     if infos is None:
-        infos = create_snaky_db(output_dir, filename=filename, stars=stars, branch='Snaky')
+        infos = create_snaky_db(output_dir, filename=filename, stars=stars, branch=branch)
     stars = np.sort(np.unique(infos['star']))
+
+    root = '/'.join(output_dir.split('/')[:-1])
+    if branch is None:
+        branch = output_dir.split('/')[-1]
 
     tgrid = 61041+182.5*np.arange(21)
     infos = []
@@ -228,9 +238,13 @@ def create_snaky_finch_db(output_dir, filename='All_stars', stars=['*'], infos=N
     infos2.to_csv(output_dir+'/database/PRIVATE_'+filename+'_FINCH.csv')
 
 
-def create_snaky_rv_db(output_dir,filename='All_stars', stars=['*'], infos=None, anonymous=False):
+def create_snaky_rv_db(output_dir,filename='All_stars', stars=['*'], infos=None, anonymous=False, branch=None):
+    root = '/'.join(output_dir.split('/')[:-1])
+    if branch is None:
+        branch = output_dir.split('/')[-1]
+
     if infos is None:
-        infos = create_snaky_db(filename=filename, stars=stars, branch='Snaky')
+        infos = create_snaky_db(output_dir, filename=filename, stars=stars, branch=branch)
     stars = np.sort(np.unique(infos['star']))
 
     infos = [] ; infos_p = []
@@ -290,29 +304,29 @@ def create_snaky_rv_db(output_dir,filename='All_stars', stars=['*'], infos=None,
                 infos2['rv'] = infos2['rv']+np.random.randn(len(infos2))*0.03
                 infos2['jdb'] = infos2['jdb']+np.random.randn(len(infos2))*1
                 plt.scatter(infos2['jdb'],infos2['rv'],color='k',zorder=10)
-            infos_p.append(infos2)
+                infos_p.append(infos2)
             plt.savefig(output_dir+'/'+s+'/data/s1d/ALLINS_MERGED/RV.png')
             plt.close('rv')
             
-            infos2[['ins','jdb','rv','rv_std']].to_csv(output_dir+'/'+s+'/data/s1d/ALLINS_MERGED/RV_anonymous.csv')
-
-
-    infos_p = pd.concat(infos_p)
-    infos_p = infos_p.reset_index(drop=True)
-    infos_p.to_csv(root+'/Snaky/database/'+filename+'_RV_infos.csv')
+            #infos2[['ins','jdb','rv','rv_std']].to_csv(output_dir+'/'+s+'/data/s1d/ALLINS_MERGED/RV_anonymous.csv')
 
     infos = pd.concat(infos)
     infos = infos.reset_index(drop=True)
-    infos.to_csv(root+'/Snaky/database/PRIVATE_'+filename+'_RV_infos.csv')
+    infos.to_csv(root+'/Snaky/database/'+filename+'_RV_infos.csv')
 
-def create_snaky_ccf_db(output_dir, filename='All_stars_ccf.npy', stars=['*'], infos=None):
+    if anonymous:
+        infos_p = pd.concat(infos_p)
+        infos_p = infos_p.reset_index(drop=True)
+        infos_p.to_csv(root+'/Snaky/database/PUBLIC_'+filename+'_RV_infos.csv')
+
+def create_snaky_ccf_db(output_dir, filename='All_stars', stars=['*'], infos=None, branch=None):
     root = '/'.join(output_dir.split('/')[:-1])
     if branch is None:
-        branch = output_dir.split('/')[-2]
+        branch = output_dir.split('/')[-1]
 
     if infos is None:
-        s = create_snaky_db(output_dir, filename=filename, stars=stars)
-    files = [output_dir+'/'+i+'/data/s1d/'+j+'_'+k+'/STAR_INFO/Stellar_info*.p' for i,j,k in np.array(infos[['star','ins','drs']])]
+        infos = create_snaky_db(output_dir, filename=filename, stars=stars)
+    files = [root+'/'+branch+'/'+i+'/data/s1d/'+j+'_'+k+'/STAR_INFO/Stellar_info*.p' for i,j,k in np.array(infos[['star','ins','drs']])]
 
     vgrid = np.arange(0,150000,538)
     vgrid = np.hstack([-vgrid[::-1],vgrid[1:]])
@@ -339,12 +353,12 @@ def create_snaky_ccf_db(output_dir, filename='All_stars_ccf.npy', stars=['*'], i
             ccf.interpolate(new_grid=vgrid,fill_value=1)
             all_ccf.append(ccf.y)
     all_ccf = (np.array(all_ccf)*1e4).astype('int16')
-    np.save(output_dir+'/database/'+filename,all_ccf)
+    np.save(output_dir+'/database/'+filename+'_ccf.npy',all_ccf)
 
 def create_snaky_spec_db(output_dir, filename='All_stars', stars=['*'], infos=None, wave_min=6100,wave_max=6200, branch=None):
     root = '/'.join(output_dir.split('/')[:-1])
     if branch is None:
-        branch = output_dir.split('/')[-2]
+        branch = output_dir.split('/')[-1]
 
     if infos is None:
         infos = create_snaky_db(output_dir, filename=filename, stars=stars, branch=branch)
@@ -370,9 +384,14 @@ def create_snaky_spec_db(output_dir, filename='All_stars', stars=['*'], infos=No
 
 
 def plot_starinfo(output_dir, ins='*', xvar='Teff_SNAKY', yvar='FWHM_G2', cvar=None, svar=None, branch=None):
+    """
+    Search inside thr Stellar_info*.p SNAKY files and query the values according to a two levels search of the variables:
+    xvar = 'X_Y' implies -> sinfo[X][Y]
+    """
+    
     root = '/'.join(output_dir.split('/')[:-1])
     if branch is None:
-        branch = output_dir.split('/')[-2]
+        branch = output_dir.split('/')[-1]
 
     all_files = np.sort(glob.glob(root+'/'+branch+'/*/data/s1d/'+ins+'/STAR_INFO/Stellar_info*.p'))
     output = []
@@ -386,9 +405,15 @@ def plot_starinfo(output_dir, ins='*', xvar='Teff_SNAKY', yvar='FWHM_G2', cvar=N
         output.append([tab['Name'],x,y])
     output = pd.DataFrame(output,columns=['starname','x','y'])
     plt.scatter(output['x'],output['y'])
+    plt.xlabel(xvar)
+    plt.ylabel(yvar)
 
-def plot_fwhm(dir_root, ccf_mask='mask_telluric_o2', xvar='jdb', yvar='fwhm', alpha=0.4, color='k', branch='Snaky',marker='o', label=''):
-    all_files = glob.glob(dir_root+'WORKSPACE/Analyse_ccf.p')
+def plot_fwhm(output_dir, ccf_mask='mask_telluric_o2', xvar='jdb', yvar='fwhm', alpha=0.4, color='k', branch='Snaky',marker='o', label=''):
+    root = '/'.join(output_dir.split('/')[:-1])
+    if branch is None:
+        branch = output_dir.split('/')[-1]
+
+    all_files = glob.glob(root+'/'+branch+'/*/data/s1d/*/WORKSPACE/Analyse_ccf.p')
     var = []
     for f in all_files:
         print(f)
@@ -429,44 +454,67 @@ def plot_fwhm(dir_root, ccf_mask='mask_telluric_o2', xvar='jdb', yvar='fwhm', al
         plt.fill_between(pbx,pby,alpha=alpha,color=color,label=label)
         plt.plot(pbx,pby,color='k')
 
-def create_finch_db(dir_root):
+def fix_dir_root(output_dir, instrument='SOPHIE-HE_1.0',stars='*'): # to be repaired
+    pouet
+    root = '/'.join(output_dir.split('/')[:-1])
+    if branch is None:
+        branch = output_dir.split('/')[-1]
 
-    files = np.sort(glob.glob(dir_root+'/*/data/s1d/*/WORKSPACE/Analyse_summary.csv'))
+    a = glob.glob(output_dir+'/'+stars+'/data/s1d/*/WORKSPACE/Analyse_summary.csv')
+    for file in a:
+        star = file.split('/data')[0].split('/')[-1]
+        dir_root = file.split('WORKSPACE')[0]
+        ins = dir_root.split('/')[-2]
+        summary = pd.read_csv(file,index_col=0)
+        dace_file = file.replace('WORKSPACE/Analyse_summary.csv','DACE_TABLE/Dace_extracted_table.csv')
+        dace = pd.read_csv(dace_file,index_col=0)
+        mask = (np.array(summary['ins'])==instrument)
 
-    infos = []
-    for f2 in tqdm(files):
-        summary = pd.read_csv(f2,index_col=0)
-        if 'MHK' in summary.keys():
-            f = glob.glob(f2.replace('WORKSPACE','STAR_INFO/Stellar_info*&&').split('&&')[0])[0]
-            info = pd.read_pickle(f)
-            star = f.split('/data')[0].split('/')[-1]
-            instrument = f.split('/STAR_INFO')[0].split('/')[-1]
-            spectro = instrument.split('_')[0]
-            drs = instrument.split('_')[1]
-            pipeline = f.split('/'+star)[0].split('/')[-1]
-            processing = 'YV0' #TBD add the info if matching_diff or matching_mad
-            code = star+'_'+spectro+'_'+drs+'_'+pipeline
+        if os.path.exists(dace['fileroot'][0]):
+            raw_visible = True
+        else:
+            raw_visible = False
+            print(Fore.YELLOW+' [INFO] The path root of the RAW is not more visible'+Fore.RESET)
+
+        if (sum(mask)!=0)&(ins!=instrument):
+            print(Fore.YELLOW+' [WARNING] Some spectra with the wrong instrument found for %s'%(star)+Fore.RESET)
+            mym.create_snaky_dir(output_dir,star,instrument)
+            pickle.dump(mym.import_star_info(dir_root),open(dir_root.replace(ins,instrument)+'/STAR_INFO/Stellar_info_'+star+'.p','wb'))
+            os.system('touch '+root+'/Snaky/'+star+'/data/s1d/'+instrument+'/REDUCTION_INFO/force_pre.txt')
             
-            teff = np.round(myf.get_info_lvl2(info,'Teff',pipeline.upper()),0)
-            logg = np.round(myf.get_info_lvl2(info,'Log_g',pipeline.upper()),2)
-            feh = np.round(myf.get_info_lvl2(info,'FeH',pipeline.upper()),2)
-            rv_sys = np.round(myf.get_info_lvl2(info,'Rv_sys',pipeline.upper()),2)
+            if raw_visible:
+                all_files = []
+                for f in np.array(summary.loc[mask,'filename']):
+                    b = pd.read_pickle(f)
+                    arc = b['parameters']['arcfiles']
+                    for ar in arc:
+                        os.system('mv '+ar+' '+ar.replace('/'+ins+'/','/'+instrument+'/'))
+                        all_files.append(ar)
+                    arc2 = [n.replace('/'+ins+'/','/'+instrument+'/') for n in arc]
+                    b['parameters']['arcfiles'] = arc2
+                    pickle.dump(b,open(f.replace('/'+ins+'/','/'+instrument+'/'),'wb'))
 
-            summary['star'] = star
-            summary['ins'] = instrument
-            summary['source'] = pipeline.upper()
-            summary['finch_offset'] = 0.0
-            summary['smw'] = 0.0
-            summary['teff'] = teff
-            summary['logg'] = logg
-            summary['feh'] = feh
-            summary['rv_sys'] = rv_sys
-            summary['flag'] = summary['flag2']
-            summary = summary.rename(columns={'RHK':'rhk','RHK_std':'rhk_std','MHK':'mhk','MHK_std':'mhk_std'})
-            summary['mhk_cleaned'] = 0.0 ; summary['mhk_cleaned_std'] = 0.0
-            summary = summary[['star','jdb','mhk','mhk_std','mhk_cleaned','mhk_cleaned_std','rhk','rhk_std','ins','source','flag','finch_offset','smw','teff','logg','feh','rv_sys']]
-            summary['mhk'] = np.round(summary['mhk'],3)
-            summary['mhk_std'] = np.round(summary['mhk_std'],3)
-            summary['rhk'] = np.round(summary['rhk'],4)
-            summary['rhk_std'] = np.round(summary['rhk_std'],4)
-            summary.to_csv(f2.replace('summary.csv','Finch_table.csv'))
+                mask_dace = myf.in1d(dace['fileroot'],np.array(all_files))
+
+                new_dace = dace.loc[mask_dace].reset_index(drop=True)
+                new_dace['ins'] = instrument
+                new_dace['fileroot'] = np.array([n.replace('/'+ins+'/','/'+instrument+'/') for n in new_dace['fileroot']])
+                new_dace.to_csv(dace_file.replace('/'+ins+'/','/'+instrument+'/'))
+                
+                old_dace = dace.loc[~mask_dace].reset_index(drop=True)
+                old_dace.to_csv(dace_file)
+
+            new_summary = summary.loc[mask].reset_index(drop=True)
+            new_summary['filename'] = np.array([n.replace('/'+ins+'/','/'+instrument+'/') for n in new_summary['filename']])
+            new_summary.to_csv(file.replace('/'+ins+'/','/'+instrument+'/'))
+
+            old_summary = summary.loc[~mask].reset_index(drop=True)
+            old_summary.to_csv(file)
+
+            rassine_files = glob.glob(file.replace('Analyse_summary.csv','RASSINE*.p'))
+            for k in np.setdiff1d(rassine_files,np.array(old_summary['filename'])):
+                os.system('rm '+k)
+            
+            if np.sum(~mask_dace)==0:
+                print(star)
+                os.system('rm -rf '+file.split('/WORKSPACE')[0])

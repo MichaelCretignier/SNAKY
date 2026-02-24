@@ -649,7 +649,7 @@ class start():
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
         mym.plot_mhk(dir_root)
-        mym.create_finch_db(dir_root)
+        mym.create_finch_db(dir_root,sub_dico=self.sy_sub_dico)
 
     def compute_spectroscopy(self):
         dir_root = self.sy_dir_root
