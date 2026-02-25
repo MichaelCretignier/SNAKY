@@ -270,7 +270,7 @@ def clean_light_dir(dir_root):
     if 'stellar_template' in material.keys():
         del material['stellar_template']
     pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
-    
+
     print(Fore.GREEN+' [INFO] The final cleaning of the output products was done.'+Fore.RESET) ; QC=1
 
 def plot_master(dir_root, srf=False, color='k', alpha=1.0, offset=0, print_info=True, figname='master', branch='Snaky', debug=False):
@@ -957,14 +957,14 @@ def extract_header(files, instru, debug=False, ra=None, dec=None):
                 uttime = np.array([f"{s[:4]}-{s[4:6]}-{s[6:8]}T{s[9:11]}:{s[11:13]}:{s[13:15]}.000" for s in uttime])
             else:
                 uttime = np.array([f[-25:-2] for f in files])
-            print(uttime)
             year = np.array([ut[0:4] for ut in uttime])
             year_num = np.array([float(y) if y.isdigit() else np.nan for y in year])
             valid = (year_num>1950)&(year_num<2050)
             missing_time = missing_time[valid]
             rjd = np.ones(len(summary))[missing_time]*np.nan
-            rjd = myf.conv_time(uttime[valid])[0]
-            summary.loc[missing_time,'rjd'] = rjd
+            if np.sum(valid)>0:
+                rjd = myf.conv_time(uttime[valid])[0]
+                summary.loc[missing_time,'rjd'] = rjd
             missing_time = (summary['rjd']!=summary['rjd'])
             print(' [INFO] Nb of missing time after UT search = %.0f'%(np.sum(missing_time)))
         
@@ -2276,7 +2276,7 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False, std_
         else:
             loc = myf.find_nearest(list(myv.instrument_res_kms.values()),ref_resolution)[0][0]
             ins_calib = list(myv.instrument_res_kms.keys())[loc]
-            print(Fore.YELLOW+'\n [WARNING] %s is no part of the calibrated instrument'%(ins))
+            print(Fore.YELLOW+'\n [WARNING] %s is no part of the calibrated instruments'%(ins))
             print(' [WARNING] The list of existing instruments is:')
             for ins in myv.instrument_res_kms.keys():
                 print(' ○ ',ins)

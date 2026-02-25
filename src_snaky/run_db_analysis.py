@@ -72,13 +72,17 @@ def check_comp_rqm(output_dir,instrument='*'):
     instruments = glob.glob(output_dir+'/*/data/s1d/'+instrument+'/REDUCTION_INFO/Time_info*_N*_GBP*_GBT*.png')
     instruments = list(np.unique([i.split('/')[-3] for i in instruments]))
 
-    x2 = None ; y1 = None ; y2 = None ; perc = None
+    n = np.arange(0,5000)
+    x2 = 4000 ; y1 = 60 ; y2 = 50 ; perc = None
+    sbatch = [[1,150,300,600,2500],[5,5,8,15,50]]
     if len(instruments):
         instruments.append('*')
         for instrument in instruments[::-1]:
             all_dir = glob.glob(output_dir+'/*/data/s1d/'+instrument+'/REDUCTION_INFO/Time_info*_N*_GBP*_GBT*.png')
             
             stars = [d.split('/data')[0].split('/')[-1] for d in all_dir]
+            ins = [d.split('/REDUCTION_INFO')[0].split('/')[-1] for d in all_dir]
+            code = np.unique([s+'_'+i for s,i in zip(stars,ins)])
             filenames = [d.split('/')[-1] for d in all_dir]
             N = np.array([f.split('_N')[-1].split('_')[0] for f in filenames]).astype('int')
             GBP = np.array([f.split('_GBP')[-1].split('_')[0] for f in filenames]).astype('float')
@@ -90,12 +94,12 @@ def check_comp_rqm(output_dir,instrument='*'):
 
             fig = plt.figure(instrument,figsize=(16,6))
             plt.subplot(1,3,3) ; plt.ylabel('CDF') ; plt.xlabel('Dataset Size N []') ; plt.title('Sample datasets')
-            a,b = np.histogram(N,bins=100) ; b = 0.5*(b[1:]+b[:-1]) ; a = np.cumsum(a) ; a= a/np.max(a)
-            cdf = myc.tableXY(b,a)
-            plt.plot(cdf.x,cdf.y,color='k')
-            index = myf.find_nearest(cdf.y,np.array([0.33,0.66,0.98]))[0]
-            perc = cdf.x[index]
-            plt.scatter(perc,np.array([0.33,0.66,0.98]),color='k',marker='o')
+            plt.tick_params(top=True,right=True,direction='inout',which='both')
+            a,b = np.histogram(N,bins=np.arange(0.5,3000.5)) ; b = 0.5*(b[1:]+b[:-1]) ; a = np.cumsum(a) ; a= a/np.max(a)
+            plt.plot(b,a,color='k')
+            index = myf.find_nearest(b,np.array(sbatch[0]))[0]
+            perc = a[index]
+            plt.scatter(np.array(sbatch[0]),perc,color='k',marker='o')
             plt.grid()
             if perc is not None:
                 for p in perc:
@@ -103,24 +107,29 @@ def check_comp_rqm(output_dir,instrument='*'):
             plt.xlim(1,4000)
             plt.xscale('log')
             plt.subplot(1,3,1) ; plt.title('Computational time') ; ax = plt.gca(); plt.xlabel('Dataset size N []') ; plt.ylabel('Execution time [min]')
+            plt.tick_params(top=True,right=True,direction='inout',which='both')
             if x2 is None:
                 x2 = 4000#np.max(N)*1.1
                 y1 = np.max(total_time)*1.2
-            plt.xscale('log')            
+            plt.xscale('log') ; plt.yscale('log')            
             plt.grid()
             if perc is not None:
                 for p in perc:
                     plt.axvline(x=p,ls='-',lw=1,color='k')
             plt.scatter(N,total_time,color='k',alpha=0.8)
 
-            plt.xlim(1,x2) ; plt.ylim(0,y1)
+            plt.xlim(1,x2) ; plt.ylim(0.6,y1)
             plt.subplot(1,3,2,sharex=ax) ; plt.title('Memory') ; plt.xlabel('Dataset size N []') ; plt.ylabel('RAM required [Gb]')
+            plt.tick_params(top=True,right=True,direction='inout',which='both')
             plt.scatter(N,GBP,color='C0',alpha=0.8)
             plt.scatter(N,GBT,color='C1',alpha=0.8)
-            plt.plot([1,40,250,700,2500],[7,7,10,20,200],ls='-.',color='k',label='sbatch config')
+            plt.plot([1,40,250,700,2500],[7,7,10,20,200],ls='-.',color='gray',label='sbatch config',marker='x')
+            plt.plot(sbatch[0],sbatch[1],ls='-.',color='k',label='sbatch config (new)',marker='o')
+            plt.plot(n,np.max(np.array([[1.35+n*0.0134],[np.ones(len(n))*3.5]]),axis=0)[0],color='r')
             if y2 is None:
                 y2 = np.max(GBP)*1.4
-            plt.xlim(1,x2) ; plt.ylim(0,y2)
+            plt.xlim(1,x2) ; plt.ylim(0.5,y2)
+            plt.yscale('log')
             plt.legend()
             plt.grid()
             if perc is not None:
@@ -129,7 +138,7 @@ def check_comp_rqm(output_dir,instrument='*'):
             plt.subplots_adjust(left=0.07,right=0.96)
             if instrument=='*':
                 instrument='ALL'
-            fig.suptitle('SNAKY (%s) with instrument = %s (Number of datasets = %.0f)'%(version,instrument,len(N)))
+            fig.suptitle('SNAKY (%s) with instrument = %s (Number of datasets = %.0f)'%(version,instrument,len(code)))
             filename = output_dir+'/database/processing_stat_%s/Processing_stat_%s.png'%(version,instrument)
             plt.savefig(filename)
             plt.close(instrument)

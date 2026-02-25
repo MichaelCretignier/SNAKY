@@ -913,7 +913,7 @@ class start():
         dir_root = self.sy_dir_root
 
         timestamp_reduction = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
-        filename_time = dir_root + '/REDUCTION_INFO/Time_informations_reduction_snaky_B%.0fE%.0f_%s.csv'%(begin,end,timestamp_reduction)
+        filename_time = dir_root + '/REDUCTION_INFO/Time_informations_reduction_snaky_%s_B%.0fE%.0f_%s.csv'%(__version__,begin,end,timestamp_reduction)
 
         steps = np.arange(begin,end+1,1).astype('int')
 
