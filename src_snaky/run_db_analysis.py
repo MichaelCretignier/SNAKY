@@ -89,7 +89,7 @@ def check_comp_rqm(output_dir,instrument='*'):
             total_time = exec_time_min+exec_time_sec/60
 
             fig = plt.figure(instrument,figsize=(16,6))
-            plt.subplot(1,3,3) ; plt.ylabel('CDF') ; plt.xlabel('Dataset Size N []')
+            plt.subplot(1,3,3) ; plt.ylabel('CDF') ; plt.xlabel('Dataset Size N []') ; plt.title('Sample datasets')
             a,b = np.histogram(N,bins=100) ; b = 0.5*(b[1:]+b[:-1]) ; a = np.cumsum(a) ; a= a/np.max(a)
             cdf = myc.tableXY(b,a)
             plt.plot(cdf.x,cdf.y,color='k')
@@ -113,7 +113,7 @@ def check_comp_rqm(output_dir,instrument='*'):
                     plt.axvline(x=p,ls='-',lw=1,color='k')
             plt.scatter(N,total_time,color='k',alpha=0.8)
 
-            plt.xlim(0,x2) ; plt.ylim(0,y1)
+            plt.xlim(1,x2) ; plt.ylim(0,y1)
             plt.subplot(1,3,2,sharex=ax) ; plt.title('Memory') ; plt.xlabel('Dataset size N []') ; plt.ylabel('RAM required [Gb]')
             plt.scatter(N,GBP,color='C0',alpha=0.8)
             plt.scatter(N,GBT,color='C1',alpha=0.8)
