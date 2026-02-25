@@ -100,29 +100,33 @@ def check_comp_rqm(output_dir,instrument='*'):
             if perc is not None:
                 for p in perc:
                     plt.axvline(x=p,ls='-',lw=1,color='k')
+            plt.xlim(1,4000)
+            plt.xscale('log')
             plt.subplot(1,3,1) ; plt.title('Computational time') ; ax = plt.gca(); plt.xlabel('Dataset size N []') ; plt.ylabel('Execution time [min]')
+            if x2 is None:
+                x2 = 4000#np.max(N)*1.1
+                y1 = np.max(total_time)*1.2
+            plt.xscale('log')            
             plt.grid()
             if perc is not None:
                 for p in perc:
                     plt.axvline(x=p,ls='-',lw=1,color='k')
             plt.scatter(N,total_time,color='k',alpha=0.8)
-            if x2 is None:
-                x2 = np.max(N)*1.1
-                y1 = np.max(total_time)*1.2
+
             plt.xlim(0,x2) ; plt.ylim(0,y1)
-            plt.subplot(1,3,2,sharex=ax) ; plt.title('Memory') ; plt.xlabel('Dataset size N []') ; plt.ylabel('RAM required')
+            plt.subplot(1,3,2,sharex=ax) ; plt.title('Memory') ; plt.xlabel('Dataset size N []') ; plt.ylabel('RAM required [Gb]')
             plt.scatter(N,GBP,color='C0',alpha=0.8)
             plt.scatter(N,GBT,color='C1',alpha=0.8)
-            plt.plot([40,250,700,2500],[7,10,20,200],ls='-.',color='k',label='sbatch config')
+            plt.plot([1,40,250,700,2500],[7,7,10,20,200],ls='-.',color='k',label='sbatch config')
             if y2 is None:
                 y2 = np.max(GBP)*1.4
-            plt.xlim(0,x2) ; plt.ylim(0,y2)
+            plt.xlim(1,x2) ; plt.ylim(0,y2)
             plt.legend()
             plt.grid()
             if perc is not None:
                 for p in perc:
                     plt.axvline(x=p,ls='-',lw=1,color='k')
-            plt.subplots_adjust(left=0.09,right=0.96)
+            plt.subplots_adjust(left=0.07,right=0.96)
             if instrument=='*':
                 instrument='ALL'
             fig.suptitle('SNAKY (%s) with instrument = %s (Number of datasets = %.0f)'%(version,instrument,len(N)))
