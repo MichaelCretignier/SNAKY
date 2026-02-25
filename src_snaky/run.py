@@ -1002,10 +1002,15 @@ class start():
 
         try:
             teff = mym.import_star_info(dir_root)['Teff']['FluxD']
-            if teff>7500:
+            if teff>8000:
                 force_ccf, force_vsini, force_activity, force_mhk, force_magcycle = [False]*5
+                print(Fore.YELLOW+' [WARNING] Teff > 8000, CCF + VSINI + ACT + MHK + MAG skipped'+Fore.RESET)
+            elif teff>7500:
+                force_activity, force_mhk, force_magcycle = [False]*3
+                print(Fore.YELLOW+' [WARNING] Teff > 7500, ACT + MHK + MAG skipped'+Fore.RESET)
             if teff<4000:
                 force_activity, force_mhk, force_magcycle = [False]*3
+                print(Fore.YELLOW+' [WARNING] Teff < 4000, ACT + MHK + MAG skipped'+Fore.RESET)
         except:
             pass
 
