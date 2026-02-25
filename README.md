@@ -383,6 +383,9 @@ import src_snaky.run as snaky
 import src_snaky.run_db_analysis as snaky_db
 
 #output_dir = '/Users/cretignier/Desktop/Snaky'
+
+snaky_db.check_comp_rqm(output_dir,instrument='*')
+
 snaky_db.check_snaky_processing(output_dir,instrument='*')
 ```
 

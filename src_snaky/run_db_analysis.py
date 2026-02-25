@@ -12,6 +12,8 @@ from . import snaky_classes as myc
 from . import snaky_variables as myv
 from . import snaky_main as mym
 
+version = mym.__version__
+
 def check_snaky_processing(output_dir,instrument='*'):
 
     os.makedirs(output_dir+'/database', exist_ok=True)
@@ -64,6 +66,51 @@ def check_snaky_processing(output_dir,instrument='*'):
 
         print('\n[INFO] File DB created: '+output_dir+'/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
         all_info.to_csv(output_dir+'/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
+
+def check_comp_rqm(output_dir,instrument='*'):
+    os.makedirs(output_dir+'/database/processing_stat_%s'%(version), exist_ok=True)
+    instruments = glob.glob(output_dir+'/*/data/s1d/'+instrument+'/REDUCTION_INFO/Time_info*_N*_GBP*_GBT*.png')
+    instruments = list(np.unique([i.split('/')[-3] for i in instruments]))
+    instruments.append('*')
+
+    x2 = None ; y1 = None ; y2 = None
+    for instrument in instruments[::-1]:
+        all_dir = glob.glob(output_dir+'/*/data/s1d/'+instrument+'/REDUCTION_INFO/Time_info*_N*_GBP*_GBT*.png')
+        
+        stars = [d.split('/data')[0].split('/')[-1] for d in all_dir]
+        filenames = [d.split('/')[-1] for d in all_dir]
+        N = np.array([f.split('_N')[-1].split('_')[0] for f in filenames]).astype('int')
+        GBP = np.array([f.split('_GBP')[-1].split('_')[0] for f in filenames]).astype('float')
+        GBT = np.array([f.split('_GBT')[-1][0:-4] for f in filenames]).astype('float')
+        exec_time = [f.split('_TIME')[-1].split('_')[0] for f in filenames]
+        exec_time_min = np.array([t.split('m')[0] for t in exec_time]).astype('int')
+        exec_time_sec = np.array([t.split('m')[1].split('s')[0] for t in exec_time]).astype('float')
+        total_time = exec_time_min+exec_time_sec/60
+
+        fig = plt.figure(instrument,figsize=(16,8)) ; fig.suptitle(instrument)
+        plt.subplot(1,2,1) ; plt.title('Computational time') ; ax = plt.gca(); plt.xlabel('Dataset size N') ; plt.ylabel('Execution time [min]')
+        plt.grid()
+        plt.scatter(N,total_time,color='k',alpha=0.8)
+        if x2 is None:
+            x2 = np.max(N)*1.1
+            y1 = np.max(total_time)*1.2
+        plt.xlim(0,x2) ; plt.ylim(0,y1)
+        plt.subplot(1,2,2,sharex=ax) ; plt.title('Memory') ; plt.xlabel('Dataset size N') ; plt.ylabel('RAM required')
+        plt.scatter(N,GBP,color='C0',alpha=0.8)
+        plt.scatter(N,GBT,color='C1',alpha=0.8)
+        plt.plot([40,250,700,2500],[7,10,20,200],ls='-.',color='k',label='sbatch config')
+        if y2 is None:
+            y2 = np.max(GBP)*1.2
+        plt.xlim(0,x2) ; plt.ylim(0,y2)
+        plt.legend()
+        plt.grid()
+        plt.subplots_adjust(left=0.09,right=0.96)
+        if instrument=='*':
+            instrument='ALL'
+        plt.savefig(output_dir+'/database/processing_stat_%s/Processing_stat_%s.png'%(version,instrument))
+        plt.close(instrument)
+
+
 
 
 def create_snaky_db(output_dir, filename='All_stars', stars=['*'], branch=None):
@@ -242,7 +289,7 @@ def create_snaky_finch_db(output_dir, filename='All_stars', stars=['*'], infos=N
             tab = tab[['star','species','jdb','proxy','proxy_std','qc']]
             infos2.append(tab)
     infos2 = pd.concat(infos2)
-    infos2.to_csv(output_dir+'/database/PRIVATE_'+filename+'_FINCH.csv')
+    infos2.to_csv(output_dir+'/database/'+filename+'_FINCH.csv')
 
 
 def create_snaky_rv_db(output_dir,filename='All_stars', stars=['*'], infos=None, anonymous=False, branch=None):
