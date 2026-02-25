@@ -126,9 +126,10 @@ def check_comp_rqm(output_dir,instrument='*'):
             if instrument=='*':
                 instrument='ALL'
             fig.suptitle('SNAKY (%s) with instrument = %s (Number of datasets = %.0f)'%(version,instrument,len(N)))
-            plt.savefig(output_dir+'/database/processing_stat_%s/Processing_stat_%s.png'%(version,instrument))
+            filename = output_dir+'/database/processing_stat_%s/Processing_stat_%s.png'%(version,instrument)
+            plt.savefig(filename)
             plt.close(instrument)
-
+            print('Figure created: %s'%(filename))
 
 def create_snaky_db(output_dir, filename='All_stars', stars=['*'], branch=None):
     os.makedirs(output_dir+'/database', exist_ok=True)
