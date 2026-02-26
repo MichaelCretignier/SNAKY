@@ -240,7 +240,7 @@ job.reduce(begin=1, end=6)
 
 ```python
 job.reduce(begin=1, end=14, automatic_db=True) 
-#notice the yellow green list at the start? That's the trigger checking the pending steps!
+# Notice that yellow green list at the start? That's the trigger checking the pending steps!
 ```
 
 *Note that by default in `.reduce()`, `automatic_db=False` in order to relaunch some specific steps.*
