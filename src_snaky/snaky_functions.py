@@ -234,6 +234,9 @@ def smooth(y, box_pts, shape='rectangular'): #rectangular kernel for the smoothi
         y_smooth[-int((len(box)-1)/2):] = y[-int((len(box)-1)/2):]
     return y_smooth
 
+def hinge_soft(x, slope, offset, slope2, x0, lamb):
+    return offset + slope*x + (slope2-slope) * np.log(1+np.exp(lamb*(x-x0)))/lamb
+
 def conv_smw_mhk(smw,teff):
     teff[teff>6100] = 6100
     teff[teff<3000] = 3000
@@ -296,7 +299,6 @@ def find_nearest_ram_friendly(array1,array2,delta,extra_search=1000):
 
     return closest_indice
 
-
 def find_nearest_ndim(array, value, znorm=True):
     if type(array)!=np.ndarray:
         array = np.array(array)
@@ -328,40 +330,6 @@ def find_nearest_ndim(array, value, znorm=True):
     distance = np.array([np.sum(abs(array1[:,i1]-array2[:,i2])) for i1,i2 in zip(idx,np.arange(len(array2.T)))])
     
     return idx, array1[:,idx], distance
-
-def my_colormesh(x,y,z,cmap='seismic',vmin=None,vmax=None,zoom=1,shading='auto', return_output=False, order=3, smooth_box=1, alpha=1, grid=False):
-    
-    dx = x[-1] - x[-2] 
-    dy = y[-1] - y[-2] 
-    x,y = np.meshgrid(x,y)
-
-    x = np.hstack([x,x[:,-1][:,np.newaxis]+dx])
-    x = np.vstack([x,x[-1,:]])
-
-    y = np.hstack([y,y[:,-1][:,np.newaxis]])
-    y = np.vstack([y,y[-1,:]+dy])
-    
-    z = np.hstack([z,z[:,-1][:,np.newaxis]])
-    z = np.vstack([z,z[-1,:]])
-    
-    z = smooth2d(z,smooth_box,borders=False)
-    
-    if zoom!=1:
-        Z = ndimage.zoom(z, zoom, order=order)
-    else:
-        Z = z
-    X = ndimage.zoom(x, zoom, order=order)
-    Y = ndimage.zoom(y, zoom, order=order)
-    
-    if return_output:
-        return X,Y,Z
-    else:
-        plt.pcolormesh(X,Y,Z,shading=shading,cmap=cmap,vmin=vmin,vmax=vmax,alpha=alpha) 
-        if grid:
-            for yi in np.unique(y)[1:]-dy/2:
-                plt.axhline(y=yi,color='k',alpha=0.2,lw=1)
-            for xi in np.unique(x)[1:]-dx/2:
-                plt.axvline(x=xi,color='k',alpha=0.2,lw=1)
 
 def clustering(array, tresh, num):
     difference = abs(np.diff(array))

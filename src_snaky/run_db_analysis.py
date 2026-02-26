@@ -19,6 +19,7 @@ def check_snaky_processing(output_dir,instrument='*'):
     os.makedirs(output_dir+'/database', exist_ok=True)
     instruments = glob.glob(output_dir+'/*/data/s1d/'+instrument+'/RAW')
     instruments = np.unique([i.split('/')[-2] for i in instruments])
+    extract = []
     for instrument in instruments:
         print('\n[INFO] Summary for the instrument : %s \n'%(instrument))
         all_dir = glob.glob(output_dir+'/*/data/s1d/'+instrument+'/RAW')
@@ -56,6 +57,7 @@ def check_snaky_processing(output_dir,instrument='*'):
         nb_stars = len(all_info)
         stat = [nb_stars]
         print('total = %.0f'%(nb_stars))
+        save = []
         for kw in kws:
             nb = int(nb_stars-np.sum(all_info[kw.split('_')[1][0:5]]=='XXXX'))
             percentage = 100*nb/(nb_stars+1e-6)
@@ -63,9 +65,20 @@ def check_snaky_processing(output_dir,instrument='*'):
                 print(Fore.GREEN+'%s = %.0f (%.1f%%)'%(kw,nb,percentage)+Fore.RESET)
             else:
                 print(Fore.YELLOW+'%s = %.0f (%.1f%%)'%(kw,nb,percentage)+Fore.RESET)
-
+            save.append(nb)
+        extract.append([instrument]+[nb_stars]+save)
         print('\n[INFO] File DB created: '+output_dir+'/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
         all_info.to_csv(output_dir+'/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
+    extract = pd.DataFrame(extract,columns=['ins','Ntot']+[k.split('_')[1] for k in kws])
+    
+    fig, ax = plt.subplots(figsize=(14, 6))
+    ax.axis('off')  # remove axes
+    table = ax.table(cellText=extract.values,colLabels=extract.columns,loc='center',cellLoc='center',colLoc='center')
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    table.auto_set_column_width(col=list(range(len(extract.columns))))
+    plt.tight_layout()
+    plt.savefig(output_dir+'/database/Summary_processing.png')
 
 def check_comp_rqm(output_dir,instrument='*'):
     os.makedirs(output_dir+'/database/processing_stat_%s'%(version), exist_ok=True)

@@ -35,6 +35,7 @@ class start():
         self.warning_printed = 0
         self.debug = False
         self.prd_ext = ''
+        self.sy_user_object = {'Name': None,'Ra': None,'Dec': None,'Rv_sys': None,'Prot': None,'Rs': None,'Ms': None,'Teff': None,'Log_g': None,'FeH': None}
 
     def set_output_dir(self,outputdir):
         self.sy_output_dir = outputdir
@@ -62,19 +63,46 @@ class start():
         template['Name'] = self.sy_starname
         pickle.dump(template,open(starinfo,'wb'))
 
-    def set_star(self, ra=None, dec=None, prot=None, rs=None, ms=None, teff=None, logg=None, feh=None):
-        self.sy_user_object = {
-            'star' : self.sy_starname,
-            'ra'   : ra,
-            'dec'  : dec,
-            'prot' : prot,
-            'rs'   : rs,
-            'ms'   : ms,
-            'teff' : teff,
-            'logg' : logg,
-            'feh'  : feh
-        }
+    def get_atmos_db(self):
+        dir_root = self.sy_dir_root
+        ins = self.sy_instrument
+        filename = dir_root.replace(ins,'ALLINS_MERGED')+'Atmos_all_instruments.csv'
+        if os.path.exists(filename):
+            db = pd.read_csv(filename,index_col=0)
 
+            print('\n [INFO] Current SNAKY atmos DB:\n')
+            print(db)
+
+            db_values = db.loc[db['ins']=='ALLINS_MERGED']
+            print(Fore.GREEN+'\n [QUERY] Atmospheric database queried:'+Fore.RESET)
+            teff = int(db_values['teff'])
+            logg = float(db_values['logg'])
+            feh = float(db_values['feh'])
+            ms = float(db_values['ms'])
+            rs = float(db_values['rs'])
+            self.set_star(teff=teff,logg=logg,feh=feh,ms=ms,rs=rs)
+        else:
+            print(Fore.YELLOW+' [ERROR] The atmospheric databases is not yet existing.'+Fore.RESET)
+
+    def set_star(self, ra=None, dec=None, rv_sys=None, prot=None, rs=None, ms=None, teff=None, logg=None, feh=None):
+        sy_user_object = {
+            'Name'  : self.sy_starname,
+            'Ra'    : ra,
+            'Dec'   : dec,
+            'Rv_sys': rv_sys,
+            'Prot'  : prot,
+            'Rs'    : rs,
+            'Ms'    : ms,
+            'Teff'  : teff,
+            'Log_g'  : logg,
+            'FeH'   : feh
+        }
+        
+        for kw in sy_user_object:
+            if sy_user_object[kw] is not None:
+                self.sy_user_object[kw] = sy_user_object[kw]
+                print(' [INFO] Stellar parameters updated: %s = %s'%(kw,str(sy_user_object[kw])))
+    
     def estimate_computation_time(self):
         N = len(self.sy_files)
 
@@ -129,7 +157,9 @@ class start():
             file_test = self.sy_files[0]
             if file_test.split('/')[-1][0:8]=='RASSINE_':
                 self.sy_rassine_db = True
-                if len(file_test.split('/Yarara/'))==2:
+                parent = '/'.join(file_test.split('/')[:-1])
+                check_summary = os.path.exists(parent+'/Analyse_summary.csv')
+                if (len(file_test.split('/Yarara/'))==2)&(check_summary):
                     self.sy_yarara_db = True
 
             #read fits files an create spectra normalised
@@ -144,7 +174,7 @@ class start():
 
         self.estimate_computation_time()
 
-    def init_workspace(self, ra=None, dec=None, copy_files=True):
+    def init_workspace(self, ra=None, dec=None, copy_rassine_files=True):
         dir_root = self.sy_dir_root
 
         self.set_starinfo()
@@ -153,7 +183,7 @@ class start():
             file_test = self.sy_files[0]
             self.copy_yarara(file_test.split('WORKSPACE/RASSINE')[0])
         else:
-            if (self.sy_rassine_db)&(copy_files):
+            if (self.sy_rassine_db)&(copy_rassine_files):
                 for f in self.sy_files:
                     os.system('cp '+f+' '+dir_root+'WORKSPACE/')
                 self.sy_files = np.sort(glob.glob(dir_root+'WORKSPACE/RASSINE*.p'))
@@ -269,13 +299,17 @@ class start():
                 for f in files:
                     mym.read_neid(f,dir_root,force=True)
             else:
-                for f,w0,dw in zip(files,cval1,cdelta1):
+                for f,w0,dw in zip(files,cval1,cdelta1): #no more used
                     mym.read_static(f,dir_root,w0,dw,force=True)
             self.sy_rassine_files = np.sort(glob.glob(dir_root+'WORKSPACE/RASSINE*.p'))
         else:
             print(' [INFO] No preprocessing needed, spectra already in RASSINE format.')
             self.sy_rassine_files = self.sy_files
     
+    def load_data(self):
+        self.sy_rassine_files = np.array(summary['filename'])
+        self.sy_sts_wave, self.sy_sts_flux = mym.create_sts(self.sy_rassine_files, sub_dico=self.sy_sub_dico)
+
     def check_spectra(self):
         files = self.sy_rassine_files
         sub_dico = self.sy_sub_dico
@@ -314,7 +348,7 @@ class start():
 
         summary = mym.import_summary(dir_root)
         mask_flag0 = (summary['flag1']==0)
-        files = summary['filename'][mask_flag0]
+        files = np.array(summary['filename'][mask_flag0])
         files = (self.sy_sts_wave,self.sy_sts_flux[mask_flag0], files)
 
         teff,feh,fluxD,warning_hole = mym.yarara_flux_density(dir_root,files)
@@ -346,6 +380,7 @@ class start():
         if rv_sys_std>10: 
             print(Fore.YELLOW+' [WARNING] RV_SYS RMS high (%.1f km/s), SB flag'%(rv_sys_std)+Fore.RESET)
             sb_flag2 = True
+            files = [np.array(summary['filename'])]
             pd.DataFrame(np.array([files[-1],rv_sys]).T,columns=['files','rv_sys']).to_csv(dir_root+'WARNING/RV_SYS_JITTER.csv')
             rv_sys_approx = mym.yarara_rough_rv_sys(spec,teff=teff,verbose=self.debug)
         print('\n [INFO] RV_sys initial guess = %.1f +/- %.1f kms'%(rv_sys_approx,rv_sys_std))
@@ -389,8 +424,8 @@ class start():
         sinfo = myf.update_info_lvl2(sinfo,'SB2','SNAKY',int(sb_flag2))
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
-        if rcorr<0.75:
-            print(Fore.YELLOW+' [EMERGENCY STOP] The CCF is unusual. The spectra is unusual.'+Fore.RESET)
+        if (rcorr<0.75)&(teff<7500):
+            print(Fore.YELLOW+' [EMERGENCY STOP] The CCF is unusual (R = %.2f). The spectra is unusual.'%(rcorr)+Fore.RESET)
             print('\n')
             raise SnakyError('The CCF has not a proper shape.')
 
@@ -482,12 +517,14 @@ class start():
         except:
             fwhm = sinfo['FWHM']['fixed']
         
-        ccf_output = mym.import_ccf(dir_root,'G2')
-        rv = ccf_output['rv'].y
-        rv_sys_correction = np.nanmedian(rv)/1000
-
-        del ccf_output
-
+        try:
+            ccf_output = mym.import_ccf(dir_root,'G2')
+            rv = ccf_output['rv'].y
+            rv_sys_correction = np.nanmedian(rv)/1000
+            del ccf_output
+        except:
+            rv_sys_correction = 0
+        
         rv_sys = sinfo['Rv_sys']['SNAKY'] - rv_sys_correction
         CT,EW = mym.yarara_iron_lines(dir_root, master, fwhm, rv_sys=rv_sys)
         for kw in CT.keys():
@@ -564,7 +601,6 @@ class start():
 
     def compute_abs_continuum(self):
         dir_root = self.sy_dir_root
-        star = self.sy_starname
         material = mym.import_material(dir_root)
         template_flux, correction = mym.yarara_correct_continuum_absorption(dir_root)
         material['stellar_template'] = template_flux
@@ -620,7 +656,10 @@ class start():
         rv_sys_correction = np.nanmedian(rv)/1000
 
         rv_sys = sinfo['Rv_sys']['SNAKY'] - rv_sys_correction
-        teff = sinfo['Teff']['SNAKY']
+        if self.sy_user_object['Teff'] is not None:
+            teff = self.sy_user_object['Teff']
+        else:
+            teff = sinfo['Teff']['SNAKY']
 
         files = ccf_output['filename']
         mask = myf.in1d(summary['filename'],files)
@@ -655,7 +694,6 @@ class start():
 
     def compute_spectroscopy(self):
         dir_root = self.sy_dir_root
-        star = self.sy_starname
         material = mym.import_material(dir_root)
         sinfo = mym.import_star_info(dir_root)
         rv_sys = sinfo['Rv_sys']['SNAKY']
@@ -708,14 +746,17 @@ class start():
         count = -1
         files = glob.glob(parent_dir+'/*/WORKSPACE/Analyse_samples*')
 
+        extract = []
+
         plt.figure(figsize=(18,6))
         plt.subplots_adjust(left=0.06,right=0.96,hspace=0.60,top=0.95,bottom=0.15,wspace=0.30)
         for f in files:
             ins = f.split('/WORKSPACE')[0].split('/')[-1]
             code = ins[0]+ins.split('_')[0][-2:]+'_'+ins.split('_')[1]
             count += 1
-            table = pd.read_csv(f,index_col=0)
-            borders = {'ms':[0,3],'rs':[0,3],'teff':[3000,8000],'logg':[3.5,5.0],'feh':[-1.5,0.5],'vsini':[0,10],'mhk':[-50,200],'rhk':[-6,-4]}
+            table = pd.read_csv(f)
+            extract.append([ins]+list(np.array(table.mean())))
+            borders = {'ms':[0,3,3],'rs':[0,3,3],'teff':[3000,8000,0],'logg':[3.5,5.0,3],'feh':[-1.5,0.5,3],'vsini':[0,10,3],'mhk':[-50,200,2],'rhk':[-6,-4,3],'prot':[0,100,1],'sini':[0,1,3]} #min max and digits
             variables = ['ms','rs','teff','logg','feh','vsini','mhk','rhk']
             save = {kw:[] for kw in variables}
             for j,kw in enumerate(variables):
@@ -725,7 +766,7 @@ class start():
                     plt.ylabel(kw,fontsize=14)
                     plt.xticks(rotation=45,ha='right')
                     save[kw].append(np.array(table[kw]))
-
+        
         for j,kw in enumerate(variables):
             plt.subplot(2,4,j+1)
             plt.boxplot(np.ravel(save[kw]),positions=[count+2],showfliers=False,labels=['ALL'],widths=[0.5],patch_artist=True,boxprops=dict(facecolor='lightsteelblue',edgecolor='black',linewidth=1.))
@@ -736,6 +777,15 @@ class start():
             plt.xticks(rotation=90,ha='center')
 
             plt.savefig(parent_dir+'/ALLINS_MERGED/Atmos_all_instrument.pdf')
+
+        extract = pd.DataFrame(extract,columns=['ins']+list(table.columns))
+        med_values = extract.drop(columns='ins').median(numeric_only=True)
+        mean_row = pd.DataFrame([['ALLINS_MERGED'] + med_values.tolist()],columns=extract.columns)
+        extract = pd.concat([extract, mean_row], ignore_index=True)
+        for kw in list(table.columns):
+            if kw in borders.keys():
+                extract[kw] = np.round(np.array(extract[kw]),borders[kw][-1]) 
+        extract.to_csv(parent_dir+'/ALLINS_MERGED/Atmos_all_instruments.csv')
 
     def cleaning(self):
         mym.clean_light_dir(self.sy_dir_root)
@@ -851,8 +901,9 @@ class start():
             begin=1,
             end=14,
             automatic_db = False,
+            atmos_db = False,
             debug = False, 
-            copy_files = True,
+            copy_rassine_files = True,
             ):
         
         """
@@ -964,15 +1015,18 @@ class start():
             print(' [INFO] Automatic sequence done!\n')
             print(' [INFO] Reduction launched, wait...\n')
 
-        ra = self.sy_user_object['ra']
-        dec = self.sy_user_object['dec']
-        Prot = self.sy_user_object['prot']
-        Rs = self.sy_user_object['rs']
+        if atmos_db:
+            self.get_atmos_db()
+        
+        ra = self.sy_user_object['Ra']
+        dec = self.sy_user_object['Dec']
+        Prot = self.sy_user_object['Prot']
+        Rs = self.sy_user_object['Rs']
 
         self.write_progress(0, 'init', savefile=filename_time)
         
         if force_pre: #1
-            self.init_workspace(ra=ra, dec=dec, copy_files=copy_files)
+            self.init_workspace(ra=ra, dec=dec, copy_rassine_files=copy_rassine_files)
             self.preprocess()
             self.write_progress(1, 'pre', savefile=filename_time)
         qc = mym.check_force_pre(dir_root)
@@ -987,8 +1041,7 @@ class start():
         except:
             pass
 
-        self.sy_rassine_files = np.array(summary['filename'])
-        self.sy_sts_wave, self.sy_sts_flux = mym.create_sts(self.sy_rassine_files, sub_dico=self.sy_sub_dico)
+        self.load_data()
 
         if force_summary: #2
             self.check_spectra()
@@ -1002,15 +1055,16 @@ class start():
 
         try:
             teff = mym.import_star_info(dir_root)['Teff']['FluxD']
+            fwhm = mym.import_star_info(dir_root)['FWHM']['fixed']
             if teff>8000:
                 force_ccf, force_vsini, force_activity, force_mhk, force_magcycle = [False]*5
-                print(Fore.YELLOW+' [WARNING] Teff > 8000, CCF + VSINI + ACT + MHK + MAG skipped'+Fore.RESET)
+                print(Fore.YELLOW+' [TRIGGER] Teff > 8000, CCF + VSINI + ACT + MHK + MAG skipped'+Fore.RESET)
             elif teff>7500:
                 force_activity, force_mhk, force_magcycle = [False]*3
-                print(Fore.YELLOW+' [WARNING] Teff > 7500, ACT + MHK + MAG skipped'+Fore.RESET)
+                print(Fore.YELLOW+' [TRIGGER] Teff > 7500, ACT + MHK + MAG skipped'+Fore.RESET)
             if teff<4000:
-                force_activity, force_mhk, force_magcycle = [False]*3
-                print(Fore.YELLOW+' [WARNING] Teff < 4000, ACT + MHK + MAG skipped'+Fore.RESET)
+                force_resolution, force_activity, force_mhk, force_magcycle = [False]*4
+                print(Fore.YELLOW+' [TRIGGER] Teff < 4000, RES + ACT + MHK + MAG skipped'+Fore.RESET)
         except:
             pass
 
@@ -1107,5 +1161,5 @@ def benchmark2(output_dir):
     job.reset(suppression='all')
 
     job.set_star(ra=219.90, dec=-60.84, prot=36) # ra and dec in degrees (prot optional)
-    job.reduce(begin=1, end=14,  copy_files=True) 
+    job.reduce(begin=1, end=14,  copy_rassine_files=True) 
 

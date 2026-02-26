@@ -61,7 +61,7 @@ root = '/'.join(cwd.split('/')[:-1])
 #INTERMEDIATE FUNCTIONS
 
 def get_berv(ra_deg, dec_deg, obstime_utc, instrument):
-    ins = instrument.split('_')[0][0:6].split('-')[0]
+    ins = instrument.split('_')[0].split('-')[0]
     obs_lat = myv.instrument_lat_deg[ins.upper()]
     obs_lon = myv.instrument_lon_deg[ins.upper()]
     obs_alt = myv.instrument_altm[ins.upper()]
@@ -376,6 +376,10 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
     ins = dir_root.split('/')[-2]
     star_info = import_star_info(dir_root)
 
+    teff = int(star_info['Teff']['SNAKY'])
+    logg = star_info['Log_g']['SNAKY']
+    feh = star_info['FeH']['SNAKY']
+
     x=[] ; y=[] ; yerr=[] ; instrument = [] ; reference = [] ; flag = []
 
     folder = '/'.join(dir_root.split('/')[0:-2])
@@ -428,7 +432,7 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
     if db_finch is not None:
         db_finch.masked(db_finch.y!=0)
         if proxy_name.split('_')[0]=='MHK':
-            db_finch.convert_smw_mhk(int(star_info['Teff']['SNAKY']))
+            db_finch.convert_smw_mhk(teff)
         x.append(db_finch.x)
         y.append(db_finch.y)
         yerr.append(db_finch.yerr)
@@ -457,9 +461,9 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
 
     vec.set_star(
         starname = starname, 
-        teff = star_info['Teff']['SNAKY'],
-        logg = star_info['Log_g']['SNAKY'],
-        feh = star_info['FeH']['SNAKY'],
+        teff = teff,
+        logg = logg,
+        feh = feh,
         )
     if not print_reference:
         vec.print_reference = False
@@ -1240,7 +1244,7 @@ def yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag=0):
     spec.clip(min=[4000,None])
     spec.y[spec.y>1.50] = 1.0
     save = []
-    for fwhm in [6,10,20,50,100,200][::-1]:
+    for fwhm in [6,10,20,40,60,100,200][::-1]:
         sinfo = yarara_check_rv_sys(spec, fwhm, rv_sys_approx, ccf_tag, dir_root=dir_root)
         if abs(sinfo[0])>500:
             save.append([fwhm,-999,-999,-999,-999,rv_sys_approx,0])
@@ -2166,8 +2170,11 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False, std_
     teff = sinfo['Teff']['SNAKY']
     logg = sinfo['Log_g']['SNAKY']
     feh = sinfo['FeH']['SNAKY']
-    ins_res = sinfo['FWHM']['O2']
-
+    try:
+        ins_res = sinfo['FWHM']['O2']
+    except:
+        ins_res = np.nan
+    
     samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv.gz')
     teff = samples_table['teff']
     logg = samples_table['logg']
@@ -2202,13 +2209,13 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False, std_
     print(' [INFO] Reference instrument resolution = %.2f km/s'%(ref_resolution))
     print(' [INFO] Telluric measured one = %.2f km/s (Delta = %.2f)'%(ins_res,diff))
     
-    if instrument[0:6]=='SOPHIE':
-        if abs(diff)>1:
-            print(Fore.YELLOW+'\n [WARNING] Resolution is too different from reference value, O2 correction applied. \n'+Fore.RESET)
-        else:
-            ins_res = ref_resolution
-    else:
-        ins_res = ref_resolution
+    #if instrument[0:6]=='SOPHIE':
+    #    if abs(diff)>1:
+    #        print(Fore.YELLOW+'\n [WARNING] Resolution is too different from reference value, O2 correction applied. \n'+Fore.RESET)
+    #    else:
+    #        ins_res = ref_resolution
+    #else:
+    #    ins_res = ref_resolution
 
     calib_product = 'Calib_HARPN_GKM_vsini_HD10700.p'
     print(' [INFO] Calibration product used : %s'%(calib_product))

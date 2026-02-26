@@ -1050,15 +1050,15 @@ class tableXY(object):
                 
                 ccf_profile.fit_gaussian(guess=[-amp,center,width,maxi],Plot=Plot,norm=norm)
                 try:
+                    print('\n [INFO] Using GND profile for the fit')
                     ccf_profile.fit_GND(guess=[-amp,center,width,maxi,2],color='g',beta_fixed=0,Plot=Plot,norm=norm)
                     self.ccf_params = ccf_profile.params
                     self.params_beta = ccf_profile.params['beta'].value
-                    print('\n [INFO] Using GND profile for the fit')
                 except:
+                    print(' [INFO] Using Gaussian profile (GND=2) for the fit')
                     ccf_profile.fit_gaussian(guess=[-amp,center,width,maxi],Plot=Plot,norm=norm)
                     self.ccf_params = ccf_profile.params
                     self.params_beta = 2.0
-                    print(' [INFO] Using Gaussian profile (GND=2) for the fit')
                 self.warning_multipeak = 0
                 self.ccf_Rcorr = 0
                 try:
