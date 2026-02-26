@@ -20,9 +20,8 @@ By complete, we mean:
 The main useful outputs of SNAKY are: 
 
 1) The master spectrum in stellar rest-frame
-2) The stellar atmospheric parameters
+2) The stellar atmospheric parameters (cited above)
 3) The MHK activity index time-series
-4) The stellar vsini (in validation...) + Stellar inclination
 
 SNAKY is **NOT** an RV pipeline aiming at EPRV precision like YARARA.\
 SNAKY is optimized for speed efficiency and star characterization, meaning steps may alter the EPRV precision.\
