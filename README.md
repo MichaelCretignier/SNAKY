@@ -241,11 +241,11 @@ job.reduce(begin=1, end=6)
 
 ```python
 job.reduce(begin=1, end=14, automatic_db=True) 
-#notice the yellow green list at the start? That's the trigger!
+#notice the yellow green list at the start? That's the trigger checking the pending steps!
 ```
 
 *Note that by default in `.reduce()`, `automatic_db=False` in order to relaunch some specific steps.*
-*For instance, you would like to compute inclination with a user specified Prot and Rs:*
+*For instance, you would like to compute the stellar inclination with a user-specified Prot and Rs:*
 
 ```python
 job.set_star(prot=11,rs=0.74)
