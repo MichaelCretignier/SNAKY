@@ -536,7 +536,7 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
     plt.axhline(y=0,color='k',ls='-',alpha=0.7,lw=1)
     plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_magnetic_cycle_GP_fixed_axis'+ext+myv.PRD_EXT+'.png')
 
-    if not vec.out_convergence_flag:
+    if (not vec.out_convergence_flag)&(len(vec.bin.x)>3):
         vec.bin.fit_line()
         trend = myc.tableXY(myf.conv_time(vec.bin.x)[1]-2000,vec.bin.y,vec.bin.yerr)
         trend.fit_line(recenter=False)
@@ -544,7 +544,7 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
         model[vec.out_gp_model[0]<=(np.min(trend.x)+2000)] = vec.out_gp_model[1][vec.out_gp_model[0]<=(np.min(trend.x)+2000)]
         model[vec.out_gp_model[0]>=(np.max(trend.x)+2000)] = vec.out_gp_model[1][vec.out_gp_model[0]>=(np.max(trend.x)+2000)]
         vec.out_gp_model[1] = model
-    
+
     export3 = myc.tableXY(myf.conv_time(vec.out_gp_model[0])[0],vec.out_gp_model[1],vec.out_gp_model[2])
     export3.export(dir_root.replace(ins,'ALLINS_MERGED')+'Finch_%s_GP_model.csv'%(proxy_name),format='csv',columns=['jdb','proxy','proxy_std','qc'])
 

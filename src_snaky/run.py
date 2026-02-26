@@ -307,6 +307,7 @@ class start():
             self.sy_rassine_files = self.sy_files
     
     def load_data(self):
+        summary = mym.import_summary(self.sy_dir_root)
         self.sy_rassine_files = np.array(summary['filename'])
         self.sy_sts_wave, self.sy_sts_flux = mym.create_sts(self.sy_rassine_files, sub_dico=self.sy_sub_dico)
 

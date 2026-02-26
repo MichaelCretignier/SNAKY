@@ -214,14 +214,13 @@ job.set_dataset('HD123456','HARPS03_3.5',files)  #HARPS03 = before fibre upgrade
 job.reduce(begin=1, end=14) # check the sequence number with: job.reduce?
 ```
 
-As you may have noticed, the `.reduce()` method also monitors RAM usage and execution time, and automatically saves this information in `.../REDUCTION_INFO/` for [benchmark](#flag3) purposes.
-
-You may also have seen the yellow list printed at the start — this is the **trigger**. It indicates which SNAKY steps have already been completed and which are still pending.
-
+*As you may have noticed, the `.reduce()` method also monitors RAM usage and execution time, and automatically saves this information in `.../REDUCTION_INFO/` for [benchmark](#flag3) purposes.*
 
 ### Automatic Restart from the Last Completed Step
 
-Thanks to this trigger mechanism, `.reduce()` can automatically restart the pipeline from the last successfully completed step after a crash:
+*SNAKY contains a **trigger**. able to assess which steps have already been completed and which are still pending.*
+
+*Thanks to this trigger mechanism, `.reduce()` can automatically restart the pipeline from the last successfully completed step after a crash:*
 
 ```python
 # Simulate a crash
@@ -237,13 +236,18 @@ job.set_dataset('HD22049', 'HARPS03_3.5', files)  # the real stellar name
 
 # Stop at step 6 (crash before atmospheric parameters, step 7)
 job.reduce(begin=1, end=6)
+```
+*Let's restart the job with the trigger:*
 
-# Restart from the beginning
+```python
 # automatic_db=True skips completed steps
-job.reduce(begin=1, end=14, automatic_db=True)
+job.reduce(begin=1, end=14, automatic_db=True) #notice the yellow green list at the start?
+```
 
-# automatic_db is False by default in order to relaunch specific steps
-# Example: recompute inclination with user specified Prot and Rs
+*Note that `automatic_db=False` by default in order to relaunch specific steps. *
+*For instance, you would like to compute inclination with user specified Prot and Rs*
+
+```python
 job.set_star(prot=11,rs=0.74)
 job.reduce(begin=8, end=8) # Eps.Eridani inclination ~26° !
 ```
