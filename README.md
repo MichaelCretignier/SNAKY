@@ -218,9 +218,9 @@ job.reduce(begin=1, end=14) # check the sequence number with: job.reduce?
 
 ### Automatic Restart from the Last Completed Step
 
-*SNAKY contains a **trigger**. able to assess which steps have already been completed and which are still pending.*
+*SNAKY contains a **trigger** able to assess which steps have already been completed and which are still pending.*
 
-*Thanks to this trigger mechanism, `.reduce()` can automatically restart the pipeline from the last successfully completed step after a crash:*
+*Thanks to this, `.reduce()` can automatically restart the pipeline from the last successfully completed step after a crash:*
 
 ```python
 # Simulate a crash
@@ -237,15 +237,15 @@ job.set_dataset('HD22049', 'HARPS03_3.5', files)  # the real stellar name
 # Stop at step 6 (crash before atmospheric parameters, step 7)
 job.reduce(begin=1, end=6)
 ```
-*Let's restart the job with the trigger:*
+*Let's restart the job with the trigger by using the option `automatic_db=True`:*
 
 ```python
-# automatic_db=True skips completed steps
-job.reduce(begin=1, end=14, automatic_db=True) #notice the yellow green list at the start?
+job.reduce(begin=1, end=14, automatic_db=True) 
+#notice the yellow green list at the start? That's the trigger!
 ```
 
-*Note that `automatic_db=False` by default in order to relaunch specific steps. *
-*For instance, you would like to compute inclination with user specified Prot and Rs*
+*Note that by default in `.reduce()`, `automatic_db=False` in order to relaunch some specific steps.*
+*For instance, you would like to compute inclination with a user specified Prot and Rs:*
 
 ```python
 job.set_star(prot=11,rs=0.74)
