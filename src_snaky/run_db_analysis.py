@@ -69,8 +69,9 @@ def check_snaky_processing(output_dir,instrument='*'):
         extract.append([instrument]+[nb_stars]+save)
         print('\n[INFO] File DB created: '+output_dir+'/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
         all_info.to_csv(output_dir+'/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
-    extract = pd.DataFrame(extract,columns=['ins','Ntot']+[k.split('_')[1] for k in kws])
-    
+    new_name = [k.split('_')[1] for k in kws]
+    extract = pd.DataFrame(extract,columns=['ins','Ntot']+nw_names)
+
     fig, ax = plt.subplots(figsize=(14, 6))
     ax.axis('off')  # remove axes
     table = ax.table(cellText=extract.values,colLabels=extract.columns,loc='center',cellLoc='center',colLoc='center')
@@ -79,6 +80,19 @@ def check_snaky_processing(output_dir,instrument='*'):
     table.auto_set_column_width(col=list(range(len(extract.columns))))
     plt.tight_layout()
     plt.savefig(output_dir+'/database/Summary_processing.png')
+
+    for k in new_name:
+        extract[k] = (extract[k]/extract['Ntot']*100).astype('int')
+
+    fig, ax = plt.subplots(figsize=(14, 6))
+    ax.axis('off')  # remove axes
+    table = ax.table(cellText=extract.values,colLabels=extract.columns,loc='center',cellLoc='center',colLoc='center')
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    table.auto_set_column_width(col=list(range(len(extract.columns))))
+    plt.tight_layout()
+    plt.savefig(output_dir+'/database/Summary_processing_percentage.png')
+    
 
 def check_comp_rqm(output_dir,instrument='*'):
     os.makedirs(output_dir+'/database/processing_stat_%s'%(version), exist_ok=True)
