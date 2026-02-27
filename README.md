@@ -251,7 +251,7 @@ job.set_star(prot=11,rs=0.74)
 job.reduce(begin=8, end=8) # Eps.Eridani inclination ~26° !
 ```
 
-*If processing DRS datasets, SNAKY will give you the RASSINE normalised spectra in `../WORKSPACE/RASSINE*.p`. Since RASSINE is the slowest step (see next section), it's recommended to save the produced `RASSINE_*.p` normalised spectra somewhere on your local machine in order to send them as input of SNAKY rather than the usual DRS `.fits` files.*
+*If you process DRS datasets, SNAKY will provide the RASSINE normalised spectra saved in the directory `../WORKSPACE/RASSINE*.p`. Since RASSINE is the slowest step (see next section), it's recommended to save the produced `RASSINE_*.p` files somewhere on your local machine in order to send them as input of SNAKY rather than the usual DRS `.fits` files.*
 
 ## ⑥ Launching a RASSINE dataset
 
