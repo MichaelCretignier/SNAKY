@@ -979,6 +979,12 @@ def extract_header(files, instru, debug=False, ra=None, dec=None):
     if (instrument=='HARPS03')|(instrument=='HARPS15'):
         instrument = 'HARPS'
 
+    if (instrument=='ESPRESSO18')|(instrument=='ESPRESSO19'):
+        instrument = 'ESPRESSO'
+
+    if (instrument=='CORALIE98')|(instrument=='CORALIE07')|(instrument=='CORALIE14'):
+        instrument = 'CORALIE'
+
     if ra is not None:
         summary['RA'] = ra
         summary['DEC'] = dec

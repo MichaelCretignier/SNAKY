@@ -121,7 +121,7 @@ class start():
         rassine_time_required = str(int(rassine_processing//60))+'m'+str(int(rassine_processing - 60*(rassine_processing//60)))+'s'
         snaky_time_required = str(int(snaky_processing//60))+'m'+str(int(snaky_processing - 60*(snaky_processing//60)))+'s'
 
-        print(' [INFO] For N=%.0f:'%(N))
+        print(' [INFO] For N=%.0f spectra:'%(N))
 
         print(Fore.CYAN+"\n [INFO] RASSINE computation time: %s %s"%(rassine_time_required,['','(SKIPPED)'][int(self.sy_rassine_db)]))
         print(" [INFO] SNAKY computation time: "+snaky_time_required)
@@ -162,6 +162,15 @@ class start():
                 if (len(file_test.split('/Yarara/'))==2)&(check_summary):
                     self.sy_yarara_db = True
 
+                mask = np.ones(len(self.sy_files)).astype('bool')
+                for n,f in enumerate(self.sy_files):
+                    if not sub_dico in pd.read_pickle(f).keys():
+                        mask[n] = False
+                if sum(mask)!=len(mask):
+                    print(Fore.YELLOW+' [WARNING] Only %.0f/%.0f contains the correct sub_dico'%(sum(mask),len(mask))+Fore.RESET)
+                    self.sy_yarara_db = False
+                self.sy_files = list(np.array(self.sy_files)[mask])
+
             #read fits files an create spectra normalised
             check_files =  np.array([os.path.exists(f) for f in self.sy_files])
 
@@ -184,6 +193,7 @@ class start():
             self.copy_yarara(file_test.split('WORKSPACE/RASSINE')[0])
         else:
             if (self.sy_rassine_db)&(copy_rassine_files):
+                print(' [INFO] Copying RASSINE files...')
                 for f in self.sy_files:
                     os.system('cp '+f+' '+dir_root+'WORKSPACE/')
                 self.sy_files = np.sort(glob.glob(dir_root+'WORKSPACE/RASSINE*.p'))
@@ -305,7 +315,7 @@ class start():
         else:
             print(' [INFO] No preprocessing needed, spectra already in RASSINE format.')
             self.sy_rassine_files = self.sy_files
-    
+
     def load_data(self):
         summary = mym.import_summary(self.sy_dir_root)
         self.sy_rassine_files = np.array(summary['filename'])
