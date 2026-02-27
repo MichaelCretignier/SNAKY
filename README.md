@@ -327,12 +327,12 @@ job2.set_star(teff=5100)
 job2.reduce(begin=9, end=14) 
 ```
 
-*2) query the SNAKY atmospheric DB that you are actively producing:*
+*2) query the SNAKY atmospheric DB that you are actively producing using `.get_atmos_db()`:*
 ```python
 job1.get_atmos_db()
 ```
 
-*That can be called directly from the `.reduce()` method:*
+*That can be called directly from the `.reduce()` method with `atmos_db=True`:*
 ```python
 job1.reduce(begin=9, end=14, atmos_db=True) 
 job2.reduce(begin=9, end=14, atmos_db=True) 
