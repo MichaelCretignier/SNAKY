@@ -70,7 +70,7 @@ def check_snaky_processing(output_dir,instrument='*'):
         print('\n[INFO] File DB created: '+output_dir+'/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
         all_info.to_csv(output_dir+'/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
     new_name = [k.split('_')[1] for k in kws]
-    extract = pd.DataFrame(extract,columns=['ins','Ntot']+new_names)
+    extract = pd.DataFrame(extract,columns=['ins','Ntot']+new_name)
 
     fig, ax = plt.subplots(figsize=(14, 6))
     ax.axis('off')  # remove axes
