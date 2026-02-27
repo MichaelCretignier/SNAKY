@@ -481,7 +481,7 @@ snaky_db.plot_starinfo(output_dir, ins='*', xvar='Teff_SNAKY', yvar='FWHM_G2')
 ```
 
 
-## Uninstall
+## ⑫ Uninstall
 
 <a id="flag_uninstall"></a>
 
