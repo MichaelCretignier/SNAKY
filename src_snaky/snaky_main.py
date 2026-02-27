@@ -1129,7 +1129,7 @@ def yarara_rough_rv_sys(spec,teff=6000, verbose=False):
     RV = np.array(RV)
     RV = np.nanmedian(RV,axis=1)
     RV_sys = np.round(np.median(RV),2)
-    
+
     if verbose:
         print(' [INFO] Measured values :',np.round(RV,2))
         print(' [INFO] Rough RV_sys estimation = %.2f km/s'%(RV_sys))
@@ -2806,7 +2806,7 @@ def yarara_compute_snr(dir_root,sub_dico):
         snrs.append(int(np.round(1/sigma,0)))
     return np.array(snrs)
 
-def yarara_correct_continuum_absorption(dir_root):
+def yarara_correct_continuum_absorption(dir_root, rv_sys, feh, model):
     
     myf.print_box('\n---- RECIPE : CORRECT ABSORPTION CONTINUUM ----\n')
 
@@ -2814,10 +2814,6 @@ def yarara_correct_continuum_absorption(dir_root):
     
     master = import_master(dir_root)
     star_info = import_star_info(dir_root)
-
-    rv_sys = star_info['Rv_sys']['SNAKY']
-    feh = star_info['FeH']['SNAKY']
-    model = star_info['stellar_template']['SNAKY']
 
     reject_zones = [[5875,5910]]
     force_zones = [[3916.5,3918.5],[3923,3926],[3927.5,3929.5],[3931,3933],[3932.1,3932.6],[3935.4,3935.8],[3936,3937],[3937.5,3939],[3940,3943],

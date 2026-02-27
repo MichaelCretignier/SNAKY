@@ -291,7 +291,7 @@ job.reduce(begin=1, end=14,  copy_rassine_files=True)
 
 ## ⑦ An accurate multi-instruments MHK time-series
 
-*The MHK is an accurate activity index, but its extraction is parametrized by the effective temperature `Teff` of the star that is for now, fully extracted by SNAKY alone independently on each. When extracting multi-instruments MHK time-series, you should therefore verify to always use the same Teff.*
+*The MHK index is a precise activity indicator, but its extraction depends on the stellar effective temperature (`Teff`). Currently, `Teff` is determined independently by SNAKY for each dataset. Therefore, when combining multi-instrument MHK time series, you should ensure that the same `Teff` value is used consistently across all instruments.*
 
 *Let's process a star observed by two different instruments:* 
 

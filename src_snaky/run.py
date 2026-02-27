@@ -9,6 +9,7 @@ import sys
 import time
 import tracemalloc
 import psutil
+import re
 
 from colorama import Fore
 
@@ -35,7 +36,7 @@ class start():
         self.warning_printed = 0
         self.debug = False
         self.prd_ext = ''
-        self.sy_user_object = {'Name': None,'Ra': None,'Dec': None,'Rv_sys': None,'Prot': None,'Rs': None,'Ms': None,'Teff': None,'Log_g': None,'FeH': None}
+        self.sy_user_object = {'Name': None,'Ra': None,'Dec': None,'Rv_sys': None,'Prot': None,'Rs': None,'Ms': None,'Teff': None,'Log_g': None,'FeH': None, 'stellar_template': None}
 
     def set_output_dir(self,outputdir):
         self.sy_output_dir = outputdir
@@ -84,7 +85,7 @@ class start():
         else:
             print(Fore.YELLOW+' [ERROR] The atmospheric databases is not yet existing.'+Fore.RESET)
 
-    def set_star(self, ra=None, dec=None, rv_sys=None, prot=None, rs=None, ms=None, teff=None, logg=None, feh=None):
+    def set_star(self, ra=None, dec=None, rv_sys=None, prot=None, rs=None, ms=None, teff=None, logg=None, feh=None, stellar_template=None):
         sy_user_object = {
             'Name'  : self.sy_starname,
             'Ra'    : ra,
@@ -95,7 +96,8 @@ class start():
             'Ms'    : ms,
             'Teff'  : teff,
             'Log_g'  : logg,
-            'FeH'   : feh
+            'FeH'   : feh,
+            'stellar_template' : None,
         }
         
         for kw in sy_user_object:
@@ -622,7 +624,24 @@ class start():
     def compute_abs_continuum(self):
         dir_root = self.sy_dir_root
         material = mym.import_material(dir_root)
-        template_flux, correction = mym.yarara_correct_continuum_absorption(dir_root)
+        sinfo = mym.import_star_info(dir_root)
+
+        model = sinfo['stellar_template']['SNAKY']
+        if self.sy_user_object['Teff'] is not None:
+            teff = self.sy_user_object['Teff']
+            model = re.sub(r'T\d+', f'T{teff}', model)
+        
+        if self.sy_user_object['FeH'] is not None:
+            feh = self.sy_user_object['FeH']
+        else:
+            feh = sinfo['FeH']['SNAKY']
+        
+        if self.sy_user_object['Rv_sys'] is not None:
+            rv_sys = self.sy_user_object['Rv_sys']
+        else:
+            rv_sys = sinfo['Rv_sys']['SNAKY']
+
+        template_flux, correction = mym.yarara_correct_continuum_absorption(dir_root, rv_sys, feh, model)
         material['stellar_template'] = template_flux
         material['correction_factor'] = correction
         pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
