@@ -387,7 +387,7 @@ and modify the `extract_header()` function too.
 If only e2ds spectra exist and not s1d, follow the `read_neid()` example.
 NB: s1d spectra should always be preferred over e2ds/s2d spectra
 
-## BENCHMARK (Computation time)
+## ⑩ BENCHMARK (Computation time)
 
 <a id="flag3"></a>
 
@@ -430,7 +430,7 @@ $$
 4.2 + 0.72 \times \left( \frac{N}{100} \right) \quad [GB]
 $$
 
-## Analysing SNAKY DB
+## ⑪ Analysing SNAKY DB
 
 *While SNAKY can perfectly be used for single-based star analysis, the code was developed for large DB processing.* 
 
