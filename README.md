@@ -322,7 +322,7 @@ job2.reduce(begin=1, end=14)
 
 *SNAKY derives a Teff of 5162K for both instruments in this case. But depending on the dataset, this may not be the case (and perhaps you have your own temperature estimate that is different!). You have two options to fix Teff in SNAKY before computing the MHK:*
 
-*1) specify Teff in the `.set_star()`. Let's for instance extract again the activity time-series with `Teff=5100K`*:
+*1) specify Teff manually in the `.set_star()`. Let's for instance extract again the activity time-series with `Teff=5100K`*:
 ```python
 job1.set_star(teff=5100)
 job1.reduce(begin=9, end=14) # steps from UV continuum to FINCH magnetic cycle
