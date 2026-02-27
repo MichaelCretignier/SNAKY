@@ -291,7 +291,7 @@ job.reduce(begin=1, end=14,  copy_rassine_files=True)
 
 ## ⑦ An accurate multi-instruments MHK time-series
 
-*The MHK is an accurate activity index, but its extraction is parametrized by the effective temperature Teff of the star. When extracting multi-instrument MHK time-series, you should therefore check you always use the same Teff.*
+*The MHK is an accurate activity index, but its extraction is parametrized by the effective temperature `Teff` of the star. When extracting multi-instrument MHK time-series, you should therefore check you always use the same Teff.*
 
 *Let's process a star observed by two different instruments:* 
 
