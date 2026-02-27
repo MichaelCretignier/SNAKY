@@ -298,17 +298,53 @@ job.reduce(begin=1, end=14,  copy_rassine_files=True)
 sbatch run_snaky_med.s HD128621 HARPS15_3.3.6 1 14
 ```
 
-## ⑧ An accurate multi-instrument MHK
+## ⑧ An accurate multi-instruments MHK time-series
 
-*Let's process a star observed by two different spectrographs:* 
+*The MHK is an accurate activity index, but its extraction is parametrized by the effective temperature Teff of the star. When extracting multi-instrument MHK time-series, you should therefore check you always use the same Teff.*
+
+*Let's process a star observed by two different instruments:* 
 
 ```python
 import src_snaky.run as snaky
 
 #output_dir = '/Users/cretignier/Desktop/Snaky'
-snaky.benchmark2(output_dir) # Cen B HARP15
-snaky.benchmark3(output_dir) # Cen B HARP03
+files1 = snaky.glob.glob(snaky.myv.TEST_DATASET2)
+
+job1 = snaky.start()
+job1.set_output_dir(output_dir)
+job1.set_dataset('HD128621','HARPS15_3.3.6',files)  
+job1.set_star(ra=219.90, dec=-60.84, prot=36) 
+job1.reduce(begin=1, end=14) # check the sequence number with: job.reduce?
+
+files2 = snaky.glob.glob(snaky.myv.TEST_DATASET3)
+
+job2 = snaky.start()
+job2.set_output_dir(output_dir)
+job2.set_dataset('HD128621','HARPS03_3.3.6',files)  
+job2.set_star(ra=219.90, dec=-60.84, prot=36) 
+job2.reduce(begin=1, end=14) # check the sequence number with: job.reduce?
 ```
+
+*SNAKY derives a Teff of 5162K for both instruments in this case. But depending on the dataset, this may not be the case. And perhaps you have your own temperature estimate that is different! You have two options to fix Teff in SNAKY:*
+
+*The first is to specify Teff in the `.set_star()`*
+```python
+job1.set_star(ra=219.90, dec=-60.84, teff=5100) 
+job1.reduce(begin=10, end=14) 
+
+job2.set_star(ra=219.90, dec=-60.84, teff=5100) 
+job2.reduce(begin=10, end=14) 
+```
+
+*The second is to query the SNAKY atmos DB that you are actively producing!:*
+```python
+job1.set_star(ra=219.90, dec=-60.84) 
+job1.reduce(begin=10, end=14, atmos_db=True) 
+
+job2.set_star(ra=219.90, dec=-60.84) 
+job2.reduce(begin=10, end=14, atmos_db=True) 
+```
+
 
 ## ⑨ Your favourite instrument missing?
 
