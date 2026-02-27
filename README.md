@@ -347,7 +347,7 @@ and modify the `extract_header()` function too.
 If only e2ds spectra exist and not s1d, follow the `read_neid()` example.
 NB: s1d spectra should always be preferred over e2ds/s2d spectra
 
-## ⑨ BENCHMARK (Computation time)
+## BENCHMARK (Computation time)
 
 <a id="flag3"></a>
 
