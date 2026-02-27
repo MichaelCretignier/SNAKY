@@ -625,7 +625,7 @@ def import_sts(files, rv_shift=None, err=False, sub_dico='matching_diff'):
     "rv_shift in m/s"
 
     importation = 'npy'
-    if type(files[0])==str:
+    if type(files[0])==np.str_:
         importation = 'file'
         wmin = []
         wmax = []
@@ -1129,7 +1129,7 @@ def yarara_rough_rv_sys(spec,teff=6000, verbose=False):
     RV = np.array(RV)
     RV = np.nanmedian(RV,axis=1)
     RV_sys = np.round(np.median(RV),2)
-
+    
     if verbose:
         print(' [INFO] Measured values :',np.round(RV,2))
         print(' [INFO] Rough RV_sys estimation = %.2f km/s'%(RV_sys))
@@ -1139,17 +1139,18 @@ def yarara_rough_rv_sys(spec,teff=6000, verbose=False):
 def yarara_check_rv_sys(spec, fwhm, rv_sys_approx, ccf_tag, dir_root=None):
     #UPDATE 12.12.2023 producing the plot even if condition satisfied
 
-    print(' [INFO] Selected CCF mask : MagiCat')
-    mask = np.genfromtxt(MATERIAL_DIR+'/MASK_CCF/Magicat.txt')
+    mask_ccf = 'Magicat'
+
+    print(' [INFO] Selected CCF mask : %s'%(mask_ccf))
+    mask = np.genfromtxt(MATERIAL_DIR+'/MASK_CCF/%s.txt'%(mask_ccf))
     mask = np.array([0.5*(mask[:,0]+mask[:,1]),mask[:,2]]).T
-    mask_harps = 'G2'
 
     rv_range = [15,fwhm][int(fwhm>15)]
 
     rv_sys_fit = rv_sys_approx*1000 # Update 28.08.24
     rv_sys_est1 = rv_sys_fit/1000
 
-    spec.ccf(mask, weighted=True, rv_range=rv_range*1.5, rv_sys=rv_sys_fit, static=dir_root+'CCF_MASK/CCF_Magicat.fits')
+    spec.ccf(mask, weighted=True, rv_range=rv_range*1.5, rv_sys=rv_sys_fit, static=dir_root+'CCF_MASK/CCF_%s.fits'%(mask_ccf))
 
     rv_sys_fit += spec.ccf_params['cen'].value
     
@@ -1161,6 +1162,7 @@ def yarara_check_rv_sys(spec, fwhm, rv_sys_approx, ccf_tag, dir_root=None):
 
     rv_sys_est2 = rv_sys_fit
 
+    mask_harps = 'G2'
     warning = 0
     if (abs(rv_sys_est1-rv_sys_est2)/abs(rv_sys_est1)*100)>20:
         print('\n [WARNING] The two RV sys estimations (%.1f km/s, %.1f km/s) are very different!'%(rv_sys_est1,rv_sys_est2))

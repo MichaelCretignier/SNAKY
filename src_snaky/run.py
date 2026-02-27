@@ -198,7 +198,7 @@ class start():
             self.copy_yarara(file_test.split('WORKSPACE/RASSINE')[0])
         else:
             if self.sy_rassine_db:
-                self.sy_files = np.sort(glob.glob(dir_root+'WORKSPACE/RASSINE*.p'))
+                self.sy_files = list(np.sort(glob.glob(dir_root+'WORKSPACE/RASSINE*.p')))
 
         if not self.sy_yarara_db:
             table = pd.DataFrame(self.sy_files,columns=['fileroot'])
@@ -364,6 +364,7 @@ class start():
         files = np.array(summary['filename'][mask_flag0])
         files = (self.sy_sts_wave,self.sy_sts_flux[mask_flag0], files)
 
+        anomalous = np.array(summary['anomalous'])
         teff,feh,fluxD,warning_hole = mym.yarara_flux_density(dir_root,files)
         
         rv_sys = []
@@ -373,9 +374,15 @@ class start():
             rv_sys.append(rv_sys1)
         rv_sys = np.array(rv_sys)
 
-        rv_sys[abs(rv_sys-np.nanmedian(rv_sys))>50] = np.nan
+        if len(rv_sys)>2:
+            mask_out = abs(rv_sys-np.nanmedian(rv_sys))>50
+            if np.sum(~mask_out)!=0:
+                rv_sys[mask_out] = np.nan
+            rv_sys_approx = np.round(np.nanmedian(rv_sys),2)
+        else:
+            rv_sys_approx = rv_sys[np.argmin(anomalous)]
+        
         rv_sys_std = np.nanstd(rv_sys)
-        rv_sys_approx = np.round(np.nanmedian(rv_sys),2)
         print('\n [INFO] Final aproximated RV_sys = %.1f +/- %.1f kms'%(rv_sys_approx,rv_sys_std))
 
         mask = np.ones(len(rv_sys)).astype('bool')
@@ -384,7 +391,7 @@ class start():
             if np.sum(~(mask_outliers>5))!=0:
                 mask = ~(mask_outliers>5)
         
-        anomalous = np.array(summary['anomalous'])[mask]
+        anomalous = anomalous[mask]
 
         #spec  = mym.import_spectrum(files[mask][np.argmin(anomalous)],sub_dico=sub_dico)
         spec = myc.tableXY(self.sy_sts_wave/100.,self.sy_sts_flux[mask][np.argmin(anomalous)]/10000.,0*self.sy_sts_wave)
