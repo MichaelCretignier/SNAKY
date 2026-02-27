@@ -321,7 +321,7 @@ job2.reduce(begin=1, end=14)
 *1) specify Teff in the `.set_star()`. Let's for instance extract again the activity time-series with `Teff=5100K`*:
 ```python
 job1.set_star(teff=5100)
-job1.reduce(begin=9, end=14) 
+job1.reduce(begin=9, end=14) # steps from UV continuum to FINCH magnetic cycle
 
 job2.set_star(teff=5100) 
 job2.reduce(begin=9, end=14) 
@@ -332,13 +332,13 @@ job2.reduce(begin=9, end=14)
 job1.get_atmos_db()
 ```
 
-*That can be called directly from the `.reduce()` method with `atmos_db=True`:*
+*Thi later can be called directly from the `.reduce()` method with `atmos_db=True`:*
 ```python
 job1.reduce(begin=9, end=14, atmos_db=True) 
 job2.reduce(begin=9, end=14, atmos_db=True) 
 ```
 
-
+*Note that to launch it, you need to have trivially at least obtain SNAKY atmospheric parameters for one instrument.*
 
 ## ⑧ Large-Scale Processing (SLURM / sbatch parallelization)
 
