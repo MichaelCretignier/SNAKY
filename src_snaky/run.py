@@ -188,14 +188,16 @@ class start():
 
         self.set_starinfo()
 
+        if copy_rassine_files:
+            print(' [INFO] Copying RASSINE files...')
+            for f in self.sy_files:
+                os.system('cp '+f+' '+dir_root+'WORKSPACE/')
+            
         if self.sy_yarara_db:
             file_test = self.sy_files[0]
             self.copy_yarara(file_test.split('WORKSPACE/RASSINE')[0])
         else:
-            if (self.sy_rassine_db)&(copy_rassine_files):
-                print(' [INFO] Copying RASSINE files...')
-                for f in self.sy_files:
-                    os.system('cp '+f+' '+dir_root+'WORKSPACE/')
+            if self.sy_rassine_db:
                 self.sy_files = np.sort(glob.glob(dir_root+'WORKSPACE/RASSINE*.p'))
 
         if not self.sy_yarara_db:
