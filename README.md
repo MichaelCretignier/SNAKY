@@ -298,7 +298,19 @@ job.reduce(begin=1, end=14,  copy_rassine_files=True)
 sbatch run_snaky_med.s HD128621 HARPS15_3.3.6 1 14
 ```
 
-## ⑧ Your favourite instrument missing?
+## ⑧ An accurate multi-instrument MHK
+
+*Let's process a star observed by two different spectrographs:* 
+
+```python
+import src_snaky.run as snaky
+
+#output_dir = '/Users/cretignier/Desktop/Snaky'
+snaky.benchmark2(output_dir) # Cen B HARP15
+snaky.benchmark3(output_dir) # Cen B HARP03
+```
+
+## ⑨ Your favourite instrument missing?
 
 <a id="flag4"></a>
 
