@@ -289,16 +289,7 @@ job.reduce(begin=1, end=14,  copy_rassine_files=True)
 
 *Since RASSINE is the slowest step, it's recommended to save the produced `RASSINE_*.p` normalised spectra somewhere on your local machine in order to send them as input of SNAKY rather than the usual `.fits` files.*
 
-## ⑦ Large-Scale Processing (SLURM / sbatch parallelization)
-
-*SNAKY is designed to process easily and rapidly thousands of datasets (as a recall a dataset corresponds to a star + an instrument combination). For large runs, the recommended approach is to use `sbatch`.* \
-*This is possible by using the `run_snaky_med.s` SLURM script, that calls the `snaky_trigger.py` Python script.*
-
-```bash
-sbatch run_snaky_med.s HD128621 HARPS15_3.3.6 1 14
-```
-
-## ⑧ An accurate multi-instruments MHK time-series
+## ⑦ An accurate multi-instruments MHK time-series
 
 *The MHK is an accurate activity index, but its extraction is parametrized by the effective temperature Teff of the star. When extracting multi-instrument MHK time-series, you should therefore check you always use the same Teff.*
 
@@ -343,6 +334,15 @@ job1.reduce(begin=10, end=14, atmos_db=True)
 
 job2.set_star(ra=219.90, dec=-60.84) 
 job2.reduce(begin=10, end=14, atmos_db=True) 
+```
+
+## ⑧ Large-Scale Processing (SLURM / sbatch parallelization)
+
+*SNAKY is designed to process easily and rapidly thousands of datasets (as a recall a dataset corresponds to a star + an instrument combination). For large runs, the recommended approach is to use `sbatch`.* \
+*This is possible by using the `run_snaky_med.s` SLURM script, that calls the `snaky_trigger.py` Python script.*
+
+```bash
+sbatch run_snaky_med.s HD128621 HARPS15_3.3.6 1 14
 ```
 
 
