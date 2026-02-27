@@ -316,25 +316,29 @@ job2.set_star(ra=219.90, dec=-60.84, prot=36)
 job2.reduce(begin=1, end=14)
 ```
 
-*SNAKY derives a Teff of 5162K for both instruments in this case. But depending on the dataset, this may not be the case. And perhaps you have your own temperature estimate that is different! You have two options to fix Teff in SNAKY:*
+*SNAKY derives a Teff of 5162K for both instruments in this case. But depending on the dataset, this may not be the case (and perhaps you have your own temperature estimate that is different!). You have two options to fix Teff in SNAKY before computing the MHK:*
 
-*The first is to specify Teff in the `.set_star()`*
+*1) specify Teff in the `.set_star()`. Let's for instance reextract the activity time-series with `Teff=5100K`*:
 ```python
-job1.set_star(ra=219.90, dec=-60.84, teff=5100) 
-job1.reduce(begin=10, end=14) 
+job1.set_star(teff=5100)
+job1.reduce(begin=9, end=14) 
 
-job2.set_star(ra=219.90, dec=-60.84, teff=5100) 
-job2.reduce(begin=10, end=14) 
+job2.set_star(teff=5100) 
+job2.reduce(begin=9, end=14) 
 ```
 
-*The second is to query the SNAKY atmos DB that you are actively producing!:*
+*2) query the SNAKY atmospheric DB that you are actively producing:*
 ```python
-job1.set_star(ra=219.90, dec=-60.84) 
-job1.reduce(begin=10, end=14, atmos_db=True) 
-
-job2.set_star(ra=219.90, dec=-60.84) 
-job2.reduce(begin=10, end=14, atmos_db=True) 
+job1.get_atmos_db()
 ```
+
+*That can be called directly from the `.reduce()` method:*
+```python
+job1.reduce(begin=9, end=14, atmos_db=True) 
+job2.reduce(begin=9, end=14, atmos_db=True) 
+```
+
+
 
 ## ⑧ Large-Scale Processing (SLURM / sbatch parallelization)
 
