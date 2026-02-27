@@ -336,13 +336,11 @@ job2.reduce(begin=9, end=14)
 job1.get_atmos_db()
 ```
 
-*Thi later can be called directly from the `.reduce()` method with `atmos_db=True`:*
+*This later can be called directly from the `.reduce()` method with the option `atmos_db=True`:*
 ```python
 job1.reduce(begin=9, end=14, atmos_db=True) 
 job2.reduce(begin=9, end=14, atmos_db=True) 
 ```
-
-*Note that to launch it, you need to have trivially at least obtain SNAKY atmospheric parameters for one instrument.*
 
 ## ⑧ Large-Scale Processing (SLURM / sbatch parallelization)
 
