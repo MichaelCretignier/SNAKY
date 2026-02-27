@@ -299,21 +299,21 @@ job.reduce(begin=1, end=14,  copy_rassine_files=True)
 import src_snaky.run as snaky
 
 #output_dir = '/Users/cretignier/Desktop/Snaky'
-files1 = snaky.glob.glob(snaky.myv.TEST_DATASET2)
+files1 = snaky.glob.glob(snaky.myv.TEST_DATASET2) # Cen B HARPS15 (RASSINE)
 
 job1 = snaky.start()
 job1.set_output_dir(output_dir)
 job1.set_dataset('HD128621','HARPS15_3.3.6',files)  
 job1.set_star(ra=219.90, dec=-60.84, prot=36) 
-job1.reduce(begin=1, end=14) # check the sequence number with: job.reduce?
+job1.reduce(begin=1, end=14)
 
-files2 = snaky.glob.glob(snaky.myv.TEST_DATASET3)
+files2 = snaky.glob.glob(snaky.myv.TEST_DATASET3) # Cen B HARPS03 (RASSINE)
 
 job2 = snaky.start()
 job2.set_output_dir(output_dir)
 job2.set_dataset('HD128621','HARPS03_3.3.6',files)  
 job2.set_star(ra=219.90, dec=-60.84, prot=36) 
-job2.reduce(begin=1, end=14) # check the sequence number with: job.reduce?
+job2.reduce(begin=1, end=14)
 ```
 
 *SNAKY derives a Teff of 5162K for both instruments in this case. But depending on the dataset, this may not be the case. And perhaps you have your own temperature estimate that is different! You have two options to fix Teff in SNAKY:*
