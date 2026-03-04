@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
+r"""
 Created on Thu Feb  7 16:34:29 2019
 19.04.19
 @author: michael cretignier & jémémie francfort
