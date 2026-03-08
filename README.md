@@ -1,4 +1,4 @@
-# SNAKY (a Spectroscopic Novel Analysis Kit of Yᴀʀᴀʀᴀ) v1.2.4
+# SNAKY (a Spectroscopic Novel Analysis Kit of Yᴀʀᴀʀᴀ) v1.2.5
 
 <p align="center">
   <img src="logo.png" alt="Project logo" width="400">
@@ -76,7 +76,7 @@ conda env list
 ### [Option 2] Venv install (Python 3.10.15)
 
 ```bash
-python3 -m venv snaky 
+python3 -m venv snaky
 source snaky/bin/activate 
 pip install --upgrade pip 
 pip install -r requirements_3.10.15.txt
