@@ -501,16 +501,16 @@ class start():
             summary.loc[sub.index[~kept2],'flag2'] = 1
             summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
 
-        pickle.dump({
-            'dir_root':dir_root,
-            'selfsy_sts_wave':self.sy_sts_wave,
-            'selfsy_sts_flux':self.sy_sts_flux,
-            'files':files,
-            'mask':mask,
-            'rv_sys':rv_sys,
-            'fwhm':fwhm,
-            'beta_gnd':beta_gnd,
-            },open('/Users/cretignier/Desktop/Snaky/TEST/compute_ccf/export.p','wb'))
+        #pickle.dump({
+        #    'dir_root':dir_root,
+        #    'selfsy_sts_wave':self.sy_sts_wave,
+        #    'selfsy_sts_flux':self.sy_sts_flux,
+        #    'files':files,
+        #    'mask':mask,
+        #    'rv_sys':rv_sys,
+        #    'fwhm':fwhm,
+        #    'beta_gnd':beta_gnd,
+        #    },open('/Users/cretignier/Desktop/Snaky/TEST/compute_ccf/export.p','wb'))
 
         sinfo = mym.import_star_info(dir_root)
         summary = mym.import_summary(dir_root)
@@ -993,7 +993,7 @@ class start():
             plt.subplots_adjust(bottom=0.15,top=0.95,hspace=0.10)
             plt.savefig(savefile.replace('.csv','_N%s_TIME%s_GBP%.1f_GBT%.1f.png'%(str(Ntot).zfill(4),tag_duration,RAM_max1,RAM_max2)))
 
-    @profile
+    #@profile
     def reduce(self,
             begin=1,
             end=14,
