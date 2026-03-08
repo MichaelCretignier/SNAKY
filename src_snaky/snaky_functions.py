@@ -890,18 +890,14 @@ def print_box(sentence):
 
 def doppler_r(lamb,v):
     """Relativistic Doppler. Take (wavelength, velocity in [m/s]) and return lambda observed and lambda source"""
-    c= 299.792e6
-    button=False
-    factor=np.sqrt((1+v/c)/(1-v/c))
-    if type(factor)!=np.ndarray:
-        button=True
-        factor=np.array([factor])
-    lambo=lamb*factor[:,np.newaxis]
-    lambs=lamb*(factor**(-1))[:,np.newaxis]
-    if button:
-        return lambo[0],lambs[0]
-    else:
+    if v!=0:
+        c= 299.792e6
+        factor=np.sqrt((1+v/c)/(1-v/c))
+        lambo=lamb*factor
+        lambs=lamb*(factor**(-1))
         return lambo, lambs
+    else:
+        return lamb, lamb
 #
 
 def posterior_sin_i_from_samples(samples_v,
@@ -1082,4 +1078,34 @@ def observatory(instrument='HARPS'):
     
     return obs_loc
 
+def interpolate_rv_shift(x,y,xnew=None,rv=0,fill_value=0,kind='linear'):
+    if xnew is None:
+        xnew = x.copy()
+    
+    interp_values = interp1d(
+        doppler_r(x, rv)[1], y,
+        bounds_error=False,
+        fill_value=fill_value,
+        kind=kind)(xnew)
+    return interp_values
 
+def master_spectrum(wave_grid, flux, shift_ms=None, method = 'median'):
+    if shift_ms is None:
+        shift_ms = np.zeros(len(flux))
+
+    if method =='median':
+        master = np.zeros_like(wave_grid, dtype='float32')
+        chunks = np.array_split(np.arange(len(wave_grid)), 5)
+
+        for idx in tqdm(chunks):
+            wave = wave_grid[idx]
+            sts = np.empty((len(flux), len(wave)), dtype='float32')
+            for m, rv in enumerate(shift_ms):
+                sts[m] = interpolate_rv_shift(wave,flux[:,idx][m], rv=rv, fill_value=0, kind='linear')
+            master[idx] = np.nanmedian(sts, axis=0)
+    elif method=='mean':
+        N = len(flux)
+        master = np.zeros(N)
+        for m, rv in enumerate(shift_ms):
+            master += interpolate_rv_shift(wave,flux[m], rv=rv, fill_value=0, kind='linear')/N
+    return master

@@ -10,6 +10,7 @@ import time
 import tracemalloc
 import psutil
 import re
+import gc
 
 from colorama import Fore
 
@@ -17,6 +18,11 @@ from . import snaky_variables as myv
 from . import snaky_functions as myf
 from . import snaky_classes as myc
 from . import snaky_main as mym
+
+try:
+    from memory_profiler import profile
+except:
+    pass
 
 # =============================================================================
 # MEMORY AND TIME MONITORING
@@ -37,6 +43,7 @@ class start():
         self.debug = False
         self.prd_ext = ''
         self.sy_user_object = {'Name': None,'Ra': None,'Dec': None,'Rv_sys': None,'Prot': None,'Rs': None,'Ms': None,'Teff': None,'Log_g': None,'FeH': None, 'stellar_template': None}
+        self.missing_file = False
 
     def set_output_dir(self,outputdir):
         self.sy_output_dir = outputdir
@@ -323,18 +330,27 @@ class start():
     def load_data(self):
         summary = mym.import_summary(self.sy_dir_root)
         self.sy_rassine_files = np.array(summary['filename'])
-        self.sy_sts_wave, self.sy_sts_flux = mym.create_sts(self.sy_rassine_files, sub_dico=self.sy_sub_dico)
-
+        try:
+            self.sy_sts_wave, self.sy_sts_flux = mym.create_sts(self.sy_rassine_files, sub_dico=self.sy_sub_dico)
+        except FileNotFoundError:
+            self.missing_file = True
+    
     def check_spectra(self):
         files = self.sy_rassine_files
         sub_dico = self.sy_sub_dico
         summary = mym.import_summary(self.sy_dir_root)
 
-        files = (self.sy_sts_wave,self.sy_sts_flux,files)
+        wave_grid, sts, sts_err = mym.import_sts((self.sy_sts_wave,self.sy_sts_flux,files), sub_dico=sub_dico, scale=False)
 
-        wave_grid, sts, sts_err = mym.import_sts(files, sub_dico=sub_dico)
-        anomalous = np.sum((sts>1.02)|(sts<0),axis=1)*100/len(wave_grid)
+        del sts_err
+    
+        anomalous = np.sum((sts>1.02*10000)|(sts<0),axis=1)*100/len(wave_grid)
         anomalous = np.round(anomalous,0).astype('int')
+
+        del wave_grid
+        del sts
+
+        gc.collect()
 
         summary['anomalous'] = anomalous
         if np.min(anomalous)<5:
@@ -357,6 +373,7 @@ class start():
             print('\n')
             raise SnakyError('No valid spectra detected (Emergency stop)')
         
+    #@profile
     def compute_rv_sys(self):
         dir_root = self.sy_dir_root
         star = self.sy_starname
@@ -364,10 +381,9 @@ class start():
         summary = mym.import_summary(dir_root)
         mask_flag0 = (summary['flag1']==0)
         files = np.array(summary['filename'][mask_flag0])
-        files = (self.sy_sts_wave,self.sy_sts_flux[mask_flag0], files)
 
         anomalous = np.array(summary['anomalous'])
-        teff,feh,fluxD,warning_hole = mym.yarara_flux_density(dir_root,files)
+        teff,feh,fluxD,warning_hole = mym.yarara_flux_density(dir_root,(self.sy_sts_wave,self.sy_sts_flux[mask_flag0], files))
         
         rv_sys = []
         for n in np.arange(len(summary)):
@@ -455,6 +471,7 @@ class start():
             print(Fore.YELLOW+' [WARNING] Spectroscopy binary detected, pipeline not designed for them.'+Fore.RESET)
             print('\n')
 
+    #@profile
     def compute_ccf(self):
         dir_root = self.sy_dir_root
         sub_dico = self.sy_sub_dico
@@ -484,6 +501,17 @@ class start():
             summary.loc[sub.index[~kept2],'flag2'] = 1
             summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
 
+        pickle.dump({
+            'dir_root':dir_root,
+            'selfsy_sts_wave':self.sy_sts_wave,
+            'selfsy_sts_flux':self.sy_sts_flux,
+            'files':files,
+            'mask':mask,
+            'rv_sys':rv_sys,
+            'fwhm':fwhm,
+            'beta_gnd':beta_gnd,
+            },open('/Users/cretignier/Desktop/Snaky/TEST/compute_ccf/export.p','wb'))
+
         sinfo = mym.import_star_info(dir_root)
         summary = mym.import_summary(dir_root)
         kept = np.array(1-summary['flag1'])*np.array(1-summary['flag2'])
@@ -508,6 +536,7 @@ class start():
                 #force_pre, force_summary, force_rvsys, force_ccf, force_master, force_atmos, force_resolution, force_vsini,force_abs_continuum, force_activity ,force_mhk, force_spectroscopy, force_magcycle, force_cleaning = [False]*14   
             pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
+    #@profile
     def compute_master(self):
         dir_root = self.sy_dir_root
         summary = mym.import_summary(dir_root)
@@ -522,7 +551,7 @@ class start():
             rv_sys = mym.import_star_info(dir_root)['Rv_sys']['SNAKY']
             rv = np.ones(len(files))*rv_sys
             mask = np.ones(len(files)).astype('bool')
-            
+        
         files = (self.sy_sts_wave,self.sy_sts_flux[mask],self.sy_sts_flux[mask]*0,files)
         master = mym.master_spectrum(files,rv,0)
         material = {'wave':master.x,'reference_spectrum':master.y}
@@ -573,6 +602,7 @@ class start():
 
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
+    #@profile
     def compute_resolution(self):
         dir_root = self.sy_dir_root
         star = self.sy_starname
@@ -589,12 +619,20 @@ class start():
             mask = np.ones(len(summary)).astype('bool')
         berv = np.array(summary.loc[mask,'berv'])
 
-        files = (self.sy_sts_wave,self.sy_sts_flux[mask],files[mask])
-        fwhm_ins, berv_output = mym.yarara_instrumental_resolution(dir_root, files, np.zeros(len(berv)), berv.copy())
+        #pickle.dump({
+        #    'dir_root':dir_root,
+        #    'selfsy_sts_wave':self.sy_sts_wave,
+        #    'selfsy_sts_flux':self.sy_sts_flux,
+        #    'files':files,
+        #    'mask':mask,
+        #    'berv':berv
+        #    },open('/Users/cretignier/Desktop/Snaky/TEST/compute_resolution/export.p','wb'))
+
+        fwhm_ins, berv_output = mym.yarara_instrumental_resolution(dir_root, (self.sy_sts_wave,self.sy_sts_flux[mask],files[mask]), np.zeros(len(berv)), berv.copy())
         summary = mym.import_summary(dir_root) # to reload updated table
         if np.sum(berv!=berv_output)!=0:
             summary.loc[mask,'berv_computed'] = berv_output
-        output = np.array([files[-1],fwhm_ins]).T
+        output = np.array([files[mask],fwhm_ins]).T
         if ins[0:6]=='SOPHIE':
             newins = np.array([[ins.replace('-HE',''),ins.replace('-HE','').replace('_','-HE_')][int(i>5)] for i in fwhm_ins])
             output[:,-1] = newins
@@ -616,11 +654,15 @@ class start():
         sub_dico = self.sy_sub_dico
 
         sinfo = mym.import_star_info(dir_root)
-        vsini = mym.yarara_vcat(dir_root, sub_dico=sub_dico, debug=self.debug, std_bias_kms=0.1) 
+        try:
+            vsini = mym.yarara_vcat(dir_root, sub_dico=sub_dico, debug=self.debug, std_bias_kms=0.1) 
+        except FileNotFoundError:
+            pass
         mym.yarara_vsini(dir_root, Prot=Prot, Rs=Rs)
         sinfo = myf.update_info_lvl2(sinfo,'Vsini','SNAKY',np.round(np.nanmean(vsini),2))
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
+    #@profile
     def compute_abs_continuum(self):
         dir_root = self.sy_dir_root
         material = mym.import_material(dir_root)
@@ -650,6 +692,7 @@ class start():
         del correction
         del material
 
+    #@profile
     def compute_activity(self):
         dir_root = self.sy_dir_root
         star = self.sy_starname
@@ -667,6 +710,14 @@ class start():
         rv = ccf_output['rv'].y
 
         del ccf_output
+
+        #pickle.dump({
+        #    'rv_sys':rv_sys,
+        #    'files':files,
+        #    'rv':rv,
+        #    'material':material,
+        #    'fwhm':fwhm
+        #    },open('/Users/cretignier/Desktop/Snaky/TEST/compute_activity/export.p','wb'))
 
         tab_proxies, CT, mask_activity = mym.yarara_activity_index(files, rv_sys, rv, material=material, fwhm=fwhm)
         material['activity_proxies'] = mask_activity
@@ -854,10 +905,16 @@ class start():
             print('\n [WARNING] If you want to reset, please run .reset() again.'+Fore.RESET)
             self.warning_printed += 1
 
-    def monitor_ram(self,stage=0):
+    def monitor_ram(self,stage=None):
         current, peak = tracemalloc.get_traced_memory()
         process = psutil.Process(os.getpid())
         rss = process.memory_info().rss / 1e9
+
+        if stage is None:
+            if len(self.memory_history)!=0:
+                stage = self.memory_history[-1][1]+0.01
+            else:
+                stage = 0
 
         self.memory_history.append([
             stage,
@@ -936,6 +993,7 @@ class start():
             plt.subplots_adjust(bottom=0.15,top=0.95,hspace=0.10)
             plt.savefig(savefile.replace('.csv','_N%s_TIME%s_GBP%.1f_GBT%.1f.png'%(str(Ntot).zfill(4),tag_duration,RAM_max1,RAM_max2)))
 
+    @profile
     def reduce(self,
             begin=1,
             end=14,
@@ -1003,7 +1061,7 @@ class start():
         dir_root = self.sy_dir_root
 
         timestamp_reduction = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
-        filename_time = dir_root + '/REDUCTION_INFO/Time_informations_reduction_snaky_%s_B%.0fE%.0f_%s.csv'%(__version__,begin,end,timestamp_reduction)
+        filename_time = dir_root + '/REDUCTION_INFO/Time_info_reduction_snaky_%s_B%sE%s_%s.csv'%(__version__,str(begin).zfill(2),str(end).zfill(2),timestamp_reduction)
 
         steps = np.arange(begin,end+1,1).astype('int')
 
@@ -1011,7 +1069,9 @@ class start():
         top_stats = []
         self.memory_history = [[-99.9,0,0,0]]
         begin = time.time()
-        self.time_step = {'begin':begin}
+        self.time_step = {'init':begin}
+
+        self.write_progress(-1, 'start', savefile=filename_time)
 
         self.debug = debug
 
@@ -1062,7 +1122,7 @@ class start():
         Prot = self.sy_user_object['Prot']
         Rs = self.sy_user_object['Rs']
 
-        self.write_progress(0, 'init', savefile=filename_time)
+        self.write_progress(0, 'begin', savefile=filename_time)
         
         if force_pre: #1
             self.init_workspace(ra=ra, dec=dec, copy_rassine_files=copy_rassine_files)
