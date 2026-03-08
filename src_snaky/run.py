@@ -974,7 +974,7 @@ class start():
             plt.plot(np.arange(len(table_time)),table_time['time_step_min'].values,marker='o',color='k',alpha=0.9)
             plt.xticks(np.arange(len(table_time)))
             for x,y,t in np.array(table_time[['stage','time_step_min','frac_time']][1:]):
-                plt.text(x+1,y,'%.0f%%'%(t),ha='left',va='bottom')
+                plt.text(x+2,y,'%.0f%%'%(t),ha='left',va='bottom')
             plt.tick_params(direction='inout',top=True,right=True,labelbottom=False)
             plt.grid()
 
@@ -1061,7 +1061,7 @@ class start():
         dir_root = self.sy_dir_root
 
         timestamp_reduction = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
-        filename_time = dir_root + '/REDUCTION_INFO/Time_info_reduction_snaky_%s_B%sE%s_%s.csv'%(__version__,str(begin).zfill(2),str(end).zfill(2),timestamp_reduction)
+        filename_time = dir_root + 'REDUCTION_INFO/Time_info_reduction_snaky_%s_B%sE%s_%s.csv'%(__version__,str(begin).zfill(2),str(end).zfill(2),timestamp_reduction)
 
         steps = np.arange(begin,end+1,1).astype('int')
 

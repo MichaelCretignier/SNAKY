@@ -1227,7 +1227,7 @@ def yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag=0):
     myf.print_box('\n---- RECIPE : RV_SYS EXTRACTION ---- \n')
     
     if ccf_tag!=0:
-        os.system('rm -f '+dir_root+'/CCF_MASK/*.fits')
+        os.system('rm -f '+dir_root+'CCF_MASK/*.fits')
 
     spec.clip(min=[4000,None])
     spec.y[spec.y>1.50] = 1.0
@@ -1269,7 +1269,7 @@ def yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag=0):
     print('\n [INFO] Best RV_SYS detected is %.1f km/s \n'%(rv_sys))
     SB1 = int(np.sum(kept[:,-1])!=0)
     
-    os.system('rm -f '+dir_root+'/CCF_MASK/*.fits')
+    os.system('rm -f '+dir_root+'CCF_MASK/*.fits')
     sinfo = yarara_check_rv_sys(spec, fwhm, rv_sys, ccf_tag, dir_root=dir_root)
 
     if fwhm<50:
@@ -1438,7 +1438,6 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
     chunks = np.array_split(np.arange(len(log_grid)), 5)
 
     if True:
-        print('ALGO2')
         grid_log10 = np.log10(grid)
         for idx in tqdm(chunks):
             idx2 = (grid_log10>log_grid[idx[0]])&(grid_log10<log_grid[idx[-1]])
@@ -1839,7 +1838,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
         summary['ccf_rv_'+ccf_name] = np.nan ; summary.loc[mask,'ccf_rv_'+ccf_name] = np.round(ccf_rv.y,0) # DONT USE RV FROM SNAKY, PRECISION NOT BETTER THAN 3 M/S
         summary['ccf_ct_'+ccf_name] = np.nan ; summary.loc[mask,'ccf_ct_'+ccf_name] = np.round(ccf_contrast.y,4)
         summary['ccf_fwhm_'+ccf_name] = np.nan ; summary.loc[mask,'ccf_fwhm_'+ccf_name] = np.round(ccf_fwhm.y,4)
-        summary.to_csv(dir_root+'/WORKSPACE/Analyse_summary.csv')
+        summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
 
     if return_ccf:
         return output, vrad, ccf_shifted
@@ -2783,8 +2782,6 @@ def yarara_activity_index(files, rv_sys, shift_rv, fwhm=6.0, material=None, sub_
     H = np.nanpercentile(save['Hb'],50)
     CT = {'NaDC':C,'Ha':X,'NaD':Y,'MgI':Z,'Hb':H}
 
-    print(tab)
-
     return tab, CT, mask_activity
 
 def yarara_compute_snr(dir_root,sub_dico):
@@ -3072,7 +3069,6 @@ def yarara_instrumental_resolution(dir_root, files, shift_rv, berv, sub_dico='ma
     flux /= (flux_ref+1e-8)
 
     if True:
-        print('ALGO2')
         for i in tqdm(np.arange(len(files[-1]))):
             flux[i] = myf.interpolate_rv_shift(grid,flux[i],rv=berv[i]*1000,kind='linear',fill_value=1)
     else:
