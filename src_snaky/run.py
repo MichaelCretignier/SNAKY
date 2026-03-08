@@ -974,7 +974,7 @@ class start():
             plt.plot(np.arange(len(table_time)),table_time['time_step_min'].values,marker='o',color='k',alpha=0.9)
             plt.xticks(np.arange(len(table_time)))
             for x,y,t in np.array(table_time[['stage','time_step_min','frac_time']][1:]):
-                plt.text(x+2,y,'%.0f%%'%(t),ha='left',va='bottom')
+                plt.text(x+1.75,y,'%.0f%%'%(t),ha='left',va='bottom')
             plt.tick_params(direction='inout',top=True,right=True,labelbottom=False)
             plt.grid()
 
