@@ -2604,7 +2604,7 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
 
     if Prot is not None:
         plt.figure(figsize=(8,8))
-        plt.xlim(-1.5,1.5) ; plt.ylim(-1.5,1.5)
+        plt.axes([0,0,1,1])
         iby,ibx = np.histogram(np.arcsin(samples_table['sini'])*180/np.pi,bins=np.arange(0,180,1),density=True)
         ibx = 0.5*(ibx[1:]+ibx[0:-1])
         iby = iby/np.sum(iby)
@@ -2626,6 +2626,13 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
         plt.plot(np.cos(np.linspace(0,2*np.pi,100)),np.sin(np.linspace(0,2*np.pi,100)),color='k')
         plt.plot([0,0],[-1,1],color='k',alpha=0.3,lw=1,ls='--')
         plt.axis('off')
+        plt.xlim(-1.1,2.9)
+        plt.ylim(-2.0,2.0)
+        plt.plot([2.7,2.8,2.7],[0.1,0.0,-0.1],color='k')
+        plt.scatter([2.72],[0.015],color='white',ec='k')
+        eye = np.linspace(7*np.pi/8,9*np.pi/8,100)
+        plt.plot(np.cos(eye)*0.1+2.8,np.sin(eye)*0.1,color='k')
+        plt.plot([0,2.6],[0,0],ls=':',lw=1,color='k',alpha=0.4)
         plt.savefig(dir_root+'IMAGES/Stellar_inclination'+myv.PRD_EXT+'.png')
 
 
