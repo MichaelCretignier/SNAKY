@@ -1004,11 +1004,10 @@ def yarara_flux_density(dir_root,files,sub_dico='matching_diff',smooth=7):
     plt.figure('flux_density',figsize=(7,7))
 
     grid = files[0]/100.
-    files = files[1]/10000.
-    for j in tqdm(files):
+    for j in tqdm(files[1]):
         count+=1
         #spec = import_spectrum(j,sub_dico=sub_dico)
-        spec = myc.tableXY(grid,j,0*grid)
+        spec = myc.tableXY(grid,j.astype('float32')/10000.,0*grid)
         if smooth!=1:
             spec.smooth(box_pts=smooth,shape='savgol')
         mask = (spec.x<6250)&(spec.x>4000)
