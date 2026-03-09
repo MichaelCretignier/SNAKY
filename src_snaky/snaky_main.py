@@ -2625,6 +2625,7 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
             plt.text(x*1.1,y*1.1,'%.0f°'%(np.arcsin(y)*180/np.pi))
         plt.plot(np.cos(np.linspace(0,2*np.pi,100)),np.sin(np.linspace(0,2*np.pi,100)),color='k')
         plt.plot([0,0],[-1,1],color='k',alpha=0.3,lw=1,ls='--')
+        plt.axis('off')
         plt.savefig(dir_root+'IMAGES/Stellar_inclination'+myv.PRD_EXT+'.png')
 
 
