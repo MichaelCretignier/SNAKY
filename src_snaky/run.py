@@ -866,7 +866,7 @@ class start():
                 plt.title('%s = %.2f +/- %.2f'%(kw,np.median(save[kw]),myf.mad(np.ravel(save[kw]))))
             plt.xticks(rotation=90,ha='center')
 
-            plt.savefig(parent_dir+'/ALLINS_MERGED/Atmos_all_instrument.pdf')
+            plt.savefig(parent_dir+'/ALLINS_MERGED/Atmos_all_instrument.png')
 
         extract = pd.DataFrame(extract,columns=['ins']+list(table.columns))
         med_values = extract.drop(columns='ins').median(numeric_only=True)
