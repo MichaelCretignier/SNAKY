@@ -1,5 +1,5 @@
 """
-@author: Cretignier Michael 
+@author: Cretignier Michael
 @university University of Geneva
 """
 
@@ -23,6 +23,10 @@ from .Rassine import main as rassine_main
 
 from astropy.io import fits
 
+import logging
+
+logger = logging.getLogger('snaky')
+
 try:
     np.warnings.filterwarnings('ignore', category=RuntimeWarning)
 except:
@@ -40,15 +44,15 @@ class Param:
 
 class table(object):
     """this classe has been establish with pandas DataFrame"""
-    
+
     def __init__(self, array):
         self.table = array
         self.dim = np.shape(array)
-    
+
     def copy(self):
         new_table = table(np.array(self.table).copy())
         return new_table
-    
+
     def transpose(self):
         new_tab = self.table.T
         self.table = new_tab
@@ -64,10 +68,10 @@ class table(object):
             color= np.array(color).astype('float')
             if (len(table)!=len(color))&(len(table.T)==len(color)):
                 table = table.T
-            
+
             if (len(table)!=len(color)):
                 color = np.arange(len(table))
-                print('[WARNING] The color vector has not the same size (%.0f) than the table : '%(len(color)),np.shape(table))
+                logger.warning('The color vector has not the same size (%.0f) than the table : '%(len(color)),np.shape(table))
 
         index = color
         mask = np.isnan(index)
@@ -88,16 +92,16 @@ class table(object):
             xmin = np.min(x)
         if xmax is None:
             xmax = np.max(x)
-        
+
         begin = int(myf.find_nearest(x,xmin)[0][0])
         end = int(myf.find_nearest(x,xmax)[0][0])
 
         if new:
             plt.figure()
-        
+
         for i,j in enumerate(table):
-            colorVal = scalarMap.to_rgba(index[i])   
-            if not inv:         
+            colorVal = scalarMap.to_rgba(index[i])
+            if not inv:
                 plt.plot(x[begin:end],j[begin:end], color=colorVal, alpha=alpha)
             else:
                 plt.plot(j[begin:end],x[begin:end], color=colorVal, alpha=alpha)
@@ -109,14 +113,14 @@ class table(object):
         ax = plt.colorbar(pad=0)
         ax.ax.set_ylabel(color_label,fontsize=fontsize)
         ax.ax.tick_params(labelsize=fontsize)
-        
+
         if plot_median:
             median = np.median(np.array(table),axis=0)
             plt.plot(x[begin:end],median[begin:end],color='k')
 
     def fit_unique_base(self, base_vec, weight=None, ortho_to=None, offset=False, perm=1, iteration=0):
         """ weights define as 1/sigma**2 """
-                
+
         nb_vec = len(base_vec)
         if ortho_to is not None:
             base_vec = np.vstack([base_vec,ortho_to])
@@ -162,7 +166,7 @@ class table(object):
         if perm>1: #bootstrap uncertainties
             noise = np.random.randn(dim1,dim2*perm)/np.sqrt(np.hstack([weight.T]*perm))
             tab = np.hstack([tab]*perm)+noise
-            
+
             coeff = np.linalg.lstsq(base_vec.T, tab,rcond=None)[0].T
             coeff_std=np.array([np.std(coeff[i::dim2],axis=0) for i in range(dim2)])
             coeff=np.array([np.median(coeff[i::dim2],axis=0) for i in range(dim2)])
@@ -180,7 +184,7 @@ class table(object):
         vec_residues = self.table - vec_fitted
         vec_residues[self.table==0] = 0
         self.vec_residues = vec_residues
-        
+
 class tableXY(object):
     def __init__(self, x, y, *yerr):
         self.stats = pd.DataFrame({},index=[0])
@@ -189,15 +193,15 @@ class tableXY(object):
         if x is None:# for a fast table initialisation
             x = np.arange(len(y))
         self.x = np.array(x)  #vector of x
-        
+
         try:
-            np.sum(self.y) 
+            np.sum(self.y)
         except: #in case of None
             self.y = np.zeros(len(self.x))
             yerr = [np.ones(len(self.y))]
-                
+
         if len(x)!=len(y):
-            print('X et Y have no the same lenght (%.0f vs %.0f)'%(len(x),len(y)))
+            logger.debug(f'X et Y have no the same lenght ({len(x):.0f} vs {len(y):.0f})')
 
         if len(yerr)!=0:
             if len(yerr)==1:
@@ -214,11 +218,11 @@ class tableXY(object):
             else:
                 self.yerr = np.ones(len(self.x))
             self.xerr =  np.zeros(len(self.x))
-        
+
         self.yerr = np.abs(self.yerr)
         self.xerr = np.abs(self.xerr)
         self.mask_qc = np.ones(len(self.x)).astype('bool')
-            
+
     def null(self):
         self.yerr = 0*self.yerr
 
@@ -226,21 +230,21 @@ class tableXY(object):
         new_table = tableXY(self.x.copy(),self.y.copy(),self.xerr.copy(),self.yerr.copy())
         new_table.mask_qc = self.mask_qc
         return new_table
-    
+
     def diff(self,replace=True):
         diff = np.diff(self.y)/np.diff(self.x)
         new = tableXY(self.x[0:-1]+np.diff(self.x)/2,diff)
         new.interpolate(new_grid=self.x,replace=True)
-        
+
         self.deri = tableXY(self.x,new.y,self.xerr,self.yerr)
-        
+
         if replace:
             self.y_backup = self.y
             self.y = new.y
 
     def find_max(self, vicinity = 3, sort=False):
         self.index_max, self.y_max = myf.local_max(self.y,vicinity = vicinity)
-        self.index_max = self.index_max.astype('int') 
+        self.index_max = self.index_max.astype('int')
         self.x_max = self.x[self.index_max.astype('int')]
         if sort:
             ordering = np.argsort(self.y_max)
@@ -250,7 +254,7 @@ class tableXY(object):
 
     def find_min(self, vicinity = 3, sort=False):
         self.index_min, self.y_min = myf.local_max(-self.y,vicinity = vicinity)
-        self.index_min = self.index_min.astype('int') 
+        self.index_min = self.index_min.astype('int')
         self.y_min *=-1
         self.x_min = self.x[self.index_min.astype('int')]
         if sort:
@@ -258,12 +262,12 @@ class tableXY(object):
             self.y_min = self.y_min[ordering]
             self.x_min = self.x_min[ordering]
         self.min_extremum = tableXY(self.x_min,self.y_min)
-    
+
     def smooth(self,box_pts = 5,shape='rectangular',replace=True):
         self.y_smoothed = myf.smooth(self.y,box_pts,shape=shape)
-        
+
         self.smoothed = tableXY(self.x,self.y_smoothed,self.xerr,self.yerr)
-        
+
         if replace:
             self.x_backup = self.x.copy()
             self.y_backup = self.y.copy()
@@ -288,13 +292,13 @@ class tableXY(object):
 
         vec.x = myf.doppler_r(vec.x,rv*1000)[0]
         vec.interpolate(new_grid=x_grid, method=method, fill_value=fill_value)
-        
+
         if xmin is not None:
             i1 = myf.find_nearest(vec.x,xmin)[0][0]
 
         if xmax is not None:
-            i2 = myf.find_nearest(vec.x,xmax)[0][0]      
-        
+            i2 = myf.find_nearest(vec.x,xmax)[0][0]
+
         if replace:
             self.y[i1:i2] = vec.y[i1:i2]
         else:
@@ -303,7 +307,7 @@ class tableXY(object):
             else:
                 self.shifted = self.copy()
             self.shifted.y[i1:i2] = vec.y[i1:i2]
-            
+
     def masked(self,mask,replace=True):
         if replace:
             self.x = self.x[mask]
@@ -328,7 +332,7 @@ class tableXY(object):
             if max2[1] == None:
                 max2[1] = np.nanmax(self.y)+1
             masky = (self.y<=max2[1])&(self.y>=min2[1])
-        
+
         if (min2[0] != None)|(max2[0] != None):
             if min2[0] == None:
                 min2[0] = np.nanmin(self.x)-1
@@ -339,7 +343,7 @@ class tableXY(object):
         mask = maskx&masky
         try:
             self.clip_mask = self.clip_mask&mask
-        except:    
+        except:
             self.clip_mask = mask
 
         if invers:
@@ -352,41 +356,41 @@ class tableXY(object):
             self.clipx = self.x[mask] ; self.clipy=self.y[mask] ; self.clipyerr = self.yerr[mask] ; self.clipxerr=self.xerr[mask]
 
     def interpolate(self, new_grid = 'auto', method = 'cubic', replace = True, interpolate_x=True, fill_value='extrapolate', scale='lin'):
-        
+
         if scale!='lin':
             self.inv()
-        
+
         if type(new_grid)==str:
             new_grid = np.linspace(self.x.min(),self.x.max(),10*len(self.x))
         if type(new_grid)==int:
             new_grid = np.linspace(self.x.min(),self.x.max(),new_grid*len(self.x))
-        
+
         warning = 0
         if len(self.x)==len(new_grid):
             if np.sum(new_grid!=self.x)==0:
                 warning = 1
-        
+
         if warning!=1:
             if replace:
                 self.x_backup = self.x.copy()
                 self.y_backup = self.y.copy()
                 self.xerr_backup = self.xerr.copy()
-                self.yerr_backup = self.yerr.copy()  
+                self.yerr_backup = self.yerr.copy()
                 self.y = interp1d(self.x, self.y, kind = method, bounds_error = False, fill_value = fill_value)(new_grid)
                 if np.sum(abs(self.yerr)):
                     self.yerr = interp1d(self.x, self.yerr, kind = method, bounds_error = False, fill_value = fill_value)(new_grid)
                 else:
                     self.yerr = np.zeros(len(new_grid))
                 if (interpolate_x)&(bool(np.sum(abs(self.xerr)))):
-                    self.xerr = interp1d(self.x, self.xerr, kind = method, bounds_error = False, fill_value = fill_value)(new_grid)  
+                    self.xerr = interp1d(self.x, self.xerr, kind = method, bounds_error = False, fill_value = fill_value)(new_grid)
                 else:
                     self.xerr = np.zeros(len(new_grid))
                 self.x = new_grid
                 self.mask_qc = np.ones(len(new_grid)).astype('bool')
-                
+
                 if scale!='lin':
                     self.inv()
-    
+
             else:
                 self.y_interp = interp1d(self.x, self.y, kind = method, bounds_error = False, fill_value = fill_value)(new_grid)
                 if np.sum(abs(self.yerr)):
@@ -394,7 +398,7 @@ class tableXY(object):
                 else:
                     self.yerr_interp = np.zeros(len(new_grid))
                 if (interpolate_x)&(bool(np.sum(abs(self.xerr)))):
-                    self.xerr_interp = interp1d(self.x, self.xerr, kind = method, bounds_error = False, fill_value = fill_value)(new_grid)        
+                    self.xerr_interp = interp1d(self.x, self.xerr, kind = method, bounds_error = False, fill_value = fill_value)(new_grid)
                 else:
                     self.xerr_interp = np.zeros(len(new_grid))
                 self.x_interp = new_grid
@@ -417,8 +421,8 @@ class tableXY(object):
         self.x = self.x[mask]
         self.y = self.y[mask]
         self.xerr = self.xerr[mask]
-        self.yerr = self.yerr[mask]  
-        self.mask_qc = self.mask_qc[mask]  
+        self.yerr = self.yerr[mask]
+        self.mask_qc = self.mask_qc[mask]
 
     def supress_nan(self):
         mask = ~np.isnan(self.x)&~np.isnan(self.y)&~np.isnan(self.yerr)&~np.isnan(self.xerr)
@@ -443,16 +447,16 @@ class tableXY(object):
             self.x[np.isnan(self.x)] = value
 
     def night_stack(self,db=0,bin_length=1,replace=False):
-        
+
         jdb = self.x
         vrad = self.y
         vrad_std = self.yerr.copy()
 
         if not np.sum(vrad_std): #to avoid null vector
-            vrad_std+=1    
+            vrad_std+=1
 
-        vrad_std[vrad_std==0] = np.nanmax(vrad_std[vrad_std!=0]*10)    
-        
+        vrad_std[vrad_std==0] = np.nanmax(vrad_std[vrad_std!=0]*10)
+
         weights = 1/(vrad_std)**2
         weights[weights!=weights] = np.nanmin(weights)
 
@@ -463,21 +467,21 @@ class tableXY(object):
         else:
             group = np.arange(len(jdb))
             groups = np.arange(len(jdb))
-            
+
         mean_jdb = []
         mean_vrad = []
         mean_svrad = []
-        
+
         for j in group:
             g = np.where(groups==j)[0]
             mean_jdb.append(np.sum(jdb[g]*weights[g])/np.sum(weights[g]))
             mean_svrad.append(1/np.sqrt(np.sum(weights[g])))
             mean_vrad.append(np.sum(vrad[g]*weights[g])/np.sum(weights[g]))
-            
+
         mean_jdb = np.array(mean_jdb)
         mean_vrad = np.array(mean_vrad)
         mean_svrad = np.array(mean_svrad)
-        
+
         if replace:
             self.x, self.y, self.xerr,self.yerr = mean_jdb, mean_vrad ,0*mean_svrad, mean_svrad
         else:
@@ -498,14 +502,14 @@ class tableXY(object):
             np.genfromtxt(np.array(self.x, self.y, self.yerr, self.mask_qc, species),name)
 
     def plot(self, Show=False, color='k', label='', ls='', lw=2, offset=0, mask=None, capsize=0, fmt='o', markersize=6, zorder=1, species=None, alpha=1, modulo=None, modulo_norm=False, cmap=None, new=False, phase_mod=0, shift_mod=0, periodic=False, frac=1, yerr=True, xerr=True, sp=None, cmin=None, cmax=None):
-        
+
         '''For the mask give either the first and last index in a list [a,b] or the mask boolean'''
-        
+
         mask_qc = self.mask_qc
 
         if modulo==100000: #default value in YARARA
             modulo=None
-        
+
         if (modulo is not None)&(cmap is None):
             try:
                 cmap = {'k':'viridis','b':'Blues','r':'Reds','g':'Greens'}[color]
@@ -513,7 +517,7 @@ class tableXY(object):
                 cmap = 'viridis'
         if (len(self.x)>25000)&(ls=='')&(modulo is None):
             ls='-'
-        
+
         if species is None:
             species = np.ones(len(self.x))
 
@@ -523,9 +527,9 @@ class tableXY(object):
             colors_species = ['k']+['C%.0f'%(i) for i in range(1,1+len(np.unique(species)))]
 
         for num, selection in enumerate(np.unique(species)):
-            
+
             color = colors_species[num]
-            
+
             if len(np.unique(species))>1:
                 label = selection
 
@@ -538,7 +542,7 @@ class tableXY(object):
                 mask2 = mask
 
             loc = np.where(species[mask2]==selection)[0]
-            
+
             sel = np.arange(len(loc))
             if frac!=1:
                 sel = np.random.choice(np.arange(len(loc)),size=int(frac*len(loc)),replace=False)
@@ -549,10 +553,10 @@ class tableXY(object):
 
             if new:
                 plt.figure()
-                
+
             if sp is not None:
                 plt.subplot(sp)
-            
+
             if ls!='':
                 plt.plot(self.x[mask2][loc][sel],self.y[mask2][loc][sel]+offset,ls=ls,lw=lw,zorder=zorder,label=label,color=color,alpha=alpha)
             else:
@@ -567,9 +571,9 @@ class tableXY(object):
     def fit_line(self, perm=1000, Draw=False, color='k', info=False, fontsize=13, label=True, compute_r=True, offset=True, recenter=True, info_printed=['r','s','i','rms'],loc_legend=0,ls='-.',s_end_point=0):
         k = perm
         self.yerr[self.yerr==0] = [np.min(self.yerr),0.1][int(np.min(self.yerr)==0)] #to avoid 0 value
-        
-        w = 1/self.yerr**2    
-        if offset:    
+
+        w = 1/self.yerr**2
+        if offset:
             A = np.array([(self.x-np.mean(self.x)*int(recenter)),np.ones(len(self.x))]).T
         else:
             A = np.array([self.x]).T
@@ -586,33 +590,33 @@ class tableXY(object):
 
         self.s = np.linalg.lstsq(A,B,rcond=None)[0][0]
         if offset:
-            self.i = np.linalg.lstsq(A,B,rcond=None)[0][1]      
+            self.i = np.linalg.lstsq(A,B,rcond=None)[0][1]
         else:
             self.i = self.s*0
 
         self.lin_slope_w = np.mean(self.s)
         self.lin_errslope_w = np.std(self.s)
-        
+
         self.lin_intercept_w = np.mean(self.i)
         self.lin_errintercept_w = np.std(self.i)
 
         self.stats['lin_slope_w'] = self.lin_slope_w
         self.stats['lin_slope_w_std'] = self.lin_errslope_w
         self.stats['lin_intercept_w'] = self.lin_intercept_w
-        self.stats['lin_intercept_w_std'] = self.lin_errintercept_w     
+        self.stats['lin_intercept_w_std'] = self.lin_errintercept_w
 
         if compute_r:
-            self.r = self.s*Crms/Brms        
+            self.r = self.s*Crms/Brms
             self.r_pearson_w = np.mean(self.r)
             self.r_errpearson_w = np.std(self.r)
         else:
             self.r_pearson_w = np.inf
             self.r_errpearson_w = np.inf
-            
+
         self.stats['r_pearson_w'] = self.r_pearson_w
         self.stats['r_pearson_w_std'] = self.r_errpearson_w
-        
-        
+
+
         temp = tableXY(self.x, self.y-((self.x-np.mean(self.x)*int(recenter))*self.lin_slope_w+self.lin_intercept_w), self.yerr)
         self.vec_res = temp
 
@@ -695,7 +699,7 @@ class tableXY(object):
                 guess_amp = self.y_min[loc_min] - guess_offset
                 guess_width = (np.max(self.x)-np.min(self.x))/10
                 guess = [guess_amp,guess_center,guess_width,guess_offset]
-                #print(' [INFO] Automatic CCF guess : ',guess)
+                #logger.info('Automatic CCF guess : ',guess)
             else:
                 guess = [-0.5,0,3,1]
 
@@ -719,7 +723,7 @@ class tableXY(object):
 
         if mask is None:
             mask = np.ones(len(self.x)).astype('bool')
-        
+
         try:
             result1 = gmodel.fit(self.y[mask], fit_params, 1/self.yerr[mask]**2, x=self.x[mask])
             self.lmfit = result1
@@ -742,7 +746,7 @@ class tableXY(object):
             tag = '_'+tag
         df = pd.DataFrame({'wave':self.x,'flux':self.y,'flux_err':self.yerr})
         df.to_csv(myv.SRC_DIR+'/temp/spectrum_to_normalise%s.csv'%(tag))
-        
+
         rassine_main([
             '-s', myv.SRC_DIR + f'/temp/spectrum_to_normalise{tag}.csv',
             '-r', str(par_R),
@@ -760,7 +764,7 @@ class tableXY(object):
 
     def fit_multi_sb(self):
 
-        x = self.x 
+        x = self.x
         y = 1 - self.y #CCF normalise to 1
 
         profiles = []
@@ -768,7 +772,7 @@ class tableXY(object):
         cen = np.linspace(0,np.max(self.x)*0.75,20)
         centers = np.hstack([-cen[::-1],cen[1:]])
         widths = np.array([3,4,5,7,9,12,15,20,40,70,100,200])
-        widths = widths[widths<np.max(self.x)*0.75] 
+        widths = widths[widths<np.max(self.x)*0.75]
         for cen in centers:
             for wid in widths:
                 for beta in [2,3,4]:
@@ -875,7 +879,7 @@ class tableXY(object):
 
                 if a <= 0 or b <= 0 or a>=1 or b>=1:
                     continue
-                
+
                 # Residual sum of squares (fast formula)
                 RSS = yTy - theta.dot(bvec)  # derived: RSS = y^T y - theta^T (P^T y)
                 results.append((i, j, a, b, RSS))
@@ -895,15 +899,15 @@ class tableXY(object):
         model_xy = tableXY(x,1-model)
         model_xy.find_min(vicinity=5)
         rms2 = np.std(residuals)
-        print(' [INFO] RMS model 1-component = %.2f'%(rms1*100))
-        print(' [INFO] RMS model 2-components = %.2f'%(rms2*100))
+        logger.info('RMS model 1-component = %.2f'%(rms1*100))
+        logger.info('RMS model 2-components = %.2f'%(rms2*100))
 
         if amp1<amp2:
             ratio = np.round(100*amp1/amp2,2)
         else:
             ratio = np.round(100*amp2/amp1,2)
 
-        print(' [INFO] Ratio of the two fitted components = %.1f'%(ratio))
+        logger.info('Ratio of the two fitted components = %.1f'%(ratio))
         condition = 0
         if (ratio>10)&(len(model_xy.x_min)>1)&(rms2/rms1<0.80):
             condition = 1
@@ -924,14 +928,14 @@ class tableXY(object):
         plt.legend(loc=4)
         if condition:
             plt.title('Two components detected!')
-            print(' [INFO] Two components detected')
+            logger.info('Two components detected')
         else:
             plt.subplot(2,1,1)
             plt.title('One component detected!')
-            print(' [INFO] Only one component detected')
+            logger.info('Only one component detected')
         plt.subplots_adjust(hspace=0.35)
         ret
-    
+
     #@myf.time_step
     def ccf(self, mask2, rv_sys=0, rv_range=15, weighted=True, ccf_oversampling=1, wave_min=None, wave_max=None, norm=True, Plot=True, pow_weight=2, fit_gaussian=True, return_mask=False, static='', save_if_missing=True):
 
@@ -942,7 +946,7 @@ class tableXY(object):
         mask = mask2.copy()
         if len(np.shape(mask))<2:
             mask = np.hstack([mask[:,np.newaxis],np.ones(len(mask))[:,np.newaxis]])
-        
+
         if rv_sys:
             mask[:,0] = myf.doppler_r(mask[:,0],rv_sys)[0]
 
@@ -950,9 +954,9 @@ class tableXY(object):
 
         mask = mask[(myf.doppler_r(mask[:,0],300000)[0]<grid.max())&(myf.doppler_r(mask[:,0],300000)[1]>grid.min()),:] #supres line farther than 300kms
         if wave_min is not None:
-            mask = mask[mask[:,0]>wave_min,:] 
+            mask = mask[mask[:,0]>wave_min,:]
         if wave_max is not None:
-            mask = mask[mask[:,0]<wave_max,:] 
+            mask = mask[mask[:,0]<wave_max,:]
 
         if not len(mask):
             return None
@@ -960,18 +964,18 @@ class tableXY(object):
             mask_min = np.min(mask[:,0])
             mask_max = np.max(mask[:,0])
 
-            
+
             grid_min = int(myf.find_nearest(grid,myf.doppler_r(mask_min,-100000)[0])[0][0])
             grid_max = int(myf.find_nearest(grid,myf.doppler_r(mask_max,100000)[0])[0][0])
             grid = grid[grid_min:grid_max]
 
             log_grid = np.linspace(np.log10(grid).min(),np.log10(grid).max(),len(grid))
             dgrid = log_grid[1] - log_grid[0]
-            #dv = (10**(dgrid)-1)*299.792e6  
+            #dv = (10**(dgrid)-1)*299.792e6
 
             used_region = ((10**log_grid)>=mask_shifted[1][:,np.newaxis])&((10**log_grid)<=mask_shifted[0][:,np.newaxis])
             used_region = (np.sum(used_region,axis=0)!=0).astype('bool')
-            print('\n [INFO] Percentage of the spectrum used : %.1f [%%] \n'%(100*sum(used_region)/len(grid)))
+            logger.info('Percentage of the spectrum used : %.1f [%%] \n'%(100*sum(used_region)/len(grid)))
 
             if not os.path.exists(static):
                 mask_wave = np.log10(mask[:,0])
@@ -1006,7 +1010,7 @@ class tableXY(object):
 
             log_template = interp1d(log_grid_mask, log_mask, kind='linear', bounds_error=False, fill_value=0)(log_grid)
 
-            vrad, ccf_power, ccf_power_std = myf.ccf(log_grid[used_region], flux[:,used_region], log_template[used_region], 
+            vrad, ccf_power, ccf_power_std = myf.ccf(log_grid[used_region], flux[:,used_region], log_template[used_region],
                                                     rv_range = rv_range, oversampling = ccf_oversampling, spec1_std = flux_err[:,used_region]) #to compute on all the ccf simultaneously
 
             self.ccf_profile = tableXY(vrad,np.ravel(ccf_power))
@@ -1019,7 +1023,7 @@ class tableXY(object):
                     self.ccf_profile.y/=np.median(self.ccf_profile.y)
 
             ccf_profile = self.ccf_profile
-            
+
             if Plot:
                 plt.figure(figsize=(18,6))
                 plt.axes([0.05,0.1,0.58,0.75])
@@ -1036,10 +1040,10 @@ class tableXY(object):
                 if norm:
                     plt.axhline(y=1,ls=':',color='k')
                     plt.ylim(0,1.1)
-            
+
             if fit_gaussian:
                 maxi = np.percentile(ccf_profile.y,95)
-                amp = maxi - np.percentile(ccf_profile.y,5) 
+                amp = maxi - np.percentile(ccf_profile.y,5)
                 xmin = np.argmin(ccf_profile.y)
                 if (xmin==0)|((xmin+1)==len(ccf_profile.y)):
                     xmin = int(len(ccf_profile.y)/2)
@@ -1047,15 +1051,15 @@ class tableXY(object):
                 x2 = myf.find_nearest(ccf_profile.y[xmin:],maxi-amp/2)[0][0]
                 width = ccf_profile.x[xmin:][x2]-ccf_profile.x[0:xmin][x1]
                 center = ccf_profile.x[xmin]
-                
+
                 ccf_profile.fit_gaussian(guess=[-amp,center,width,maxi],Plot=Plot,norm=norm)
                 try:
-                    print('\n [INFO] Using GND profile for the fit')
+                    logger.info('Using GND profile for the fit')
                     ccf_profile.fit_GND(guess=[-amp,center,width,maxi,2],color='g',beta_fixed=0,Plot=Plot,norm=norm)
                     self.ccf_params = ccf_profile.params
                     self.params_beta = ccf_profile.params['beta'].value
                 except:
-                    print(' [INFO] Using Gaussian profile (GND=2) for the fit')
+                    logger.info('Using Gaussian profile (GND=2) for the fit')
                     ccf_profile.fit_gaussian(guess=[-amp,center,width,maxi],Plot=Plot,norm=norm)
                     self.ccf_params = ccf_profile.params
                     self.params_beta = 2.0
@@ -1074,8 +1078,8 @@ class tableXY(object):
                         res.plot(color='gray',ls='-',offset=1.025)
                         plt.axvline(x=res.x_min[0],color='r',ls='-.',label='RV =%.1f | CT = %.1f'%(center2,contrast2*100))
                         self.warning_multipeak = 1
-                        print(' [WARNING] Multi peak detected!')
-                        print(' [INFO] CT1 = %.1f (RV=%.1f km/s) & CT2 = %.1f (RV=%.1f km/s)'%(contrast1*100,contrast2*100,center1,center2))
+                        logger.warning('Multi peak detected!')
+                        logger.info('CT1 = %.1f (RV=%.1f km/s) & CT2 = %.1f (RV=%.1f km/s)'%(contrast1*100,contrast2*100,center1,center2))
                         plt.legend(loc=4)
                 except:
                     pass
@@ -1087,10 +1091,10 @@ class tableXY(object):
                     if ccf_profile.convergence:
                         if ccf_profile.params['wid'].stderr is not None:
                             width_err = ccf_profile.params['wid'].stderr/1000*2.355
-                        
+
                         if ccf_profile.params['cen'].stderr is not None:
                             ct_err = ccf_profile.params['cen'].stderr
-  
+
                         if ccf_profile.params['amp'].stderr is not None:
                             amp_err = 100*(ccf_profile.params['amp'].stderr/ccf_profile.params['offset'].value)
 
@@ -1104,6 +1108,6 @@ class tableXY(object):
                             width_err,
                             ccf_profile.params['cen'].value+rv_sys,
                             ct_err))
-            
+
             if return_mask:
                 return log_grid, log_template, used_region

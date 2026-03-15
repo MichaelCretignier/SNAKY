@@ -1,5 +1,5 @@
 """
-@author: Cretignier Michael 
+@author: Cretignier Michael
 @university University of Geneva
 """
 
@@ -30,6 +30,9 @@ from colorama import Fore
 
 from collections import namedtuple
 from typing import TypeVar
+import logging
+
+logger = logging.getLogger('snaky')
 
 MATERIAL_DIR = myv.MATERIAL_DIR
 
@@ -43,10 +46,10 @@ pickle_protocol_version = 5
 
 #astronomical units
 
-udeg = 1*u.deg 
-uarcmin = 1*u.arcmin 
+udeg = 1*u.deg
+uarcmin = 1*u.arcmin
 
-#astronomical constant 
+#astronomical constant
 
 Mass_sun = 1.99e30
 Mass_earth = 5.97e24
@@ -76,7 +79,7 @@ def time_step(func):
         result = func(*args, **kwargs)
         end = time.perf_counter()
         elapsed = end - start
-        print(f"[TIME] {func.__name__}: {elapsed:.3f} s")
+        logger.debug(f"[TIME] {func.__name__}: {elapsed:.3f} s")
         return result
     return wrapper
 
@@ -84,16 +87,16 @@ def print_ram(step=''):
     process = psutil.Process(os.getpid())
     mem_usage = process.memory_info().rss / (1024 * 1024)/1000  # Conversion en Mo
 
-    print(Fore.CYAN +" [COMP] RAM used now (%s) : %.2f Go\n"%(step,mem_usage),Fore.RESET+'')
+    logger.debug(f"[COMP] RAM used now ({step}) : {mem_usage:.2f} Go\n")
 
 
 def find_turbulence(teff, logg):
     """From Bruntt+10 """
-    
+
     if logg>4.0:
         DT = teff-5700
 
-        vmac = 2.26 + 2.90e-3*DT + 5.86e-7*DT**2  #Eq 9  (5000-6500K + log<4.0) 
+        vmac = 2.26 + 2.90e-3*DT + 5.86e-7*DT**2  #Eq 9  (5000-6500K + log<4.0)
         vmic = 1.01 + 4.56e-4*DT + 2.75e-7*DT**2  #Eq 10 (5000-6500K + log<4.0)
 
         if teff<4750:
@@ -133,10 +136,10 @@ def find_stellar_mass_radius(Teff, sp_type='G2V'):
             break
         except:
             lim+=1
-    
+
     class_lum = sp_type[len(sp_type)-lim:]
     if class_lum=='':
-        class_lum='V'    
+        class_lum='V'
     if class_lum!='V':
         class_lum='IV'
     calib = pd.read_pickle(MATERIAL_DIR+'/logT_logM_logR.p')[class_lum]
@@ -151,7 +154,7 @@ def find_stellar_mass_radius(Teff, sp_type='G2V'):
 def update_info_lvl2(file,kw1,kw2,value):
     if kw1 not in file.keys():
         file[kw1] = {}
-    
+
     file[kw1][kw2] = value
     return file
 
@@ -195,7 +198,7 @@ def touch_pickle(filename):
 
 def touch_npy(filename):
     if not os.path.exists(filename):
-        arr = np.array([]) 
+        arr = np.array([])
         np.save(filename, arr)
         return arr
     else:
@@ -206,18 +209,18 @@ def local_max(spectre,vicinity):
     maxima = np.ones(len(vec_base))
     for k in range(1,vicinity):
         maxima *= 0.5*(1+np.sign(vec_base - spectre[vicinity-k:-vicinity-k]))*0.5*(1+np.sign(vec_base - spectre[vicinity+k:-vicinity+k]))
-    
+
     index = np.where(maxima==1)[0]+vicinity
     if len(index)==0:
         index = np.array([0,len(spectre)-1])
-    flux = spectre[index]       
+    flux = spectre[index]
     return np.array([index,flux])
 
 def smooth(y, box_pts, shape='rectangular'): #rectangular kernel for the smoothing
     box2_pts = int(2*box_pts-1)
     if type(shape)==int:
         y_smooth = np.ravel(pd.DataFrame(y).rolling(box_pts,min_periods=1,center=True).quantile(shape/100))
-    
+
     elif shape=='savgol':
         if box2_pts>=5:
             y_smooth = savgol_filter(y, box2_pts, 3)
@@ -250,20 +253,20 @@ def conv_rhk_prot(log_rhk, bv):
     y = log_rhk+5
     log_t = int(x>0)*(1.362 - 0.166*x + 0.025*x**2 - 5.323*x**3) + int(x<0)*(1.362 - 0.14*x)
     log_p = log_t + 0.324 - 0.4*y - 0.283*y**2 - 1.325*y**3
-    
+
     prot_n84 = 10**log_p
     sig_prot_n84 = np.log(10)*0.08*prot_n84
 
     prot_m08 = (0.808-2.966*(log_rhk+4.52))*10**log_t
     sig_prot_m08 = 4.4*bv*1.7-1.7
-    
+
     if (prot_m08 > 0.) & (bv >= 0.50):
         age_m08 = 1e-3*(prot_m08/0.407/(bv-0.495)**0.325)**(1./0.566)
         sig_age_m08 = 0.05*np.log(10)*age_m08
     else:
         age_m08 = 0.0
         sig_age_m08 = 0.0
-    
+
     return prot_n84, sig_prot_n84, prot_m08, sig_prot_m08, age_m08, sig_age_m08
 
 
@@ -272,7 +275,7 @@ def find_nearest(array,value,dist_abs=True,closest='abs'):
         array = np.array(array)
     if type(value)!=np.ndarray:
         value = np.array([value])
-    
+
     array[np.isnan(array)] = 1e16
 
     dist = array-value[:,np.newaxis]
@@ -281,8 +284,8 @@ def find_nearest(array,value,dist_abs=True,closest='abs'):
     elif closest=='high':
         dist[dist<0] = np.inf
     idx = np.argmin(np.abs(dist),axis=1)
-    
-    distance = abs(array[idx]-value) 
+
+    distance = abs(array[idx]-value)
     if dist_abs==False:
         distance = array[idx]-value
     return idx, array[idx], distance
@@ -304,31 +307,31 @@ def find_nearest_ndim(array, value, znorm=True):
         array = np.array(array)
     if type(value)!=np.ndarray:
         value = np.array([value])
-    
+
     array[np.isnan(array)] = 1e16
-    
+
     array1 = array.copy()
     array2 = value.copy()
-    
+
     if znorm:
         med_vec = np.median(array1,axis=1)[:,np.newaxis]
         mad_vec = mad(array1,axis=1)[:,np.newaxis]
     else:
         med_vec = np.zeros(len(array1)).astype(type(array1[0]))[:,np.newaxis]
         mad_vec = np.ones(len(array1)).astype(type(array1[0]))[:,np.newaxis]
-        
+
     array1 = array1 - med_vec
     array2 = array2 - med_vec
-    
+
     array1/= mad_vec
     array2/= mad_vec
-    
-    
+
+
     dist = np.sum([abs(array1[j]-array2[j][:,np.newaxis]) for j in np.arange(len(array1))],axis=0)
-    idx = np.argmin(dist,axis=1)    
-        
+    idx = np.argmin(dist,axis=1)
+
     distance = np.array([np.sum(abs(array1[:,i1]-array2[:,i2])) for i1,i2 in zip(idx,np.arange(len(array2.T)))])
-    
+
     return idx, array1[:,idx], distance
 
 def clustering(array, tresh, num):
@@ -336,7 +339,7 @@ def clustering(array, tresh, num):
     cluster = (difference<tresh)
     if len(cluster)>0:
         indice = np.arange(len(cluster))[cluster]
-        
+
         j = 0
         border_left = [indice[0]]
         border_right = []
@@ -347,17 +350,17 @@ def clustering(array, tresh, num):
                 border_right.append(indice[j])
                 border_left.append(indice[j+1])
                 j+=1
-        border_right.append(indice[-1])        
+        border_right.append(indice[-1])
         border = np.array([border_left,border_right]).T
         border = np.hstack([border,(1+border[:,1]-border[:,0])[:,np.newaxis]])
-        
+
         kept = []
         for j in range(len(border)):
             if border[j,-1]>=num:
                 kept.append(array[border[j,0]:border[j,1]+2])
         return kept, border
     else:
-        print('no cluster found with such treshhold')
+        logger.debug('no cluster found with such treshhold')
 
 def flat_clustering(length,cluster_output,extended=0,elevation=1):
     vec_init = np.arange(length)
@@ -371,7 +374,7 @@ def flat_clustering(length,cluster_output,extended=0,elevation=1):
         vecs = np.array_split(vec_init,total_cut)
     else: #old recipe
         vecs = [vec_init]
-    
+
     flat = []
     for vec in vecs:
         larger = (vec >= (cluster_output[:,0][:,np.newaxis]-extended)).astype('int')*elevation[:,np.newaxis]
@@ -379,15 +382,15 @@ def flat_clustering(length,cluster_output,extended=0,elevation=1):
         flat.append(np.sqrt(np.sum(larger*smaller,axis=0)))
     flat = np.hstack(flat)
     return flat
-    
+
 
 def identify_nearest_deprecated(array1,array2):
     """identify the closest elements in array2 of array1"""
     array1 = np.sort(array1)
     array2 = np.sort(array2)
-    
+
     identification = []
-    
+
     begin=0
     for value in tqdm(array1):
         begin2 = find_nearest(array2[begin:],value)[0][0]
@@ -395,7 +398,7 @@ def identify_nearest_deprecated(array1,array2):
         begin=int(begin2)
 
     return np.ravel(identification)
-    
+
 def identify_nearest(array1, array2):
     array1 = np.sort(array1)
     array2 = np.sort(array2)
@@ -420,15 +423,15 @@ def match_unique_closest(array1, array2):
     if type(array1)!=np.ndarray:
         array1 = np.array(array1)
     if type(array2)!=np.ndarray:
-        array2 = np.array(array2)    
+        array2 = np.array(array2)
     if not (np.prod(~np.isnan(array1))*np.prod(~np.isnan(array2))):
-        print('there is a nan value in your list, remove it first to be sure of the algorithme reliability')
-    index1 = np.arange(len(array1))[~np.isnan(array1)] ; index2 = np.arange(len(array2))[~np.isnan(array2)]  
+        logger.debug('there is a nan value in your list, remove it first to be sure of the algorithme reliability')
+    index1 = np.arange(len(array1))[~np.isnan(array1)] ; index2 = np.arange(len(array2))[~np.isnan(array2)]
     array1 = array1[~np.isnan(array1)] ;  array2 = array2[~np.isnan(array2)]
     liste1 = np.arange(len(array1))[:,np.newaxis]*np.hstack([np.ones(len(array1))[:,np.newaxis],np.zeros(len(array1))[:,np.newaxis]])
     liste2 = np.arange(len(array2))[:,np.newaxis]*np.hstack([np.ones(len(array2))[:,np.newaxis],np.zeros(len(array2))[:,np.newaxis]])
     liste1 = liste1.astype('int') ; liste2 = liste2.astype('int')
-    
+
     if len(array1)>1:
         dmin = np.diff(np.sort(array1)).min()
     else:
@@ -443,46 +446,46 @@ def match_unique_closest(array1, array2):
     m = array2_r-array1_r[:,np.newaxis]
     m_line = np.ones(len(array2_r))*np.arange(len(array1_r))[:,np.newaxis]
     m_col = np.arange(len(array2_r))*np.ones(len(array1_r))[:,np.newaxis]
-    
-    
+
+
     save = []
-    
+
     for j in range(np.min([len(array1_r),len(array2_r)])):
         line,col = np.where(m==np.nanmin(abs(m)))
         if len(line):
             line = line[0]
             col = col[0]
             save.append([m_line[line][col], m_col[line][col], array1_r[line],  array2_r[col], m[line][col]])
-            
+
             m = np.delete(m,line,axis=0)
             m = np.delete(m,col,axis=1)
-    
+
             m_col = np.delete(m_col,line,axis=0)
-            m_col = np.delete(m_col,col,axis=1)    
-    
+            m_col = np.delete(m_col,col,axis=1)
+
             m_line = np.delete(m_line,line,axis=0)
-            m_line = np.delete(m_line,col,axis=1)    
+            m_line = np.delete(m_line,col,axis=1)
         else:
             break
-    
+
     save = np.array(save)
-    
-    return save     
-    
+
+    return save
+
 def match_nearest(array1, array2,fast=True,max_dist=None,random=True):
     """return a table [idx1,idx2,num1,num2,distance] matching the closest element from two arrays. Remark : algorithm very slow by conception if the arrays are too large."""
     if type(array1)!=np.ndarray:
         array1 = np.array(array1)
     if type(array2)!=np.ndarray:
-        array2 = np.array(array2)    
+        array2 = np.array(array2)
     if not (np.prod(~np.isnan(array1))*np.prod(~np.isnan(array2))):
-        print('there is a nan value in your list, remove it first to be sure of the algorithme reliability')
-    index1 = np.arange(len(array1))[~np.isnan(array1)] ; index2 = np.arange(len(array2))[~np.isnan(array2)]  
+        logger.debug('there is a nan value in your list, remove it first to be sure of the algorithme reliability')
+    index1 = np.arange(len(array1))[~np.isnan(array1)] ; index2 = np.arange(len(array2))[~np.isnan(array2)]
     array1 = array1[~np.isnan(array1)] ;  array2 = array2[~np.isnan(array2)]
     liste1 = np.arange(len(array1))[:,np.newaxis]*np.hstack([np.ones(len(array1))[:,np.newaxis],np.zeros(len(array1))[:,np.newaxis]])
     liste2 = np.arange(len(array2))[:,np.newaxis]*np.hstack([np.ones(len(array2))[:,np.newaxis],np.zeros(len(array2))[:,np.newaxis]])
     liste1 = liste1.astype('int') ; liste2 = liste2.astype('int')
-    
+
     if fast:
         #ensure that the probability for two close value to be the same is null
         if len(array1)>1:
@@ -506,26 +509,26 @@ def match_nearest(array1, array2,fast=True,max_dist=None,random=True):
         array2_k = array2[liste_idx2]
 
         liste_idx1 = index1[liste_idx1]
-        liste_idx2 = index2[liste_idx2] 
-        
+        liste_idx2 = index2[liste_idx2]
+
         mat = np.hstack([liste_idx1[:,np.newaxis],liste_idx2[:,np.newaxis],
-                          array1_k[:,np.newaxis],array2_k[:,np.newaxis],(array1_k-array2_k)[:,np.newaxis]]) 
-        
+                          array1_k[:,np.newaxis],array2_k[:,np.newaxis],(array1_k-array2_k)[:,np.newaxis]])
+
         if max_dist is not None:
            mat = mat[(abs(mat[:,-1])<max_dist)]
-        
+
         return mat
-             
+
     else:
         for num,j in enumerate(array1):
             liste1[num,1] = int(find_nearest(array2,j)[0])
         for num,j in enumerate(array2):
             liste2[num,1] = int(find_nearest(array1,j)[0])
-            
+
         save = liste2[:,0].copy()
         liste2[:,0] = liste2[:,1].copy()
-        liste2[:,1] = save.copy() 
-        
+        liste2[:,1] = save.copy()
+
         liste1 = np.vstack([liste1,liste2])
         liste = []
         for j in np.unique(liste1,axis=0):
@@ -535,17 +538,17 @@ def match_nearest(array1, array2,fast=True,max_dist=None,random=True):
         distance = []
         for j in liste[:,0]:
             distance.append(find_nearest(array2,array1[j],dist_abs=False)[2])
-        
+
         liste_idx1 = index1[liste[:,0]]
-        liste_idx2 = index2[liste[:,1]] 
-        
+        liste_idx2 = index2[liste[:,1]]
+
         mat = np.hstack([liste_idx1[:,np.newaxis],liste_idx2[:,np.newaxis],array1[liste[:,0],np.newaxis],array2[liste[:,1],np.newaxis],np.array(distance)[:,np.newaxis]])
-        
+
         if max_dist is not None:
             mat = mat[(abs(mat[:,-1])<max_dist)]
-        
+
         return mat
-  
+
 
 def planck_function(wave,Teff):
     y = 2*myv.h_planck*myv.c_lum/wave**5*(np.exp(myv.h_planck*myv.c_lum/(myv.k_boltz*Teff*wave*1e-10))-1)**-1
@@ -559,22 +562,22 @@ def black_body_ratio(T0,teff,wave):
     return planck_factor
 
 def ccf_deprecated(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=10, spec1_std=None):
-    "CCF for a equidistant grid in log wavelength spec1 = spectrum, spec2 =  binary mask"   
+    "CCF for a equidistant grid in log wavelength spec1 = spectrum, spec2 =  binary mask"
 
     if myv.DEV:
         save = {'wave':wave,'spec1':spec1,'spec2':spec2,'extended':extended,'rv_range':rv_range,'oversampling':oversampling}
 
     dwave = np.median(np.diff(wave))
-    
+
     if spec1_std is None:
         spec1_std = np.zeros(np.shape(spec1))
-    
+
     if len(np.shape(spec1))==1:
         spec1 = spec1[:,np.newaxis].T
     if len(np.shape(spec1_std))==1:
         spec1_std = spec1_std[:,np.newaxis].T
     #spec1 = np.hstack([np.ones(extended),spec1,np.ones(extended)])
-    
+
     spec1 = np.hstack([np.ones((len(spec1),extended)),spec1,np.ones((len(spec1),extended))])
     spec2 = np.hstack([np.zeros(extended),spec2,np.zeros(extended)])
     spec1_std = np.hstack([np.zeros((len(spec1_std),extended)), spec1_std, np.zeros((len(spec1_std),extended))])
@@ -584,7 +587,7 @@ def ccf_deprecated(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=
     sum_spec = np.nansum(spec2)
     convolution = []
     convolution_std = []
-    
+
     rv_max = int(np.log10((rv_range/299.792e3)+1)/dwave)
     for j in tqdm(shift):
         new_spec = interp1d(wave+j,spec2,kind='linear', bounds_error=False, fill_value='extrapolate')(wave)
@@ -604,9 +607,9 @@ def ccf_deprecated(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=
         save['velocity'] = velocity
         save['conv'] = conv
         pickle.dump(save,open('/Users/cretignier/Desktop/Snaky/%.0f.p'%(np.random.randint(100)),'wb'))
-    
+
     return velocity, conv, conv_std
-    
+
 DType = TypeVar("DType", bound=np.generic)
 
 def pad(arr, amount: int, pad_value: float = 0):
@@ -714,14 +717,14 @@ def ccf(
     return velocity, convolution, conv_std
 
 def ccf(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=3, spec1_std=None, method='cubic'):
-    "CCF for a equidistant grid in log wavelength spec1 = spectrum, spec2 =  binary mask"   
+    "CCF for a equidistant grid in log wavelength spec1 = spectrum, spec2 =  binary mask"
 
     dwave = np.median(np.diff(wave))
-        
+
     if len(np.shape(spec1))==1:
         spec1 = spec1[:,np.newaxis].T
     #spec1 = np.hstack([np.ones(extended),spec1,np.ones(extended)])
-    
+
     spec1 = np.hstack([np.ones((len(spec1),extended)),spec1,np.ones((len(spec1),extended))])
     spec2 = np.hstack([np.zeros(extended),spec2,np.zeros(extended)])
     wave = np.hstack([np.arange(-extended*dwave+wave.min(),wave.min(),dwave),wave,np.arange(wave.max()+dwave,(extended+1)*dwave+wave.max(),dwave)])
@@ -765,11 +768,11 @@ def GND(x,cen,amp,offset,wid,beta):
 
 def gaussian(x, cen, amp, offset, wid):
     """width the classical sigma (FWHM=2.355*sigma)"""
-    return amp * np.exp(-(x-cen)**2 / (2*wid**2))+offset    
+    return amp * np.exp(-(x-cen)**2 / (2*wid**2))+offset
 
 
 def substract_model(x, y, *par):
-    if np.shape(par[0])==(): 
+    if np.shape(par[0])==():
         a, b = par[0], par[1]
     else:
         a, b = par[0]
@@ -789,21 +792,21 @@ def string_contained_in(array,string,inv=False,exclusion=[]):
         mask = mask&(~split.astype('bool'))
 
     return mask, array[mask]
-    
+
 
 def rm_outliers(array, m=1.5, kind='sigma',axis=0, return_borders=False,Plot=False):
     if type(array)!=np.ndarray:
         array=np.array(array)
-    
+
     if m!=0:
         array[array==np.inf] = np.nan
         #array[array!=array] = np.nan
-        
+
         if kind == 'inter':
             interquartile = np.nanpercentile(array, 75, axis=axis) - np.nanpercentile(array, 25, axis=axis)
             inf = np.nanpercentile(array, 25, axis=axis)-m*interquartile
-            sup = np.nanpercentile(array, 75, axis=axis)+m*interquartile    
-            if axis==0:        
+            sup = np.nanpercentile(array, 75, axis=axis)+m*interquartile
+            if axis==0:
                 mask = (array >= inf)&(array <= sup)
             else:
                 mask = (array.T >= inf)&(array.T <= sup)
@@ -817,20 +820,20 @@ def rm_outliers(array, m=1.5, kind='sigma',axis=0, return_borders=False,Plot=Fal
             mad = np.nanmedian(abs(array-median), axis=axis)
             sup = median+m * mad * 1.48
             inf = median-m * mad * 1.48
-            if axis==0:        
+            if axis==0:
                 mask = (array >= inf)&(array <= sup)
             else:
                 mask = (array.T >= inf)&(array.T <= sup)
-                mask = mask.T            
+                mask = mask.T
     else:
         mask = np.ones(len(array)).astype('bool')
-    
+
     if Plot:
         plt.plot(array)
         plt.plot(np.arange(len(array))[mask],array[mask])
 
     if return_borders:
-        return mask,  array[mask], sup, inf        
+        return mask,  array[mask], sup, inf
     else:
         return mask,  array[mask]
 
@@ -879,13 +882,13 @@ def instrBroadGaussFast(wvl, flux, resolution, edgeHandling=None, fullout=False,
     if not fullout:
         return result
     else:
-        return (result, fwhm)    
+        return (result, fwhm)
 
 def print_box(sentence):
     print('\n')
-    print('L'*len(sentence))
-    print(sentence)
-    print('T'*len(sentence))
+    logger.debug('L'*len(sentence))
+    logger.debug(sentence)
+    logger.debug('T'*len(sentence))
     print('\n')
 
 def doppler_r(lamb,v):
@@ -907,7 +910,7 @@ def posterior_sin_i_from_samples(samples_v,
                                  vsini_sigma_override=None,
                                  rng_seed=0,
                                  plot=True):
-    
+
     rng = np.random.default_rng(rng_seed)
 
     samples_v = np.asarray(samples_v)
@@ -1011,9 +1014,9 @@ def posterior_sin_i_from_samples(samples_v,
 
 
 def only_axis(color=None,lw=2,ax=None,side='all',ls='-'):
-    plt.tick_params(left=False,bottom=False,labelleft=False,labelbottom=False)  
+    plt.tick_params(left=False,bottom=False,labelleft=False,labelbottom=False)
 
-def conv_time(time):    
+def conv_time(time):
     time = np.array(time)
     if (type(time[0])==np.float64)|(type(time[0])==np.int64):
         fmt='mjd'
@@ -1028,27 +1031,27 @@ def conv_time(time):
         else:
             t0 = np.array([Time.Time(i, format=fmt).mjd for i in time])
             t1 = time
-            t2 = np.array([Time.Time(i, format=fmt).isot for i in time])            
+            t2 = np.array([Time.Time(i, format=fmt).isot for i in time])
     elif type(time[0])==np.str_:
         fmt='isot'
-        t0 = np.array([Time.Time(i, format=fmt).jd-2400000 for i in time]) 
+        t0 = np.array([Time.Time(i, format=fmt).jd-2400000 for i in time])
         t1 = np.array([Time.Time(i, format=fmt).decimalyear for i in time])
-        t2 = time  
+        t2 = time
     return t0,t1,t2
-    
+
 def observatory(instrument='HARPS'):
     if instrument=='HARPS':
-        obs_loc = EarthLocation(lat=-29.260972*u.deg, lon=-70.731694*u.deg, height=2400) 
+        obs_loc = EarthLocation(lat=-29.260972*u.deg, lon=-70.731694*u.deg, height=2400)
     elif instrument=='HARPS03':
-        obs_loc = EarthLocation(lat=-29.260972*u.deg, lon=-70.731694*u.deg, height=2400) 
+        obs_loc = EarthLocation(lat=-29.260972*u.deg, lon=-70.731694*u.deg, height=2400)
     elif instrument=='HARPS15':
-        obs_loc = EarthLocation(lat=-29.260972*u.deg, lon=-70.731694*u.deg, height=2400) 
+        obs_loc = EarthLocation(lat=-29.260972*u.deg, lon=-70.731694*u.deg, height=2400)
     elif instrument=='HARPN':
-        obs_loc = EarthLocation(lat=28.754000*u.deg, lon=-17.889055*u.deg, height=2387.2) 
+        obs_loc = EarthLocation(lat=28.754000*u.deg, lon=-17.889055*u.deg, height=2387.2)
     elif instrument=='ESPRESSO':
         obs_loc = EarthLocation(lat=-24.627622*u.deg, lon=-70.405075*u.deg, height=2635)
     elif instrument=='ESPRESSO18':
-        obs_loc = EarthLocation(lat=-24.627622*u.deg, lon=-70.405075*u.deg, height=2635) 
+        obs_loc = EarthLocation(lat=-24.627622*u.deg, lon=-70.405075*u.deg, height=2635)
     elif instrument=='ESPRESSO19':
         obs_loc = EarthLocation(lat=-24.627622*u.deg, lon=-70.405075*u.deg, height=2635)
     elif instrument=='EXPRES':
@@ -1058,15 +1061,15 @@ def observatory(instrument='HARPS'):
     elif instrument=='Geneva':
         obs_loc = EarthLocation(lat=46.204391*u.deg, lon=6.143158*u.deg, height=300)
     elif instrument=='CORALIE14':
-        obs_loc = EarthLocation(lat=-29.260972*u.deg, lon=-70.731694*u.deg, height=2400) 
+        obs_loc = EarthLocation(lat=-29.260972*u.deg, lon=-70.731694*u.deg, height=2400)
     elif instrument=='CORALIE07':
-        obs_loc = EarthLocation(lat=-29.260972*u.deg, lon=-70.731694*u.deg, height=2400) 
+        obs_loc = EarthLocation(lat=-29.260972*u.deg, lon=-70.731694*u.deg, height=2400)
     elif instrument=='CORALIE98':
-        obs_loc = EarthLocation(lat=-29.260972*u.deg, lon=-70.731694*u.deg, height=2400) 
+        obs_loc = EarthLocation(lat=-29.260972*u.deg, lon=-70.731694*u.deg, height=2400)
     elif instrument=='SOPHIE':
-        obs_loc = EarthLocation(lat=43.930833*u.deg, lon=5.713333*u.deg, height=650) 
+        obs_loc = EarthLocation(lat=43.930833*u.deg, lon=5.713333*u.deg, height=650)
     elif instrument=='PEPSI':
-        obs_loc = EarthLocation(lat=32.701388*u.deg, lon=-109.889166*u.deg, height=3221) 
+        obs_loc = EarthLocation(lat=32.701388*u.deg, lon=-109.889166*u.deg, height=3221)
     elif instrument=='UVES':
         obs_loc = EarthLocation(lat=-24.627622*u.deg, lon=-70.405075*u.deg, height=2635)
     elif instrument=='ESPADONS':
@@ -1075,13 +1078,13 @@ def observatory(instrument='HARPS'):
         obs_loc = EarthLocation(lat=31.9584*u.deg, lon=-111.5987*u.deg, height=2096)
     elif instrument=='KPF':
         obs_loc = EarthLocation(lat=19.8261*u.deg, lon=-155.4700*u.deg, height=4145)
-    
+
     return obs_loc
 
 def interpolate_rv_shift(x,y,xnew=None,rv=0,fill_value=0,kind='linear'):
     if xnew is None:
         xnew = x.copy()
-    
+
     interp_values = interp1d(
         doppler_r(x, rv)[1], y,
         bounds_error=False,

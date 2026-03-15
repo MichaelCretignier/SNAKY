@@ -1,7 +1,10 @@
 import glob as glob
-import numpy as np 
+import numpy as np
 import os
 
+import logging
+
+logger = logging.getLogger('snaky')
 cwd = os.getcwd()
 root = '/'.join(cwd.split('/')[:-1])
 
@@ -15,7 +18,7 @@ for f in files_to_compile:
 process = np.array(process)
 
 if len(process)==0:
-    print(' [INFO] No files were found to be merged. Did you already build the code?')
+    logger.info('No files were found to be merged. Did you already build the code?')
 else:
     for p in np.unique(process[:,1]):
         split_files = process[process[:,1]==p]
@@ -33,9 +36,9 @@ else:
             merged = np.vstack(merged)
 
         np.save(root+'/Material_snaky/'+filename,merged.astype(tp))
-        print(' [INFO] The table was recreated: ',root+'/Material_snaky/'+filename)
-        
-        print(' [INFO] The splited subparts will be erased...')
+        logger.info('The table was recreated: ',root+'/Material_snaky/'+filename)
+
+        logger.info('The splited subparts will be erased...')
         for f in files:
-            print(' [INFO] %s was deleted'%(f))
+            logger.info(f'{f:s} was deleted')
             os.system('rm '+f)

@@ -1,5 +1,5 @@
-import os 
-import numpy as np 
+import os
+import numpy as np
 import matplotlib.pylab as plt
 import pandas as pd
 import pickle
@@ -12,6 +12,9 @@ from . import snaky_classes as myc
 from . import snaky_variables as myv
 from . import snaky_main as mym
 
+import logging
+
+logger = logging.getLogger('snaky')
 version = mym.__version__
 
 def check_snaky_processing(output_dir,instrument='*'):
@@ -21,7 +24,7 @@ def check_snaky_processing(output_dir,instrument='*'):
     instruments = np.unique([i.split('/')[-2] for i in instruments])
     extract = []
     for instrument in instruments:
-        print('\n[INFO] Summary for the instrument : %s \n'%(instrument))
+        logger.info('Summary for the instrument : %s \n'%(instrument))
         all_dir = glob.glob(output_dir+'/*/data/s1d/'+instrument+'/RAW')
         stars = [d.split('/data')[0].split('/')[-1] for d in all_dir]
         ins = [d.split('/RAW')[0].split('/')[-1] for d in all_dir]
@@ -44,7 +47,7 @@ def check_snaky_processing(output_dir,instrument='*'):
             'force_spectroscopy',
             'force_magcycle',
             ]
-        
+
         for kw in kws:
             all_files2 = glob.glob(output_dir+'/*/data/s1d/'+instrument+'/REDUCTION_INFO/'+kw+'.txt')
             stars2 = [d.split('/data')[0].split('/')[-1] for d in all_files2]
@@ -56,18 +59,18 @@ def check_snaky_processing(output_dir,instrument='*'):
         all_info = all_info.sort_values(by='code').reset_index(drop=True)
         nb_stars = len(all_info)
         stat = [nb_stars]
-        print('total = %.0f'%(nb_stars))
+        logger.debug(f'total = {nb_stars:.0f}')
         save = []
         for kw in kws:
             nb = int(nb_stars-np.sum(all_info[kw.split('_')[1][0:5]]=='XXXX'))
             percentage = 100*nb/(nb_stars+1e-6)
             if percentage>99:
-                print(Fore.GREEN+'%s = %.0f (%.1f%%)'%(kw,nb,percentage)+Fore.RESET)
+                logger.info('%s = %.0f (%.1f%%)'%(kw,nb,percentage))
             else:
-                print(Fore.YELLOW+'%s = %.0f (%.1f%%)'%(kw,nb,percentage)+Fore.RESET)
+                logger.warning('%s = %.0f (%.1f%%)'%(kw,nb,percentage))
             save.append(nb)
         extract.append([instrument]+[nb_stars]+save)
-        print('\n[INFO] File DB created: '+output_dir+'/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
+        logger.info('File DB created: '+output_dir+'/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
         all_info.to_csv(output_dir+'/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
     new_name = [k.split('_')[1] for k in kws]
     extract = pd.DataFrame(extract,columns=['ins','Ntot']+new_name)
@@ -92,7 +95,7 @@ def check_snaky_processing(output_dir,instrument='*'):
     table.auto_set_column_width(col=list(range(len(extract.columns))))
     plt.tight_layout()
     plt.savefig(output_dir+'/database/Summary_processing_percentage.png')
-    
+
 
 def check_comp_rqm(output_dir,instrument='*'):
     os.makedirs(output_dir+'/database/processing_stat_%s'%(version), exist_ok=True)
@@ -106,7 +109,7 @@ def check_comp_rqm(output_dir,instrument='*'):
         instruments.append('*')
         for instrument in instruments[::-1]:
             all_dir = glob.glob(output_dir+'/*/data/s1d/'+instrument+'/REDUCTION_INFO/Time_info*_N*_GBP*_GBT*.png')
-            
+
             stars = [d.split('/data')[0].split('/')[-1] for d in all_dir]
             ins = [d.split('/REDUCTION_INFO')[0].split('/')[-1] for d in all_dir]
             code = np.unique([s+'_'+i for s,i in zip(stars,ins)])
@@ -138,7 +141,7 @@ def check_comp_rqm(output_dir,instrument='*'):
             if x2 is None:
                 x2 = 4000#np.max(N)*1.1
                 y1 = np.max(total_time)*1.2
-            plt.xscale('log') ; plt.yscale('log')            
+            plt.xscale('log') ; plt.yscale('log')
             plt.grid()
             if perc is not None:
                 for p in perc:
@@ -169,7 +172,7 @@ def check_comp_rqm(output_dir,instrument='*'):
             filename = output_dir+'/database/processing_stat_%s/Processing_stat_%s.png'%(version,instrument)
             plt.savefig(filename)
             plt.close(instrument)
-            print('Figure created: %s'%(filename))
+            logger.debug(f'Figure created: {filename:s}')
 
 def create_snaky_db(output_dir, filename='All_stars', stars=['*'], branch=None):
     os.makedirs(output_dir+'/database', exist_ok=True)
@@ -199,7 +202,7 @@ def create_snaky_db(output_dir, filename='All_stars', stars=['*'], branch=None):
         spectro = instrument.split('_')[0]
         drs = instrument.split('_')[1]
         pipeline = f.split('/'+star)[0].split('/')[-1]
-        processing = {'matching_diff':'YV0','matching_instrument':'YVA','matching_mad':'YV1'}[sub_dico] 
+        processing = {'matching_diff':'YV0','matching_instrument':'YVA','matching_mad':'YV1'}[sub_dico]
         code = star+'_'+spectro+'_'+drs+'_'+pipeline
 
         ra = np.round(myf.get_info_lvl2(info,'Ra','SNAKY'),6)
@@ -260,11 +263,11 @@ def create_snaky_db(output_dir, filename='All_stars', stars=['*'], branch=None):
     infos = infos.reset_index(drop=True)
 
     nb_processed = len(np.unique(infos['star']))
-    print(infos)
+    logger.debug(infos)
 
-    print('\n [INFO] %.0f datasets'%(len(infos)))
+    logger.info('%.0f datasets'%(len(infos)))
     percentage = 100*nb_processed/ntot
-    print('\n [INFO] Nb unique stars processed = %.0f (%.0f%%)\n'%(nb_processed,percentage))
+    logger.info('Nb unique stars processed = %.0f (%.0f%%)\n'%(nb_processed,percentage))
 
     infos.to_csv(output_dir+'/database/'+filename+'_summary_infos.csv')
 
@@ -363,7 +366,7 @@ def create_snaky_rv_db(output_dir,filename='All_stars', stars=['*'], infos=None,
     for s in tqdm(stars):
         infos2 = []
         plt.figure('rv')
-        for f in glob.glob(output_dir+'/'+s+'/data/s1d/*/STAR_INFO/Stellar_info_*p'): 
+        for f in glob.glob(output_dir+'/'+s+'/data/s1d/*/STAR_INFO/Stellar_info_*p'):
             info = pd.read_pickle(f)
             star = f.split('/data')[0].split('/')[-1]
             instrument = f.split('/STAR_INFO')[0].split('/')[-1]
@@ -376,9 +379,9 @@ def create_snaky_rv_db(output_dir,filename='All_stars', stars=['*'], infos=None,
                 rv_sys = info['Rv_sys']['SNAKY']
                 summary = pd.read_csv(f.split('STAR_INFO/')[0]+'WORKSPACE/Analyse_summary.csv',index_col=0)
             except:
-                print(' [ERROR] %s has no RV_SYS'%(s))
+                logger.error('%s has no RV_SYS'%(s))
                 summary = {}
-            
+
             if 'ccf_rv_G2' in summary.keys():
                 if 'rv_shift' not in summary.keys():
                     summary['rv_shift'] = 0
@@ -400,13 +403,13 @@ def create_snaky_rv_db(output_dir,filename='All_stars', stars=['*'], infos=None,
 
         if len(infos2):
             plt.xlabel('Jdb - 2,400,000 [days]')
-            plt.ylabel('RV [km/s]')  
+            plt.ylabel('RV [km/s]')
             plt.legend()
 
             infos2 = pd.concat(infos2)
             infos2 = infos2.reset_index(drop=True)
             infos.append(infos2)
-            
+
             if anonymous:
                 japanese_names = ["太郎", "花子", "健", "美咲", "翔", "愛", "直樹", "由美", "大輔", "陽菜", "拓也", "彩", "悠斗", "真央", "和也", "玲奈", "誠", "さくら", "隼人", "結衣", "隆", "千尋", "慎一", "奈々", "智也", "美穂", "剛", "麻衣", "亮", "久美子",'宮崎','なおみ']
                 matching = {i:k for i,k in zip(np.unique(infos2['ins']), np.random.choice(japanese_names,len(np.unique(infos2['ins'])),replace=False))}
@@ -419,7 +422,7 @@ def create_snaky_rv_db(output_dir,filename='All_stars', stars=['*'], infos=None,
                 infos_p.append(infos2)
             plt.savefig(output_dir+'/'+s+'/data/s1d/ALLINS_MERGED/RV.png')
             plt.close('rv')
-            
+
             #infos2[['ins','jdb','rv','rv_std']].to_csv(output_dir+'/'+s+'/data/s1d/ALLINS_MERGED/RV_anonymous.csv')
 
     infos = pd.concat(infos)
@@ -500,7 +503,7 @@ def plot_starinfo(output_dir, ins='*', xvar='Teff_SNAKY', yvar='FWHM_G2', cvar=N
     Search inside thr Stellar_info*.p SNAKY files and query the values according to a two levels search of the variables:
     xvar = 'X_Y' implies -> sinfo[X][Y]
     """
-    
+
     root = '/'.join(output_dir.split('/')[:-1])
     if branch is None:
         branch = output_dir.split('/')[-1]
@@ -528,7 +531,7 @@ def plot_fwhm(output_dir, ccf_mask='mask_telluric_o2', xvar='jdb', yvar='fwhm', 
     all_files = glob.glob(root+'/'+branch+'/*/data/s1d/*/WORKSPACE/Analyse_ccf.p')
     var = []
     for f in all_files:
-        print(f)
+        logger.debug(f)
         f2 = f.replace('/WORKSPACE/Analyse_ccf.p','/STAR_INFO/Ste*')
         if xvar=='jdb':
             v = 0
@@ -557,7 +560,7 @@ def plot_fwhm(output_dir, ccf_mask='mask_telluric_o2', xvar='jdb', yvar='fwhm', 
                 good = 1
         except:
             pass
-    
+
     if (xvar=='')&(len(values)!=0):
         values = np.hstack(np.hstack(values))
         values = values[values==values]
@@ -586,14 +589,14 @@ def fix_dir_root(output_dir, instrument='SOPHIE-HE_1.0',stars='*'): # to be repa
             raw_visible = True
         else:
             raw_visible = False
-            print(Fore.YELLOW+' [INFO] The path root of the RAW is not more visible'+Fore.RESET)
+            logger.info('The path root of the RAW is not more visible')
 
         if (sum(mask)!=0)&(ins!=instrument):
-            print(Fore.YELLOW+' [WARNING] Some spectra with the wrong instrument found for %s'%(star)+Fore.RESET)
+            logger.warning('Some spectra with the wrong instrument found for {star}')
             mym.create_snaky_dir(output_dir,star,instrument)
             pickle.dump(mym.import_star_info(dir_root),open(dir_root.replace(ins,instrument)+'/STAR_INFO/Stellar_info_'+star+'.p','wb'))
             os.system('touch '+root+'/Snaky/'+star+'/data/s1d/'+instrument+'/REDUCTION_INFO/force_pre.txt')
-            
+
             if raw_visible:
                 all_files = []
                 for f in np.array(summary.loc[mask,'filename']):
@@ -612,7 +615,7 @@ def fix_dir_root(output_dir, instrument='SOPHIE-HE_1.0',stars='*'): # to be repa
                 new_dace['ins'] = instrument
                 new_dace['fileroot'] = np.array([n.replace('/'+ins+'/','/'+instrument+'/') for n in new_dace['fileroot']])
                 new_dace.to_csv(dace_file.replace('/'+ins+'/','/'+instrument+'/'))
-                
+
                 old_dace = dace.loc[~mask_dace].reset_index(drop=True)
                 old_dace.to_csv(dace_file)
 
@@ -626,7 +629,7 @@ def fix_dir_root(output_dir, instrument='SOPHIE-HE_1.0',stars='*'): # to be repa
             rassine_files = glob.glob(file.replace('Analyse_summary.csv','RASSINE*.p'))
             for k in np.setdiff1d(rassine_files,np.array(old_summary['filename'])):
                 os.system('rm '+k)
-            
+
             if np.sum(~mask_dace)==0:
-                print(star)
+                logger.debug(star)
                 os.system('rm -rf '+file.split('/WORKSPACE')[0])

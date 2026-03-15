@@ -25,7 +25,7 @@ import os
 import pickle
 import sys
 
-#from tqdm import tqdm 
+#from tqdm import tqdm
 import time
 from itertools import repeat
 
@@ -40,6 +40,9 @@ from scipy.interpolate import interp1d
 from scipy.signal import savgol_filter
 from scipy.stats import norm
 
+import logging
+
+logger = logging.getLogger('snaky')
 pickle.DEFAULT_PROTOCOL = 3
 
 # =============================================================================
@@ -77,23 +80,23 @@ else:
 # =============================================================================
 
 def print_code_line(text):
-    print(Fore.GREEN + ' [CODE LINE] ' + text + Fore.RESET + '')
+    logger.debug('[CODE LINE] ' + text)
 
 def ccf(wave,spec1,spec2,extended=1500):
     """
     CCF for a equidistant grid in log wavelength spec1 = spectrum, spec2 =  binary mask, mask_telluric = binary mask
-    
+
     Parameters
     ----------
-    extended : int-type 
-    
+    extended : int-type
+
     Returns
     -------
-    
+
     Return the vrad lag grid as well as the CCF
-    
+
     """
-       
+
     dwave = wave[1]-wave[0]
     spec1 = np.hstack([np.ones(extended),spec1,np.ones(extended)])
     spec2 = np.hstack([np.zeros(extended),spec2,np.zeros(extended)])
@@ -115,7 +118,7 @@ def ccf(wave,spec1,spec2,extended=1500):
 def check_none_negative_values(array):
     """
     Remove negative number
-    
+
     """
     neg = np.where(array<=0)[0]
     if len(neg)==0:
@@ -127,7 +130,7 @@ def check_none_negative_values(array):
         if (len(where)==0)&(np.mean(neg)<len(array)/2):
             array[neg] = array[neg[-1]+1]
         elif (len(where)==0)&(np.mean(neg)>=len(array)/2):
-            array[neg] = array[neg[0]-1]            
+            array[neg] = array[neg[0]-1]
         else:
             where = np.hstack([where,np.array([0,len(neg)-1])])
             where = where[where.argsort()]
@@ -141,9 +144,9 @@ def check_none_negative_values(array):
 
 def clustering(array, tresh, num):
     """
-    Detect and form cluster on an array considering than values are closer than the tresh value. 
+    Detect and form cluster on an array considering than values are closer than the tresh value.
     Only cluster containing more elements than num are kept.
-    
+
     """
     difference = np.diff(array)
     cluster = (difference<tresh)
@@ -159,15 +162,15 @@ def clustering(array, tresh, num):
                 border_right.append(indice[j])
                 border_left.append(indice[j+1])
                 j+=1
-        border_right.append(indice[-1])        
+        border_right.append(indice[-1])
         border = np.array([border_left,border_right]).T
         border = np.hstack([border,(1+border[:,1]-border[:,0])[:,np.newaxis]])
-        
+
         kept = []
         for j in range(len(border)):
             if border[j,-1]>=num:
                 kept.append(array[border[j,0]:border[j,1]+2])
-        return np.array(kept,dtype='object') 
+        return np.array(kept,dtype='object')
     else:
         return [np.array([j]) for j in array]
 
@@ -175,7 +178,7 @@ def clustering(array, tresh, num):
 def create_grid(wave_min, dwave, nb_bins):
     """
     Form a  wavelength grid from a minimal wavelength, a dwave and a number of elements.
-    
+
     """
     return np.linspace(wave_min, wave_min+(nb_bins-1)*dwave, nb_bins) # the grid of wavelength of your spectrum (assumed equidistant in lambda)
 
@@ -183,12 +186,12 @@ def create_grid(wave_min, dwave, nb_bins):
 def doppler_r(lamb,v):
     """
     Relativistic doppler shift of a wavelength by a velocity v in kms
-    
+
     """
     factor = np.sqrt((1+1000*v/c_lum)/(1-1000*v/c_lum))
     lambo = lamb*factor
     lambs = lamb*factor**(-1)
-    return lambo, lambs 
+    return lambo, lambs
 
 
 def empty_ccd_gap(wave,flux,left=None,right=None, extended=30):
@@ -196,19 +199,19 @@ def empty_ccd_gap(wave,flux,left=None,right=None, extended=30):
     Ensure a 0 value in the gap between the ccd of HARPS s1d with extended=30 kms extension
     """
     dgrid = np.diff(wave)[0]
-    
+
     if left is not None:
         left = np.array(left).astype('float')
         left = doppler_r(left,-extended)[0] #30 km/s supression
     else:
         left = wave.max()
-    
+
     if right is not None:
         right = np.array(right).astype('float')
         right = doppler_r(right,extended)[0] #30 km/s supression
     else:
         right = wave.min()
-    
+
     flux[(wave>=left-dgrid/2)&(wave<=right+dgrid/2)] = 0
     return flux
 
@@ -216,22 +219,22 @@ def empty_ccd_gap(wave,flux,left=None,right=None, extended=30):
 def find_nearest(array,value,dist_abs=True):
     """
     Find the closest value in an array
-    
+
     Parameters
     ----------
-    
+
     dist_abs : provide the distance output in absolute
-    
+
     Return
     ------
-    
+
     index of th closest element, value and distance
-    
+
     """
     if type(value)!=np.ndarray:
         value = np.array([value])
     idx = np.argmin((np.abs(array-value[:,np.newaxis])),axis=1)
-    distance = abs(array[idx]-value) 
+    distance = abs(array[idx]-value)
     if dist_abs==False:
         distance = array[idx]-value
     return idx, array[idx], distance
@@ -257,15 +260,15 @@ def grouping(array, tresh, num):
                 border_right.append(indice[j])
                 border_left.append(indice[j+1])
                 j+=1
-        border_right.append(indice[-1])        
+        border_right.append(indice[-1])
         border = np.array([border_left,border_right]).T
         border = np.hstack([border,(1+border[:,1]-border[:,0])[:,np.newaxis]])
-        
+
         kept = []
         for j in range(len(border)):
             if border[j,-1]>=num:
                 kept.append(array[border[j,0]:border[j,1]+2])
-        return np.array(kept,dtype='object'), border 
+        return np.array(kept,dtype='object'), border
     else:
         return np.array([]), np.array([[0,0,0]])
 
@@ -275,7 +278,7 @@ def local_max(spectre,vicinity):
     maxima = np.ones(len(vec_base))
     for k in range(1,vicinity):
         maxima *= 0.5*(1+np.sign(vec_base - spectre[vicinity-k:-vicinity-k]))*0.5*(1+np.sign(vec_base - spectre[vicinity+k:-vicinity+k]))
-    
+
     index = np.where(maxima==1)[0]+vicinity
     flux = spectre[index]
     return np.array([index,flux])
@@ -294,61 +297,61 @@ def import_files_mcpu(file_liste,kind):
         file = open_pickle(j)
         snr.append(file['parameters']['SNR_5500'])
         sub.append(file['output'][kind])
-    return sub, snr 
+    return sub, snr
 
-    
-def intersect_all_continuum_sphinx(names, master_spectrum=None, copies_master=0, kind='anchor_index', 
-                            nthreads=6, fraction=0.2, threshold = 0.66, tolerance=0.5, add_new = True, feedback=True): 
+
+def intersect_all_continuum_sphinx(names, master_spectrum=None, copies_master=0, kind='anchor_index',
+                            nthreads=6, fraction=0.2, threshold = 0.66, tolerance=0.5, add_new = True, feedback=True):
     """Search for the interction of all the anchors points in a list of filename
-    For each anchor point the fraction of the closest distance to a neighbourhood is used. 
+    For each anchor point the fraction of the closest distance to a neighbourhood is used.
     Anchor point under the threshoold are removed (1 = most deleted, 0 = most kept).
     Possible to use multiprocessing with nthreads cpu.
-    If you want to fix the anchors points, enter a master spectrum path and the number of copies you want of it. 
-    """      
-    print('Loading of the files, wait ... \n')
+    If you want to fix the anchors points, enter a master spectrum path and the number of copies you want of it.
+    """
+    logger.debug('Loading of the files, wait ...')
     names = np.sort(names)
     sub_dico = 'output'
-    
+
     directory, dustbin = os.path.split(names[0])
     directory = '/'.join(directory.split('/')[0:-1])+'/MASTER/'
-    
+
     previous_files = glob.glob(directory+'Master_tool*.p')
     for file_to_delete in previous_files:
         os.system('rm '+file_to_delete)
-    
+
     save = []
     snr = []
-    
+
     if nthreads >= multicpu.cpu_count():
-        print('Your number of cpu (%s) is smaller than the number your entered (%s), enter a smaller value please'%(multicpu.cpu_count(),nthreads))
+        logger.debug(f'Your number of cpu ({multicpu.cpu_count(),}) is smaller than the number your entered ({nthreads}), enter a smaller value please')
     else:
         if os.getcwd()=='/Users/cretignier/Documents/Python': #to restablish Rassine on my computer only
-            product = [import_files_mcpu(names,kind)] #multiprocess not work for some reason, go back to classical loop 
+            product = [import_files_mcpu(names,kind)] #multiprocess not work for some reason, go back to classical loop
         else:
             chunks = np.array_split(names,nthreads)
             pool = multicpu.Pool(processes=nthreads)
             product = pool.map(import_files_mcpu_wrapper, zip(chunks, repeat(kind)))
-        
+
         for j in range(len(product)):
             save = save + product[j][0]
             snr = snr + product[j][1]
-    
+
     snr =  np.array(snr)
-            
+
     if master_spectrum is not None:
         if copies_master==0:
-            print('You have to specify the number of copy of the master file you want as argument.')
+            logger.debug('You have to specify the number of copy of the master file you want as argument.')
             copies_master = 2*len(names)
-            print(Fore.YELLOW + ' [WARNING] Default value of master copies fixed at %.0f.'%(copies_master) + Fore.WHITE)
+            logger.warning(f'Default value of master copies fixed at {copies_master:.0f}.')
         file = open_pickle(master_spectrum)
         for j in range(copies_master):
             names = np.hstack([names,master_spectrum])
-            save.append(file[sub_dico][kind])     
-    
+            save.append(file[sub_dico][kind])
+
     sum_mask = []
     all_idx = np.hstack(save)
 
-    print('Computation of the intersection of the anchors points, wait ... \n')
+    logger.debug('Computation of the intersection of the anchors points, wait ...')
     mask = np.zeros(len(open_pickle(names[0])['wave']))
     for j in range(len(names)):
         mask*=0
@@ -366,21 +369,21 @@ def intersect_all_continuum_sphinx(names, master_spectrum=None, copies_master=0,
         sum_mask.append(mask)
     sum_mask = np.array(sum_mask)
     sum_mask_vert = np.sum(sum_mask,axis=0)
-        
+
     strat = np.linspace(int(sum_mask_vert.min()),int(sum_mask_vert.max()),10).astype('int')
     strat = strat[strat!=strat[1]] #supress the first level
-    
+
     for j in range(len(strat)-1)[::-1]:
         sum_mask_vert[(sum_mask_vert>=strat[j])&(sum_mask_vert<strat[j+1])] = strat[j]
     for j in range(len(strat[0:-1]))[::-1]:
         sum_mask_vert[sum_mask_vert==strat[0:-1][j]] = strat[j+1]
-        
+
     #sum_mask_vert -= np.diff(strat)[0]
     sum_mask_vert[sum_mask_vert==np.unique(sum_mask_vert)[0]] = 0
-    
+
     mask_vert2 = sum_mask_vert.copy()
     mask_vert2[0] = 0 ; mask_vert2[-1] = 0
-    
+
     for j in range(len(mask_vert2)-2):
         j+=1
         if (mask_vert2[j]>mask_vert2[j-1])|(mask_vert2[j]>mask_vert2[j+1]): #supression of delta peak (not possible because all the peaks cannot be situated at the exact same wavelength), allow the use of grouping function here after
@@ -388,7 +391,7 @@ def intersect_all_continuum_sphinx(names, master_spectrum=None, copies_master=0,
 
     val, border = grouping(mask_vert2,1,1)
     border = np.hstack([border,np.array([i[0] for i in val])[:,np.newaxis]])
-    
+
     null = np.where(border[:,-1]==0)[0]
 
     area = []
@@ -406,26 +409,26 @@ def intersect_all_continuum_sphinx(names, master_spectrum=None, copies_master=0,
 
     left = border[null,1][0:-1]
     right = border[null,0][1:]
-    
+
     center2 = []
     for i,j in zip(left,right):
         center2.append(np.median(all_idx[(all_idx>=i)&(all_idx<=j)]))
     center2 = np.round(center2,0).astype('int')
     center2[center2<0]=0
-    
+
     large_length = (right-left)
     large_center = left + large_length/2
-    
+
     center = np.mean(np.array([[small_center],[large_center]]),axis=0)[0]
     windows = np.mean(np.array([[small_length],[large_length]]),axis=0)[0]
     height = area / windows
-        
+
     center = np.round(center,0).astype('int')
     windows = np.round(windows/2,0).astype('int')
     height = np.round(height,0).astype('int')
-    
+
     center = center2
-    
+
     fig = plt.figure(figsize=(14,7))
     plt.subplots_adjust(left=0.10, bottom=0.25,top=0.95,hspace=0.30)
     plt.subplot(2,1,1)
@@ -434,35 +437,35 @@ def intersect_all_continuum_sphinx(names, master_spectrum=None, copies_master=0,
     ax = plt.gca()
     plt.ylabel('Flux normalised',fontsize=14)
     plt.title('Selection of the clusters',fontsize=14)
-        
+
     plt.subplot(2,1,2,sharex=ax)
-    for i,j in enumerate(names): 
+    for i,j in enumerate(names):
         file_to_read = open_pickle(j)
-        plt.scatter(file_to_read[sub_dico]['anchor_wave'],i*np.ones(len(file_to_read[sub_dico]['anchor_wave'])),alpha=0.5) 
+        plt.scatter(file_to_read[sub_dico]['anchor_wave'],i*np.ones(len(file_to_read[sub_dico]['anchor_wave'])),alpha=0.5)
     plt.plot(file_to_plot['wave'],sum_mask_vert,color='g')
     plt.axhline(y=(len(names)*1.02),color='r')
     plt.xlabel(r'Wavelength [$\AA$]',fontsize=14)
     plt.ylabel('N° of the spectrum',fontsize=14)
-    
+
     stack_vert3 = np.zeros(len(sum_mask_vert))
 
     stack_vert = np.zeros(len(sum_mask_vert))
     for j in range(len(save)):
         stack_vert[save[j]] += 1
-    
+
     for j in range(len(center)):
         if center[j] != np.nan:
             stack_vert3[center[j]-windows[j]:center[j]+windows[j]+1] = height[j]
-    
+
     stack_vert3[stack_vert3<(len(names)*threshold)] = 0
     stack_vert3[stack_vert3>(len(names))] = len(names)
     val, border = grouping(stack_vert3,1,1)
     border = np.hstack([border,np.array([i[0] for i in val])[:,np.newaxis]])
-    
+
     for j in range(len(border)):
         if np.sum(stack_vert[int(border[j,0]):int(border[j,1])+1])<(border[j,3]*tolerance):
             stack_vert3[int(border[j,0]):int(border[j,1])+1] = 0
-    
+
     liste = []
     for j in range(len(stack_vert3)-2):
         j+=1
@@ -471,10 +474,10 @@ def intersect_all_continuum_sphinx(names, master_spectrum=None, copies_master=0,
     liste = np.array(liste)
     if len(liste)!=0:
         stack_vert3[liste] = 0
-    
+
     val, border = grouping(stack_vert3,1,1)
     border = np.hstack([border,np.array([i[0] for i in val])[:,np.newaxis]])
-    
+
     nb_cluster = np.sum(border[:,-1]!=0)
 
     gri = file_to_plot['wave']
@@ -484,13 +487,13 @@ def intersect_all_continuum_sphinx(names, master_spectrum=None, copies_master=0,
     plt.axis('off')
     l3 = plt.text(0,0,'Nb of cluster detected : %.0f'%(nb_cluster),fontsize=14)
     axcolor = 'whitesmoke'
-    
+
     axtresh = plt.axes([0.1, 0.12, 0.30, 0.03], facecolor = axcolor)
     stresh = Slider(axtresh, 'Threshold', 0, 1, valinit = threshold, valstep=0.05)
 
     axtolerance = plt.axes([0.1, 0.05, 0.30, 0.03], facecolor = axcolor)
     stolerance = Slider(axtolerance, 'Tolerance', 0, 1, valinit = tolerance, valstep=0.05)
-    
+
     resetax = plt.axes([0.8, 0.05, 0.1, 0.1])
     button = Button(resetax, 'Reset', color=axcolor, hovercolor='0.975')
 
@@ -499,7 +502,7 @@ def intersect_all_continuum_sphinx(names, master_spectrum=None, copies_master=0,
         def update(self,val):
             tresh = stresh.val
             tol = 1 - stolerance.val
-            
+
             stack_vert3 = np.zeros(len(sum_mask_vert))
 
             stack_vert = np.zeros(len(sum_mask_vert))
@@ -509,16 +512,16 @@ def intersect_all_continuum_sphinx(names, master_spectrum=None, copies_master=0,
             for j in range(len(center)):
                 if center[j] != np.nan:
                     stack_vert3[center[j]-windows[j]:center[j]+windows[j]+1] = height[j]
-            
+
             stack_vert3[stack_vert3<(len(names)*tresh)] = 0
             stack_vert3[stack_vert3>(len(names))] = len(names)
             val, border = grouping(stack_vert3,1,1)
             border = np.hstack([border,np.array([i[0] for i in val])[:,np.newaxis]])
-            
+
             for j in range(len(border)):
                 if np.sum(stack_vert[int(border[j,0]):int(border[j,1])+1])<(border[j,3]*tol):
                     stack_vert3[int(border[j,0]):int(border[j,1])+1] = 0
-            
+
             liste = []
             for j in range(len(stack_vert3)-2):
                 j+=1
@@ -527,84 +530,84 @@ def intersect_all_continuum_sphinx(names, master_spectrum=None, copies_master=0,
             liste = np.array(liste)
             if len(liste)!=0:
                 stack_vert3[liste] = 0
-            
+
             val, border = grouping(stack_vert3,1,1)
             border = np.hstack([border,np.array([i[0] for i in val])[:,np.newaxis]])
-            
+
             nb_cluster = np.sum(border[:,-1]!=0)
-            
+
             l3.set_text('Nb of cluster detected : %.0f'%(nb_cluster))
             l1.set_ydata(stack_vert3)
             l2.set_ydata([len(names)*tresh]*2)
-            
+
             self.nb_clust = nb_cluster
-            
+
             fig.canvas.draw_idle()
-    
+
     callback = Index()
     stresh.on_changed(callback.update)
     stolerance.on_changed(callback.update)
-    
+
     def reset(event):
         stolerance.reset()
         stresh.reset()
 
     button.on_clicked(reset)
-    
+
     plt.show(block=False)
-    
+
     if feedback:
         make_sound('The sphinx is waiting on you...')
         sphinx('Press ENTER to save the clusters locations (black curve)')
-        
+
     while type(callback.nb_clust)==str:
-        print(' [WARNING] You have to move the sliders at least once before validating clusters')
+        logger.warning('You have to move the sliders at least once before validating clusters')
         make_sound('Warning')
         sphinx('Press ENTER to save the clusters locations (black curve)')
-    
+
     time.sleep(0.5)
     plt.close()
     time.sleep(0.5)
-    
+
     threshold = stresh.val
     tolerance = stolerance.val
-    
+
     #after plot
-    
+
     val2, border2 = grouping(l1.get_ydata(),1,1)
     border2 = np.hstack([border2,np.array([i[0] for i in val2])[:,np.newaxis]])
     border2 = border2[border2[:,-1] > 0]
     curve = (l1.get_ydata() > 0)
-    
-    plt.close()   
+
+    plt.close()
 
     output_cluster = {'curve':curve,'border':border2, 'wave':gri,
                       'threshold':'%.2f'%(threshold), 'tolerance':'%.2f'%(tolerance),'fraction':'%.2f'%(fraction),
                       'nb_copies_master':copies_master, 'master_filename':master_spectrum}
-    
+
     save_pickle('',output_cluster)
-    
+
     tool_name = 'Master_tool_%s.p'%(time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime()))
 
     save_pickle(directory+'/'+tool_name, output_cluster)
-    
-def intersect_all_continuum(names, add_new = True): 
-    print('Extraction of the new continua, wait... \n')
+
+def intersect_all_continuum(names, add_new = True):
+    logger.debug('Extraction of the new continua, wait...')
 
     names = np.sort(names)
     sub_dico = 'output'
-    
+
     directory, dustbin = os.path.split(names[0])
     directory = '/'.join(directory.split('/')[0:-1])
-    
+
     master_file = glob.glob(directory+'/MASTER/RASSINE_Master_spectrum*')[0]
     names = np.hstack([master_file,names])
     number_of_files = len(names)
-    
+
     tool_file = glob.glob(directory+'/MASTER/Master_tool*')[0]
     tool_name = tool_file.split('/')[-1]
     tool = pd.read_pickle(tool_file)
-    
+
     fraction = tool['fraction']
     tolerance = tool['tolerance']
     threshold = tool['threshold']
@@ -613,26 +616,26 @@ def intersect_all_continuum(names, add_new = True):
     border2 = tool['border']
     cluster_center = (border2[:,1]-border2[:,0])/2+border2[:,0]
     curve = tool['curve']
-    
+
     for i,j in enumerate(names):
-        valid = True                
+        valid = True
         file = open_pickle(j)
-        try: 
+        try:
             valid = (file['matching_anchors']['parameters']['master_tool'] != tool_name)
         except:
             pass
-        
+
         if valid:
             spectrei = file['flux']
-            spectre = file['flux_used']        
-            grid = file['wave']  
-    
+            spectre = file['flux_used']
+            grid = file['wave']
+
             index = file[sub_dico]['anchor_index']
             wave = file[sub_dico]['anchor_wave']
             flux = file[sub_dico]['anchor_flux']
-    
+
             save = index.copy()
-            
+
             diff = np.min([np.diff(save[1:]),np.diff(save[0:-1])],axis=0)
             diff = np.array([diff[0]]+list(diff)+[diff[-1]])
             diff = diff*float(fraction)
@@ -644,54 +647,54 @@ def intersect_all_continuum(names, add_new = True):
             new = np.unique(np.hstack(new))
             new = new[(new>0)&(new<len(mask))]
             mask[new.astype('int')] = 1
-            
+
             test = mask*curve
-            
+
             mask_idx = test[save].astype('bool')
             mask_idx[0:file['parameters']['number of cut']] = True
             mask_idx[-file['parameters']['number of cut']:] = True
-    
+
             try:
                 flux_denoised = file[sub_dico]['anchor_flux_denoised']
             except:
                 flux_denoised = flux
-            
+
             save_before = len(index)
-            
+
             index = index[mask_idx]
             wave = wave[mask_idx]
             flux = flux[mask_idx]
             flux_denoised = flux_denoised[mask_idx]
-            
+
             save_after = len(index)
-            
+
             index2 = (index>=border2[:,0][:,np.newaxis])&(index<=border2[:,1][:,np.newaxis])
             cluster_empty = np.where(np.sum(index2,axis=1)==0)[0]
             cluster_twin = np.where(np.sum(index2,axis=1)>1)[0]
-    
+
             if len(cluster_twin)!=0:
-                index3 = np.unique(index*index2[cluster_twin,:])[1:]  
+                index3 = np.unique(index*index2[cluster_twin,:])[1:]
                 #centers_with_twin = cluster_center[cluster_twin]
-                
+
                 index_kept = index3[match_nearest(cluster_center,index3)[:,1].astype('int')] #only twin closest to the cluster is kept
                 index_to_suppress = np.setdiff1d(index3,index_kept)
                 mask_idx = ~np.in1d(index,index_to_suppress)
-                
+
                 index = index[mask_idx]
                 wave = wave[mask_idx]
                 flux = flux[mask_idx]
                 flux_denoised = flux_denoised[mask_idx]
-            
+
             save_after_twin = len(index)
-            
+
             if add_new:
                 index_max, flux_max = local_max(spectre,file['parameters']['vicinity_local_max'])
-                
+
                 new_max_index = []
                 new_max_flux = []
                 new_max_flux_denoised = []
                 new_max_wave = []
-                
+
                 for k in cluster_empty:
                     kept = (index_max>=border2[k,0])&(index_max<=border2[k,1])
                     if sum(kept)!=0:
@@ -700,22 +703,22 @@ def intersect_all_continuum(names, add_new = True):
                         new_max_flux.append((flux_max[kept])[maxi])
                         new_max_wave.append(grid[(index_max[kept].astype('int'))[maxi]])
                         new_max_flux_denoised.append(np.mean(spectre[(index_max[kept].astype('int'))[maxi]-int(file['parameters']['denoising_dist']):(index_max[kept].astype('int'))[maxi]+int(file['parameters']['denoising_dist'])+1]))
-                
+
                 new_max_index = np.array(new_max_index)
                 new_max_flux = np.array(new_max_flux)
                 new_max_flux_denoised = np.array(new_max_flux_denoised)
-                new_max_wave = np.array(new_max_wave)         
-                
+                new_max_wave = np.array(new_max_wave)
+
                 index = np.hstack([index,new_max_index])
                 wave = np.hstack([wave,new_max_wave])
                 flux = np.hstack([flux,new_max_flux])
-                flux_denoised = np.hstack([flux_denoised,new_max_flux_denoised])  
-                        
+                flux_denoised = np.hstack([flux_denoised,new_max_flux_denoised])
+
             save_after_new = len(index)
-            print('\nModification of file (%.0f/%.0f): %s \n# of anchor before : %.0f \n# of anchor after out-of-cluster filtering : %0.f \n# of anchor after twin filtering : %.0f \n# of anchor after adding : %.0f'%(i+1,number_of_files,j,save_before,save_after,save_after_twin,save_after_new))
-    
+            logger.debug(f'Modification of file ({i+1:.0f}/{number_of_files:.0f}): {j:s} \n# of anchor before : {save_before:.0f} \n# of anchor after out-of-cluster filtering : save_after:0.f \n# of anchor after twin filtering : {save_after_twin:.0f} \n# of anchor after adding : {save_after_new:.0f}')
+
             continuum1, continuum3, continuum1_denoised, continuum3_denoised = make_continuum(wave, flux, flux_denoised, grid, spectrei, continuum_to_produce = [file['parameters']['continuum_interpolated_saved'],file['parameters']['continuum_denoised_saved']])
-            
+
             float_precision = file['parameters']['float_precision']
             if float_precision!='float64':
                 flux = flux.astype(float_precision)
@@ -726,56 +729,56 @@ def intersect_all_continuum(names, add_new = True):
                 continuum1_denoised = continuum1_denoised.astype(float_precision)
                 flux_denoised = flux_denoised.astype(float_precision)
             index = index.astype('int')
-            
+
             outputs_interpolation_saved = file['parameters']['continuum_interpolated_saved']
             outputs_denoising_saved = file['parameters']['continuum_denoised_saved']
-            
-            if (outputs_interpolation_saved=='linear')&(outputs_denoising_saved=='undenoised'):    
+
+            if (outputs_interpolation_saved=='linear')&(outputs_denoising_saved=='undenoised'):
                 output = {'continuum_linear':continuum1,
                          'anchor_wave':wave,
                          'anchor_flux':flux,
                          'anchor_index':index}
-            elif (outputs_interpolation_saved=='cubic')&(outputs_denoising_saved=='undenoised'):    
+            elif (outputs_interpolation_saved=='cubic')&(outputs_denoising_saved=='undenoised'):
                 output = {'continuum_cubic':continuum3,
                          'anchor_wave':wave,
                          'anchor_flux':flux,
                          'anchor_index':index}
-            elif (outputs_interpolation_saved=='linear')&(outputs_denoising_saved=='denoised'):    
+            elif (outputs_interpolation_saved=='linear')&(outputs_denoising_saved=='denoised'):
                 output = {'continuum_linear':continuum1_denoised,
                          'anchor_wave':wave,
                          'anchor_flux':flux_denoised,
                          'anchor_index':index}
-            elif (outputs_interpolation_saved=='cubic')&(outputs_denoising_saved=='denoised'):     
+            elif (outputs_interpolation_saved=='cubic')&(outputs_denoising_saved=='denoised'):
                 output = {'continuum_cubic':continuum3_denoised,
                          'anchor_wave':wave,
                          'anchor_flux':flux_denoised,
                          'anchor_index':index}
-            elif (outputs_interpolation_saved=='all')&(outputs_denoising_saved=='denoised'):     
+            elif (outputs_interpolation_saved=='all')&(outputs_denoising_saved=='denoised'):
                 output = {'continuum_cubic':continuum3_denoised,
                       'continuum_linear':continuum1_denoised,
                       'anchor_wave':wave,
                       'anchor_flux':flux_denoised,
                       'anchor_index':index}
-            elif (outputs_interpolation_saved=='all')&(outputs_denoising_saved=='undenoised'):     
+            elif (outputs_interpolation_saved=='all')&(outputs_denoising_saved=='undenoised'):
                 output = {'continuum_cubic':continuum3,
                       'continuum_linear':continuum1,
                       'anchor_wave':wave,
                       'anchor_flux':flux,
                       'anchor_index':index}
-            elif (outputs_interpolation_saved=='linear')&(outputs_denoising_saved=='all'):     
+            elif (outputs_interpolation_saved=='linear')&(outputs_denoising_saved=='all'):
                 output = {'continuum_linear':continuum1,
                       'continuum_linear_denoised':continuum1_denoised,
                       'anchor_wave':wave,
                       'anchor_flux':flux,
-                      'anchor_flux_denoised':flux_denoised,          
-                      'anchor_index':index}  
-            elif (outputs_interpolation_saved=='cubic')&(outputs_denoising_saved=='all'):     
+                      'anchor_flux_denoised':flux_denoised,
+                      'anchor_index':index}
+            elif (outputs_interpolation_saved=='cubic')&(outputs_denoising_saved=='all'):
                 output = {'continuum_cubic':continuum3,
                       'continuum_cubic_denoised':continuum3_denoised,
                       'anchor_wave':wave,
                       'anchor_flux':flux,
-                      'anchor_flux_denoised':flux_denoised,          
-                      'anchor_index':index}      
+                      'anchor_flux_denoised':flux_denoised,
+                      'anchor_index':index}
             else:
                 output = {'continuum_cubic':continuum3,
                       'continuum_linear':continuum1,
@@ -785,63 +788,63 @@ def intersect_all_continuum(names, add_new = True):
                       'anchor_flux':flux,
                       'anchor_flux_denoised':flux_denoised,
                       'anchor_index':index}
-            
-            
+
+
             file['matching_anchors'] = output
             file['matching_anchors']['parameters'] = {'master_tool':tool_name,'master_filename':master_spectrum,'sub_dico_used':sub_dico,'nb_copies_master':copies_master,
                                                       'threshold':threshold,'tolerance':tolerance,'fraction':fraction}
             save_pickle(names[i],file)
-    
+
 def matching_diff_continuum_sphinx(names, sub_dico = 'matching_anchors', master=None, savgol_window = 200, zero_point=False):
     snr = []
     for j in names:
         file = open_pickle(j)
         snr.append(file['parameters']['SNR_5500'])
-    
+
     names = np.array(names)[np.array(snr).argsort()[::-1]]
     snr  = np.array(snr)[np.array(snr).argsort()[::-1]]
-    
+
     if master is None:
         master = names[0]
 
     file_highest = open_pickle(master)
     file_highest['matching_diff'] = file_highest[sub_dico]
-    
+
     save_pickle(master,file_highest)
 
     dx = np.diff(file_highest['wave'])[0]
     length_clip = int(100/dx) #smoothing on 100 \ang for the tellurics clean
-    
+
     if len(names)>1:
         file = open_pickle(names[1])
     else:
         file = open_pickle(names[0])
-    
+
     keys = file_highest[sub_dico].keys()
     if 'continuum_cubic' in keys:
         ref_cont = 'continuum_cubic'
     else:
         ref_cont = 'continuum_linear'
-        
+
     cont2  = file_highest['flux_used']/file_highest[sub_dico][ref_cont]
     cont1 = file['flux_used']/file[sub_dico][ref_cont]
-    
+
     all_continuum = ['continuum_linear','continuum_cubic','continuum_linear_denoised','continuum_cubic_denoised']
     continuum_to_reduce = []
     for i in all_continuum:
         if i in keys:
             continuum_to_reduce.append(i)
-            
+
     diff = cont1-cont2
     med_value = np.nanmedian(diff)
     for k in range(3): #needed to avoid artefact induced by tellurics
         q1, q3, iq = rolling_iq(diff,window=length_clip)
         diff[(diff>q3+1.5*iq)|(diff<q1-1.5*iq)] = med_value
         diff[diff<q1-1.5*iq] = med_value
-    
-    correction = smooth(diff, savgol_window, shape='savgol') 
-    correction = smooth(correction, savgol_window, shape='savgol') 
-    
+
+    correction = smooth(diff, savgol_window, shape='savgol')
+    correction = smooth(correction, savgol_window, shape='savgol')
+
     fig = plt.figure(figsize=(14,7))
     plt.subplots_adjust(left=0.10, bottom=0.25,top=0.95,hspace=0.30)
     plt.title('Selection of the smoothing kernel length',fontsize=14)
@@ -853,47 +856,47 @@ def matching_diff_continuum_sphinx(names, sub_dico = 'matching_anchors', master=
     axcolor = 'whitesmoke'
     axsmoothing = plt.axes([0.2, 0.1, 0.40, 0.03], facecolor = axcolor)
     ssmoothing = Slider(axsmoothing, 'Kernel length', 1, 500, valinit = savgol_window, valstep=1)
-    
+
     resetax = plt.axes([0.8, 0.05, 0.1, 0.1])
     button = Button(resetax, 'Reset', color=axcolor, hovercolor='0.975')
-        
+
     class Index():
         def update(self,val):
             smoothing = ssmoothing.val
-            correction = smooth(diff, smoothing, shape='savgol') 
-            correction = smooth(correction, smoothing, shape='savgol') 
+            correction = smooth(diff, smoothing, shape='savgol')
+            correction = smooth(correction, smoothing, shape='savgol')
             l1.set_ydata(correction)
-            fig.canvas.draw_idle()            
-    
+            fig.canvas.draw_idle()
+
     callback = Index()
     ssmoothing.on_changed(callback.update)
-    
+
     def reset(event):
         ssmoothing.reset()
     button.on_clicked(reset)
-    
+
     plt.show(block=False)
     make_sound('The sphinx is waiting on you...')
     sphinx('Press ENTER to save the kernel length for the smoothing')
     savgol_window = ssmoothing.val
-    plt.close()        
+    plt.close()
     time.sleep(1)
 
     return master, savgol_window
 
-def matching_diff_continuum(names, sub_dico = 'matching_anchors', master=None, savgol_window = 200, zero_point=False): 
-    """A savgol fitering can be performed on spectra diff 
+def matching_diff_continuum(names, sub_dico = 'matching_anchors', master=None, savgol_window = 200, zero_point=False):
+    """A savgol fitering can be performed on spectra diff
     (the spectrum with the highest snr is used as reference) to remove remaining fluctuation.
     If zero point = False, the median level of the spectra difference is not removed and only the fluctuation are."""
-    
+
     snr = []
     for j in names:
         file = open_pickle(j)
         snr.append(file['parameters']['SNR_5500'])
-    
+
     names = np.array(names)[np.array(snr).argsort()[::-1]]
     snr  = np.array(snr)[np.array(snr).argsort()[::-1]]
-    
+
     if master is None:
         master = names[0]
 
@@ -901,9 +904,9 @@ def matching_diff_continuum(names, sub_dico = 'matching_anchors', master=None, s
     file_highest = open_pickle(master)
     dx = np.diff(file_highest['wave'])[0]
     length_clip = int(100/dx) #smoothing on 100 \ang for the tellurics clean
-    
+
     keys = file_highest[sub_dico].keys()
-            
+
     all_continuum = ['continuum_linear','continuum_cubic','continuum_linear_denoised','continuum_cubic_denoised']
     continuum_to_reduce = []
     for i in all_continuum:
@@ -911,24 +914,24 @@ def matching_diff_continuum(names, sub_dico = 'matching_anchors', master=None, s
             continuum_to_reduce.append(i)
 
     for i,j in enumerate(names):
-        valid = True                        
+        valid = True
         file = open_pickle(j)
-        try: 
+        try:
             valid = (file['matching_diff']['parameters']['reference_continuum'] != master_name)
         except:
             pass
-        
+
         if valid:
-            print('Modification of file (%.0f/%.0f) : %s (SNR : %.0f)'%(i+1,len(names),j,snr[i]))
-            spectre = file['flux_used']  
-            
+            logger.debug(f'Modification of file ({i+1:.0f}/{len(names):.0f}) : {j:s} (SNR : {snr[i]:.0f})')
+            spectre = file['flux_used']
+
             par = {'reference_continuum':master_name,'savgol_window':savgol_window,'recenter':zero_point,'sub_dico_used':sub_dico}
             file['matching_diff'] = {'parameters':par}
-    
+
             for label in continuum_to_reduce:
                 cont = file[sub_dico][label]
                 cont2 = file_highest['flux_used']/file_highest[sub_dico][label]
-                
+
                 cont1 = spectre/cont
                 diff = cont1-cont2
                 med_value = np.nanmedian(diff)
@@ -936,24 +939,24 @@ def matching_diff_continuum(names, sub_dico = 'matching_anchors', master=None, s
                     q1, q3, iq = rolling_iq(diff,window=length_clip)
                     diff[(diff>q3+1.5*iq)|(diff<q1-1.5*iq)] = med_value
                     diff[diff<q1-1.5*iq] = med_value
-                
-                correction = smooth(diff, savgol_window, shape='savgol') 
-                correction = smooth(correction, savgol_window, shape='savgol') 
+
+                correction = smooth(diff, savgol_window, shape='savgol')
+                correction = smooth(correction, savgol_window, shape='savgol')
                 if zero_point:
-                    correction = correction - np.nanmedian(correction)   
-                cont_corr = cont.copy()/(1-correction.copy())                 
+                    correction = correction - np.nanmedian(correction)
+                cont_corr = cont.copy()/(1-correction.copy())
                 file['matching_diff'][label] = cont_corr
-            
+
             save_pickle(j,file)
 
 
 def make_continuum(wave, flux, flux_denoised, grid, spectrei, continuum_to_produce = ['all','all']):
-    
+
     continuum1_denoised = np.zeros(len(grid))
     continuum3_denoised = np.zeros(len(grid))
     continuum1 = np.zeros(len(grid))
     continuum3 = np.zeros(len(grid))
-    
+
     if continuum_to_produce[1]!='undenoised':
         if continuum_to_produce[0]!='cubic':
             Interpol1 = interp1d(wave, flux_denoised, kind = 'linear', bounds_error = False, fill_value = 'extrapolate')
@@ -964,7 +967,7 @@ def make_continuum(wave, flux, flux_denoised, grid, spectrei, continuum_to_produ
             Interpol3 = interp1d(wave, flux_denoised, kind = 'cubic', bounds_error = False, fill_value = 'extrapolate')
             continuum3_denoised = Interpol3(grid)
             continuum3_denoised = troncated(continuum3_denoised,spectrei)
-            continuum3_denoised = check_none_negative_values(continuum3_denoised)        
+            continuum3_denoised = check_none_negative_values(continuum3_denoised)
 
     if continuum_to_produce[1]!='denoised':
         if continuum_to_produce[0]!='cubic':
@@ -977,19 +980,19 @@ def make_continuum(wave, flux, flux_denoised, grid, spectrei, continuum_to_produ
             continuum3 = Interpol3(grid)
             continuum3 = troncated(continuum3,spectrei)
             continuum3 = check_none_negative_values(continuum3)
-    
-    return continuum1, continuum3, continuum1_denoised, continuum3_denoised    
+
+    return continuum1, continuum3, continuum1_denoised, continuum3_denoised
 
 
 def make_sound(sentence):
     if type(voice_name)==str:
-        try: 
+        try:
             os.system('say -v '+voice_name+' "'+sentence+'"')
         except:
-            print('\7')
+            logger.debug('\7')
     else:
-        print('\7')
-        
+        logger.debug('\7')
+
 
 def match_nearest(array1, array2):
     dmin = np.diff(np.sort(array1)).min()
@@ -1005,10 +1008,10 @@ def match_nearest(array1, array2):
     array1_k = array1[liste_idx1]
     array2_k = array2[liste_idx2]
     return np.hstack([liste_idx1[:,np.newaxis],liste_idx2[:,np.newaxis],
-                      array1_k[:,np.newaxis],array2_k[:,np.newaxis],(array1_k-array2_k)[:,np.newaxis]]) 
+                      array1_k[:,np.newaxis],array2_k[:,np.newaxis],(array1_k-array2_k)[:,np.newaxis]])
 
 
-def open_pickle(filename):    
+def open_pickle(filename):
     if filename.split('.')[-1]=='p':
         a = pd.read_pickle(filename)
         return a
@@ -1024,7 +1027,7 @@ def plot_debug(grid,spectre,wave,flux):
     plt.scatter(wave,flux,color='k')
     plt.show(block=False)
     input('blabla')
-          
+
 
 def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound=True, output_dir=None):
     """Preprocess  the files depending on the s1d format instrument, HARPS, HARPN, CORALIE or ESPRESSO"""
@@ -1034,7 +1037,7 @@ def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound
     init_time = time.time()
 
     if output_dir is not None:
-        directory =  output_dir     
+        directory =  output_dir
 
     directory0, dustbin = os.path.split(files_to_process[0])
     if output_dir is not None:
@@ -1042,40 +1045,40 @@ def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound
 
     try:
         table = pd.read_csv(directory0+'/DACE_TABLE/Dace_extracted_table.csv')
-        print(' [INFO] DACE table has been found. Reduction will run with it.')
+        logger.info('DACE table has been found. Reduction will run with it.')
     except FileNotFoundError:
-        print(' [INFO] The DACE table is missing. Reduction will run without it.')
+        logger.info('The DACE table is missing. Reduction will run without it.')
 
-    if (instrument=='HARPS')|(instrument=='CORALIE')|(instrument=='HARPN')|(instrument=='SOPHIE'):   
-        
+    if (instrument=='HARPS')|(instrument=='CORALIE')|(instrument=='HARPN')|(instrument=='SOPHIE'):
+
         for spectrum_name in files_to_process:
-            
+
             counter+=1
             if (counter+1)%100==1:
                 after_time = time.time()
                 time_it = (after_time - init_time)/100
                 init_time = after_time
                 if time_it>1:
-                    print(' [INFO] Number of files preprocessed : --- %.0f/%0.f --- (%.2f s/it, remaining time : %.0f min %s s)'%(counter, number_of_files, time_it, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
+                    logger.info('Number of files preprocessed : --- %.0f/%0.f --- (%.2f s/it, remaining time : %.0f min %s s)'%(counter, number_of_files, time_it, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
                 else:
-                    print(' [INFO] Number of files preprocessed : --- %.0f/%0.f --- (%.2f it/s, remaining time : %.0f min %s s)'%(counter,number_of_files,time_it**-1, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
-                    
+                    logger.info('Number of files preprocessed : --- %.0f/%0.f --- (%.2f it/s, remaining time : %.0f min %s s)'%(counter,number_of_files,time_it**-1, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
+
             directory, name = os.path.split(spectrum_name)
             if output_dir is not None:
                 directory =  output_dir
 
             if not os.path.exists(directory+'/PREPROCESSED/'):
                 os.system('mkdir '+directory+'/PREPROCESSED/')
-            
+
             try:
                 header = fits.getheader(spectrum_name) # load the fits header
             except:
-                print(Fore.YELLOW + '\n [WARNING] File %s cannot be read'%(spectrum_name) + Fore.WHITE)
+                logger.warning('\nFile %s cannot be read'%(spectrum_name))
             spectre = fits.getdata(spectrum_name).astype('float64') # the flux of your spectrum
             spectre_step = np.round(fits.getheader(spectrum_name)['CDELT1'],8)
             wave_min = np.round(header['CRVAL1'],8) # to round float32
             wave_max = np.round(header['CRVAL1']+(len(spectre)-1)*spectre_step,8) # to round float32
-            
+
             grid = np.round(np.linspace(wave_min,wave_max,len(spectre)),8)
 
             begin = np.min(np.arange(len(spectre))[spectre>0])
@@ -1099,38 +1102,38 @@ def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound
             except:
                 pma=0
                 pmd=0
-            
+
             if plx_mas:
                 distance_m = 1000.0/plx_mas*3.08567758e16
                 mu_radps = np.sqrt(pma**2+pmd**2)*2*np.pi/(360.0*1000.0*3600.0*86400.0*365.25)
                 acc_sec = distance_m*86400.0*mu_radps**2 # rv secular drift in m/s per days
             else:
                 acc_sec = 0
-            
+
             if instrument=='CORALIE':
                 if np.mean(spectre)<100000:
                     spectre *= 400780143771.18976 #calibrated with HD8651 2016-12-16 AND 2013-10-24
-                
+
                 spectre /= (1.4e10/125**2) #calibrated to match with HARPS SNR
-            
+
             try:
-                mjd = table.loc[table['fileroot']==spectrum_name,'mjd'].values[0]                
+                mjd = table.loc[table['fileroot']==spectrum_name,'mjd'].values[0]
             except NameError:
                 try:
                     mjd = header['MJD-OBS']
                 except KeyError:
                     mjd = Time(name.split('/')[-1].split('.')[1]).mjd
-            
+
             jdb = np.array(mjd) + 0.5
-            
+
             out = {'flux':spectre,'flux_err':np.zeros(len(spectre)),
                    'instrument':instrument,'mjd':mjd,'jdb':jdb, 'berv':berv, 'lamp_offset':lamp, 'plx_mas':plx_mas,'acc_sec':acc_sec,
                    'wave_min':wave_min,'wave_max':wave_max,'dwave':spectre_step}
-            
+
             save_pickle(directory+'/PREPROCESSED/'+name[:-5]+'.p',out)
-            
-    elif (instrument=='ESPRESSO')|(instrument=='EXPRESS'): 
-        
+
+    elif (instrument=='ESPRESSO')|(instrument=='EXPRESS'):
+
         for spectrum_name in files_to_process:
 
             counter+=1
@@ -1139,10 +1142,10 @@ def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound
                 time_it = (after_time - init_time)/100
                 init_time = after_time
                 if time_it>1:
-                    print(' [INFO] Number of files preprocessed : --- %.0f/%0.f --- (%.2f s/it, remaining time : %.0f min %s s)'%(counter, number_of_files, time_it, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
+                    logger.info('Number of files preprocessed : --- %.0f/%0.f --- (%.2f s/it, remaining time : %.0f min %s s)'%(counter, number_of_files, time_it, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
                 else:
-                    print(' [INFO] Number of files preprocessed : --- %.0f/%0.f --- (%.2f it/s, remaining time : %.0f min %s s)'%(counter,number_of_files,time_it**-1, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
-                    
+                    logger.info('Number of files preprocessed : --- %.0f/%0.f --- (%.2f it/s, remaining time : %.0f min %s s)'%(counter,number_of_files,time_it**-1, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
+
             directory, name = os.path.split(spectrum_name)
             if output_dir is not None:
                 directory =  output_dir
@@ -1152,7 +1155,7 @@ def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound
 
             header = fits.getheader(spectrum_name) # load the fits header
             data_fits = fits.getdata(spectrum_name)
-            
+
             try:
                 grid = data_fits['wavelength_air'].astype('float64') # the grid of wavelength of your spectrum (assumed equidistant in lambda)
                 spectre = data_fits['flux'].astype('float64') # the flux of your spectrum
@@ -1161,7 +1164,7 @@ def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound
                 grid = data_fits['wave_air'][0].astype('float64') # the grid of wavelength of your spectrum (assumed equidistant in lambda)
                 spectre = data_fits['flux_el'][0].astype('float64') # the flux of your spectrum
                 spectre_error = data_fits['err_el'][0].astype('float64') # the flux of your spectrum
-            
+
             spectre_error[spectre!=spectre] = 0
             spectre[spectre!=spectre] = 0
 
@@ -1174,7 +1177,7 @@ def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound
             wave_max = np.max(grid)
             spectre_step = np.mean(np.diff(grid))
             try:
-                mjd = table.loc[table['fileroot']==spectrum_name,'mjd'].values[0]                
+                mjd = table.loc[table['fileroot']==spectrum_name,'mjd'].values[0]
             except NameError:
                 try:
                     mjd = float(header['MJD-OBS'])
@@ -1196,7 +1199,7 @@ def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound
             except:
                 pma=0
                 pmd=0
-            
+
             if plx_mas:
                 distance_m = 1000.0/plx_mas*3.08567758e16
                 mu_radps = np.sqrt(pma**2+pmd**2)*2*np.pi/(360.0*1000.0*3600.0*86400.0*365.25)
@@ -1204,15 +1207,15 @@ def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound
             else:
                 acc_sec = 0
             jdb = np.array(mjd) + 0.5
-            
+
             out = {'wave':grid,'flux':spectre,'flux_err':spectre_error,
                    'instrument':instrument,'mjd':mjd,'jdb':jdb,
                    'berv':berv,'lamp_offset':lamp,'plx_mas':plx_mas,'acc_sec':acc_sec,
                    'wave_min':wave_min,'wave_max':wave_max,'dwave':spectre_step}
-            
+
             save_pickle(directory+'/PREPROCESSED/'+name[:-5]+'.p',out)
-    elif instrument=='PEPSI': 
-        
+    elif instrument=='PEPSI':
+
         for spectrum_name in files_to_process:
 
             counter+=1
@@ -1221,10 +1224,10 @@ def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound
                 time_it = (after_time - init_time)/100
                 init_time = after_time
                 if time_it>1:
-                    print(' [INFO] Number of files preprocessed : --- %.0f/%0.f --- (%.2f s/it, remaining time : %.0f min %s s)'%(counter, number_of_files, time_it, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
+                    logger.info('Number of files preprocessed : --- %.0f/%0.f --- (%.2f s/it, remaining time : %.0f min %s s)'%(counter, number_of_files, time_it, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
                 else:
-                    print(' [INFO] Number of files preprocessed : --- %.0f/%0.f --- (%.2f it/s, remaining time : %.0f min %s s)'%(counter,number_of_files,time_it**-1, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
-                    
+                    logger.info('Number of files preprocessed : --- %.0f/%0.f --- (%.2f it/s, remaining time : %.0f min %s s)'%(counter,number_of_files,time_it**-1, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
+
             directory, name = os.path.split(spectrum_name)
             if output_dir is not None:
                 directory =  output_dir
@@ -1234,14 +1237,14 @@ def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound
 
             header = fits.getheader(spectrum_name) # load the fits header
             data_fits = fits.getdata(spectrum_name)
-            
+
             grid = data_fits['Arg'].astype('float64') # the grid of wavelength of your spectrum (assumed equidistant in lambda)
             spectre = data_fits['Fun'].astype('float64') # the flux of your spectrum
             spectre_error = np.sqrt(data_fits['Var'].astype('float64')) # the flux of your spectrum
 
             spectre_error[spectre!=spectre] = 0
             spectre[spectre!=spectre] = 0
-            
+
             begin = np.min(np.arange(len(spectre))[spectre>0]) # remove border spectrum with 0 value
             end = np.max(np.arange(len(spectre))[spectre>0])   # remove border spectrum with 0 value
             grid = grid[begin:end+1]
@@ -1251,7 +1254,7 @@ def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound
             wave_max = np.max(grid)
             spectre_step = np.mean(np.diff(grid))
             try:
-                mjd = table.loc[table['fileroot']==spectrum_name,'mjd'].values[0]                
+                mjd = table.loc[table['fileroot']==spectrum_name,'mjd'].values[0]
             except NameError:
                 try:
                     mjd = float(header['JD-OBS']) - 2400000
@@ -1263,41 +1266,41 @@ def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound
                 berv = float(header['SSBVEL']/1000)
             except:
                 berv = 0
-            
+
             jdb = np.array(mjd) + 0.5
-            
+
             out = {'wave':grid,'flux':spectre,'flux_err':spectre_error,
                    'instrument':instrument,'mjd':mjd,'jdb':jdb,
                    'berv':berv,'lamp_offset':lamp,'plx_mas':plx_mas,'acc_sec':acc_sec,
                    'wave_min':wave_min,'wave_max':wave_max,'dwave':spectre_step}
-            
+
             save_pickle(directory+'/PREPROCESSED/'+name[:-5]+'.p',out)
 
 
-    elif (instrument=='UNDEF')|(instrument=='NEID'):    #with NEID_solar processing  
+    elif (instrument=='UNDEF')|(instrument=='NEID'):    #with NEID_solar processing
 
         table = pd.read_csv(directory0+'/DACE_TABLE/Dace_extracted_table.csv')
-        print(' [INFO] DACE table has been found. Reduction will run with it.')
+        logger.info('DACE table has been found. Reduction will run with it.')
 
         for spectrum_name in files_to_process:
-            
+
             counter+=1
             if (counter+1)%100==1:
                 after_time = time.time()
                 time_it = (after_time - init_time)/100
                 init_time = after_time
                 if time_it>1:
-                    print(' [INFO] Number of files preprocessed : --- %.0f/%0.f --- (%.2f s/it, remaining time : %.0f min %s s)'%(counter, number_of_files, time_it, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
+                    logger.info('Number of files preprocessed : --- %.0f/%0.f --- (%.2f s/it, remaining time : %.0f min %s s)'%(counter, number_of_files, time_it, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
                 else:
-                    print(' [INFO] Number of files preprocessed : --- %.0f/%0.f --- (%.2f it/s, remaining time : %.0f min %s s)'%(counter,number_of_files,time_it**-1, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
-                    
+                    logger.info('Number of files preprocessed : --- %.0f/%0.f --- (%.2f it/s, remaining time : %.0f min %s s)'%(counter,number_of_files,time_it**-1, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
+
             directory, name = os.path.split(spectrum_name)
             if output_dir is not None:
                 directory =  output_dir
 
             if not os.path.exists(directory+'/PREPROCESSED/'):
                 os.system('mkdir '+directory+'/PREPROCESSED/')
-            
+
             ext = spectrum_name.split('.')[-1]
             if ext=='csv':
                 file_csv = pd.read_csv(spectrum_name)
@@ -1311,7 +1314,7 @@ def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound
                 file_npz = np.load(spectrum_name)
                 spectre = file_npz['spec'] # the flux of your spectrum
                 grid = file_npz['wave']
-           
+
             spectre_step = np.mean(np.diff(grid))
 
             begin = np.min(np.arange(len(spectre))[spectre>0])
@@ -1320,16 +1323,16 @@ def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound
             spectre = spectre[begin:end+1]
             wave_min = np.min(grid)
             wave_max = np.max(grid)
-            
-            jdb = table.loc[table['fileroot']==spectrum_name,'rjd'].values[0]    
-            mjd = jdb - 0.5            
-            berv = table.loc[table['fileroot']==spectrum_name,'berv'].values[0]                
-                        
+
+            jdb = table.loc[table['fileroot']==spectrum_name,'rjd'].values[0]
+            mjd = jdb - 0.5
+            berv = table.loc[table['fileroot']==spectrum_name,'berv'].values[0]
+
             out = {'flux':spectre,'flux_err':spectre_err,
-                   'instrument':instrument,'mjd':mjd,'jdb':jdb, 
+                   'instrument':instrument,'mjd':mjd,'jdb':jdb,
                    'berv':berv, 'lamp_offset':0, 'plx_mas':0,'acc_sec':0,
                    'wave_min':wave_min,'wave_max':wave_max,'dwave':spectre_step}
-            
+
             save_pickle(directory+'/PREPROCESSED/'+name[:-4]+'.p',out)
 
     if final_sound:
@@ -1339,50 +1342,50 @@ def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound
 
 def preprocess_prematch_stellar_frame(files_to_process, rv=0, dlambda=None, wave_min_k=None, wave_max_k=None, stc_grid=None, holes=None, rv_mean=None):
     """compute needed information to all the spectra of a star in the same stellar frame by specifying the rv in km/s and the dlambda to form the grid in angstrom"""
-    
+
     files_to_process = np.sort(files_to_process)
-    
+
     emergency = 1
 
     if np.max(abs(rv))>300:
         make_sound('Warning')
-        print(Fore.YELLOW + '\n [WARNING] RV are certainly is m/s instead of km/s ! '+ Fore.WHITE)
-        rep = sphinx('Are you sure your RV are in km/s ? Purchase with these RV ? (y/n)',rep=['y','n'])    
+        logger.warning('\nRV are certainly is m/s instead of km/s ! ')
+        rep = sphinx('Are you sure your RV are in km/s ? Purchase with these RV ? (y/n)',rep=['y','n'])
         if rep=='n':
             emergency=0
 
     if rv_mean is None:
         rv_mean = np.median(rv)
     rv -= rv_mean
- 
+
     if type(rv)!=np.array:
         rv = np.hstack([rv])
         if len(rv)==1:
             rv = np.ones(len(files_to_process))*rv
-        
+
     if (len(rv)!=len(files_to_process)):
         make_sound('Warning')
-        print(Fore.YELLOW + '\n [WARNING] RV vector is not the same size than the number of files (%.0f vs. %.0f) ! '%(len(rv),len(files_to_process)) + Fore.WHITE)
-        emergency=0       
-    
+        logger.warning('\nRV vector is not the same size than the number of files (%.0f vs. %.0f) ! '%(len(rv),len(files_to_process)))
+        emergency=0
+
     if emergency:
         all_length = [] ; wave_min = [] ; wave_max = []
-        hole_left = [] ; hole_right = []        
+        hole_left = [] ; hole_right = []
         diff = [] ; berv = [] ; lamp = []
-        plx_mas = [] ; acc_sec =[] 
-        
+        plx_mas = [] ; acc_sec =[]
+
         i = -1
-        print('Loading the data, wait... \n') 
+        logger.debug('Loading the data, wait...')
         nb_total = len(files_to_process)
         step = int(np.min([250,nb_total/10]))
         for j in files_to_process:
             i+=1
             if not (i%step):
-                print(' [INFO] Number of files processed : %s/%.0f (%.1f %%)'%(str(i).zfill(len(str(nb_total))),nb_total,100*i/nb_total))
-            f = open_pickle(j)  
+                logger.info('Number of files processed : %s/%.0f (%.1f %%)'%(str(i).zfill(len(str(nb_total))),nb_total,100*i/nb_total))
+            f = open_pickle(j)
 
             shift = rv[i]*(len(np.ravel(rv))!=1)
-                        
+
             flux = f['flux']
             try:
                 wave = f['wave']
@@ -1391,15 +1394,15 @@ def preprocess_prematch_stellar_frame(files_to_process, rv=0, dlambda=None, wave
             except KeyError:
                 wave = create_grid(f['wave_min'],f['dwave'],len(flux))
                 diff.append(f['dwave'])
-            wave_min.append(f['wave_min'])      
-            wave_max.append(f['wave_max'])      
+            wave_min.append(f['wave_min'])
+            wave_max.append(f['wave_max'])
             all_length.append(len(wave))
             berv.append(f['berv'])
             lamp.append(f['lamp_offset'])
             plx_mas.append(f['plx_mas'])
             acc_sec.append(f['acc_sec'])
 
-            
+
             null_flux = np.where(flux==0)[0] #criterion to detect gap between ccd
             if len(null_flux):
                 mask = grouping(np.diff(null_flux),0.5,0)[-1]
@@ -1409,7 +1412,7 @@ def preprocess_prematch_stellar_frame(files_to_process, rv=0, dlambda=None, wave
                     right = wave[int(null_flux[highest[1]])]
                     hole_left.append(find_nearest(wave, doppler_r(left,shift)[1])[1])
                     hole_right.append(find_nearest(wave, doppler_r(right,shift)[1])[1])
-                
+
         if holes is not None:
             hole_left_k = holes[0]
             hole_right_k = holes[1]
@@ -1418,30 +1421,30 @@ def preprocess_prematch_stellar_frame(files_to_process, rv=0, dlambda=None, wave
                 hole_left_k = np.min(hole_left)-0.5 #increase of 0.5 the gap limit by security
                 hole_right_k = np.max(hole_right)+0.5 #increase of 0.5 the gap limit by security
                 make_sound('Warning')
-                print(Fore.YELLOW + '\n [WARNING] GAP detected in s1d between : %.2f and %.2f ! '%(hole_left_k, hole_right_k) + Fore.WHITE)            
+                logger.warning('\nGAP detected in s1d between : %.2f and %.2f ! '%(hole_left_k, hole_right_k))
             else:
                 hole_left_k = -99.9
                 hole_right_k = -99.9
-            
+
         berv = np.array(berv)
         lamp = np.array(lamp)
         plx_mas = np.array(plx_mas)
         acc_sec = np.array(acc_sec)
 
-        wave_min = np.round(wave_min,8)#to take into account float32 
-        wave_max = np.round(wave_max,8)#to take into account float32 
-        
+        wave_min = np.round(wave_min,8)#to take into account float32
+        wave_max = np.round(wave_max,8)#to take into account float32
+
         if wave_min_k is None:
             wave_min_k = np.array(wave_min).max()
 
         if wave_max_k is None:
-            wave_max_k = np.array(wave_max).min() 
+            wave_max_k = np.array(wave_max).min()
 
         wave_min_k = np.round(100*wave_min_k,0)/100
         wave_max_k = np.round(100*wave_max_k,0)/100
 
-        print('\n [INFO] Spectra borders are found between : %.4f and %.4f'%(wave_min_k, wave_max_k))
-       
+        logger.info('Spectra borders are found between : %.4f and %.4f'%(wave_min_k, wave_max_k))
+
         if dlambda is None:
             value = np.unique(np.round(np.hstack(diff),8))
 
@@ -1449,13 +1452,13 @@ def preprocess_prematch_stellar_frame(files_to_process, rv=0, dlambda=None, wave
                 dlambda = value[0]
             else:
                 make_sound('Warning')
-                print(Fore.YELLOW+'\n [WARNING] The algorithm has not managed to determine the dlambda value of your spectral wavelength grid'+Fore.WHITE)
-                dlambda = sphinx('Which dlambda value are you selecting for the wavelength grid ?') 
+                logger.warning('\nThe algorithm has not managed to determine the dlambda value of your spectral wavelength grid')
+                dlambda = sphinx('Which dlambda value are you selecting for the wavelength grid ?')
                 dlambda = np.round(float(dlambda),8)
         else:
             value = np.array([69,69])
 
-        print('\n [INFO] Spectra dwave is : %.4f \n'%(dlambda))
+        logger.info('Spectra dwave is : %.4f \n'%(dlambda))
 
         if stc_grid is not None:
             static_grid = stc_grid
@@ -1464,28 +1467,28 @@ def preprocess_prematch_stellar_frame(files_to_process, rv=0, dlambda=None, wave
                 static_grid = None
             else:
                 static_grid = np.arange(wave_min_k, wave_max_k + dlambda, dlambda)
-        
+
         return wave_min_k, wave_max_k, dlambda, hole_left_k, hole_right_k, static_grid, wave_min, berv, lamp, plx_mas, acc_sec, rv, rv_mean
-                
-    
+
+
 def preprocess_match_stellar_frame(files_to_process, args=None, rv=0, dlambda=None, final_sound=True):
     """process all the spectra of a star in the same stellar frame by specifying the rv in km/s and the dlambda to form the grid in angstrom"""
-    
+
     files_to_process = np.sort(files_to_process)
-    
+
     number_of_files = len(files_to_process)
-    
+
     if args is None:
         args = preprocess_prematch_stellar_frame(files_to_process, rv=rv, dlambda=dlambda)
-    
+
     wave_min_k, wave_max_k, dlambda, hole_left_k, hole_right_k, static_grid, wave_min, berv, lamp, plx_mas, acc_sec, rv, rv_mean = args
-    
-    print('\n [INFO] Spectra dwave is : %.6f \n'%(dlambda))           
-    
+
+    logger.info('Spectra dwave is : %.6f \n'%(dlambda))
+
     wave_ref = int(find_nearest(np.arange(wave_min_k,wave_max_k+dlambda,dlambda),5500)[0])
-    
-    print('Extraction of the new spectra, wait... \n')
-                
+
+    logger.debug('Extraction of the new spectra, wait...')
+
     init_time = time.time()
     k=-1
     for name in files_to_process:
@@ -1496,10 +1499,10 @@ def preprocess_match_stellar_frame(files_to_process, args=None, rv=0, dlambda=No
             init_time = after_time
             counter = k+1
             if time_it>1:
-                print(' [INFO] Number of files preprocessed : --- %.0f/%0.f --- (%.2f s/it, remaining time : %.0f min %s s)'%(counter, number_of_files, time_it, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
+                logger.info('Number of files preprocessed : --- %.0f/%0.f --- (%.2f s/it, remaining time : %.0f min %s s)'%(counter, number_of_files, time_it, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
             else:
-                print(' [INFO] Number of files preprocessed : --- %.0f/%0.f --- (%.2f it/s, remaining time : %.0f min %s s)'%(counter, number_of_files,time_it**-1, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
-                
+                logger.info('Number of files preprocessed : --- %.0f/%0.f --- (%.2f it/s, remaining time : %.0f min %s s)'%(counter, number_of_files,time_it**-1, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
+
         f = open_pickle(name)
         flux = f['flux']
         flux_err = f['flux_err']
@@ -1513,7 +1516,7 @@ def preprocess_match_stellar_frame(files_to_process, args=None, rv=0, dlambda=No
             except:
                 wave = create_grid(f['wave_min'],f['dwave'], len(flux))
             grid = static_grid
-                        
+
         if (rv[k]!=0)|(len(grid)!=len(wave)):
             nflux = interp1d(doppler_r(wave,rv[k])[1], flux, kind='cubic', bounds_error=False, fill_value='extrapolate')(grid)
             nflux_err = interp1d(doppler_r(wave,rv[k])[1], flux_err, kind='linear', bounds_error=False, fill_value='extrapolate')(grid)
@@ -1523,7 +1526,7 @@ def preprocess_match_stellar_frame(files_to_process, args=None, rv=0, dlambda=No
 
         if static_grid is not None:
             wave = static_grid
-        
+
         mask = (wave>=(wave_min_k-dlambda/2.))&(wave<=(wave_max_k+dlambda/2.))
         mask2 = (wave>=(hole_left_k-dlambda/2.))&(wave<=(hole_right_k+dlambda/2.))
         nflux[mask2] = 0
@@ -1533,8 +1536,8 @@ def preprocess_match_stellar_frame(files_to_process, args=None, rv=0, dlambda=No
 
         continuum_5500 = np.nanpercentile(new_flux[wave_ref-50:wave_ref+50],95)
         SNR = np.sqrt(continuum_5500)
-        save_pickle(name,{'flux':new_flux, 'flux_err':new_flux_err, 
-                       'RV_sys':rv_mean, 'RV_shift':rv[k], 'SNR_5500':SNR, 
+        save_pickle(name,{'flux':new_flux, 'flux_err':new_flux_err,
+                       'RV_sys':rv_mean, 'RV_shift':rv[k], 'SNR_5500':SNR,
                        'berv':berv[k], 'lamp_offset':lamp[k], 'plx_mas':plx_mas[k], 'acc_sec':acc_sec[k],
                        'instrument':f['instrument'], 'mjd':f['mjd'], 'jdb':f['jdb'],
                        'hole_left':hole_left_k, 'hole_right':hole_right_k,
@@ -1543,25 +1546,25 @@ def preprocess_match_stellar_frame(files_to_process, args=None, rv=0, dlambda=No
         make_sound('Matching stellar spectra has finished')
 
 def preprocess_prestacking(files_to_process, bin_length = 1.0, dbin = 0.0):
-    """Stack the s1d spectras by bin_length in days. 
+    """Stack the s1d spectras by bin_length in days.
     Use dbin to shift the zero point (useful for solar observation).
-    Define the zero point of the counter for the product name. 
+    Define the zero point of the counter for the product name.
     """
-    
+
     files_to_process = np.sort(files_to_process)
     directory, dustbin = os.path.split(files_to_process[0])
     directory = '/'.join(directory.split('/')[0:-1])+'/STACKED/'
-    
+
     if not os.path.exists(directory):
-        os.system('mkdir '+directory)    
-    
-    print('Loading the data, wait... \n')    
+        os.system('mkdir '+directory)
+
+    logger.debug('Loading the data, wait...')
     jdb = []
     berv = []
     lamp = []
     plx = []
     acc_sec = []
-    
+
     for name in files_to_process:
         jdb.append(pd.read_pickle(name)['jdb'])
         berv.append(pd.read_pickle(name)['berv'])
@@ -1574,7 +1577,7 @@ def preprocess_prestacking(files_to_process, bin_length = 1.0, dbin = 0.0):
     lamp = np.array(lamp)
     plx = np.array(plx)
     acc_sec = np.array(acc_sec)
-    
+
     if bin_length==0:
         group = np.arange(len(jdb))
         groups = np.arange(len(jdb))
@@ -1583,25 +1586,25 @@ def preprocess_prestacking(files_to_process, bin_length = 1.0, dbin = 0.0):
         groups -= groups[0]
         group = np.unique(groups)
 
-    print('Number of bins : %.0f'%(len(group)))
-    
+    logger.debug(f'Number of bins : {len(group):.0f}')
+
     return jdb, berv, lamp, acc_sec, groups
-    
+
 def preprocess_stack(files_to_process, bin_length = 1.00, dbin = 0.00, make_master=True):
-    
-    """Stack the s1d spectras by bin_length in days. 
+
+    """Stack the s1d spectras by bin_length in days.
     Use dbin to shift the zero point (useful for solar observation).
-    Define the zero point of the counter for the product name. 
+    Define the zero point of the counter for the product name.
     """
-    
+
     files_to_process = np.sort(files_to_process)
     directory, dustbin = os.path.split(files_to_process[0])
     directory = '/'.join(directory.split('/')[0:-1])+'/STACKED/'
-    
+
     jdb, berv, lamp, rv_sec, groups = preprocess_prestacking(files_to_process, bin_length = bin_length, dbin = dbin)
-    
+
     group = np.unique(groups)
-    
+
     num=-1
 
     all_snr = []
@@ -1622,19 +1625,19 @@ def preprocess_stack(files_to_process, bin_length = 1.00, dbin = 0.00, make_mast
         acc_sec =  try_field(file_arbitrary,'acc_sec')
         stack = 0
         stack_err = 0
-        bolo = []     
+        bolo = []
         rv_shift = []
         name_root_files = []
         for file in files_to_process[g]:
             f = pd.read_pickle(file)
-            flux = f['flux']  
-            flux_err = f['flux_err']    
+            flux = f['flux']
+            flux_err = f['flux_err']
             rv_shift.append(try_field(f,'RV_shift'))
             stack += flux
             stack_err += flux_err**2
             bolo.append(np.nansum(flux)/len(flux))
             name_root_files.append(file)
-        
+
         bolo = np.array(bolo)
         rv_shift = np.array(rv_shift)
         wave_ref = int(find_nearest(grid,5500)[0])
@@ -1656,18 +1659,18 @@ def preprocess_stack(files_to_process, bin_length = 1.00, dbin = 0.00, make_mast
                'lamp_offset':lamp_w,
                'acc_sec':acc_sec,
                'RV_shift':np.sum(rv_shift*bolo)/np.sum(bolo),
-               'RV_sys':RV_sys,'SNR_5500':SNR, 
+               'RV_sys':RV_sys,'SNR_5500':SNR,
                'hole_left':hole_left, 'hole_right':hole_right,
                'wave_min':wave_min,'wave_max':wave_max,'dwave':dwave,
                'stacking_length':bin_length,
                'nb_spectra_stacked':nb_spectra_stacked,
-               'arcfiles':name_root_files} 
-        
+               'arcfiles':name_root_files}
+
         save_pickle(directory+'/Stacked_spectrum_B%.2f'%(bin_length)+'_D'+date_name+'.p',out)
-    
+
     all_snr = np.array(all_snr)
 
-    print('SNR 5500 statistic (Q1/Q2/Q3) : Q1 = %.0f / Q2 = %.0f / Q3 = %.0f'%(np.nanpercentile(all_snr,25),np.nanpercentile(all_snr,50),np.nanpercentile(all_snr,75)))
+    logger.debug(f'SNR 5500 statistic (Q1/Q2/Q3) : Q1 = {np.nanpercentile(all_snr,25):.0f} / Q2 = {np.nanpercentile(all_snr,50):.0f} / Q3 = {np.nanpercentile(all_snr,75):.0f}')
 
     master_name=None
 
@@ -1687,7 +1690,7 @@ def preprocess_stack(files_to_process, bin_length = 1.00, dbin = 0.00, make_mast
         master_name = 'Master_spectrum_%s.p'%(time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime()))
 
         save_pickle(directory+'/'+master_name,{'flux':stack, 'master_spectrum':True,
-                                                    'RV_sys':RV_sys, 'RV_shift':0, 'SNR_5500':SNR, 
+                                                    'RV_sys':RV_sys, 'RV_shift':0, 'SNR_5500':SNR,
                                                     'lamp_offset':0,'acc_sec':acc_sec,
                                                     'berv':BERV, 'berv_min':BERV_MIN,'berv_max':BERV_MAX,
                                                     'instrument':instrument, 'mjd':0, 'jdb':0,
@@ -1704,78 +1707,78 @@ def preprocess_stack(files_to_process, bin_length = 1.00, dbin = 0.00, make_mast
     return master_name
 
 def postprocess_tofits(path_input,path_rassine,anchor_mode,continuum_mode):
-    
+
     files_input = glob.glob(path_input)
     files_Rassine = glob.glob(path_rassine)
-    
+
     files_input.sort()
     files_Rassine.sort()
-    
-    
+
+
     for i in range(len(files_input)):
-        
+
         data_input = fits.open(files_input[i])
         data_Rassine = pd.read_pickle(files_Rassine[i])
-        
-        
+
+
         wave_input = data_input[1].data['wavelength']
-        
+
         wave_Rassine = data_Rassine['wave']
         cont_Rassine = data_Rassine[anchor_mode][continuum_mode]
-        
+
         f = interp1d(wave_Rassine,cont_Rassine,kind='cubic', bounds_error=False, fill_value='extrapolate')
         cont_interp_Rassine = f(wave_input)
-        
-        
-        
+
+
+
         col1 = fits.Column(name = 'stellar_continuum', format = '1D', array = cont_interp_Rassine)
         col2 = fits.Column(name = 'flux_norm', format = '1D', array = data_input[1].data['flux']/cont_interp_Rassine)
         cols = fits.ColDefs([col1, col2])
-    
-        tbhdu = fits.BinTableHDU.from_columns(data_input[1].data.columns + cols) 
-    
+
+        tbhdu = fits.BinTableHDU.from_columns(data_input[1].data.columns + cols)
+
         prihdr = fits.Header()
         prihdr = data_input[0].header
         prihdu = fits.PrimaryHDU(header=prihdr)
-        
-        
+
+
         thdulist = fits.HDUList([prihdu, tbhdu])
         thdulist.writeto(files_input[i][:files_input[i].index('.fits')]+'_rassine.fits')
 
     return
-    
+
 def produce_line(grid,spectre,box=5,shape='savgol',vic=7):
     index, line_flux = local_max(-smooth(spectre, box, shape = shape), vic)
     line_flux = -line_flux
     line_index = index.astype('int')
     line_wave = grid[line_index]
-    
+
     index2, line_flux2 = local_max(smooth(spectre, box, shape = shape),vic)
     line_index2 = index2.astype('int')
     line_wave2 = grid[line_index2]
-    
+
     if line_wave[0]<line_wave2[0]:
         line_wave2 = np.insert(line_wave2,0,grid[0])
         line_flux2 = np.insert(line_flux2,0,spectre[0])
         line_index2 = np.insert(line_index2,0,0)
-    
+
     if line_wave[-1]>line_wave2[-1]:
-        line_wave2 = np.insert(line_wave2,-1,grid[-1])    
-        line_flux2 = np.insert(line_flux2,-1,spectre[-1]) 
+        line_wave2 = np.insert(line_wave2,-1,grid[-1])
+        line_flux2 = np.insert(line_flux2,-1,spectre[-1])
         line_index2 = np.insert(line_index2,-1,len(grid)-1)
-    
+
     memory = np.hstack([-1*np.ones(len(line_wave)),np.ones(len(line_wave2))])
     stack_wave = np.hstack([line_wave,line_wave2])
     stack_flux = np.hstack([line_flux,line_flux2])
-    stack_index = np.hstack([line_index,line_index2]) 
-    
+    stack_index = np.hstack([line_index,line_index2])
+
     memory = memory[stack_wave.argsort()]
     stack_flux = stack_flux[stack_wave.argsort()]
     stack_wave = stack_wave[stack_wave.argsort()]
     stack_index = stack_index[stack_index.argsort()]
-    
+
     trash,matrix = grouping(memory,0.01,0)
-    
+
     delete_liste = []
     for j in range(len(matrix)):
         numero = np.arange(matrix[j,0],matrix[j,1]+2)
@@ -1784,33 +1787,33 @@ def produce_line(grid,spectre,box=5,shape='savgol',vic=7):
             delete_liste.append(numero[fluxes[0:-1]])
         else:
             delete_liste.append(numero[fluxes[1:]])
-    delete_liste = np.hstack(delete_liste)        
-    
-    memory = np.delete(memory,delete_liste)       
-    stack_flux = np.delete(stack_flux,delete_liste)       
-    stack_wave = np.delete(stack_wave,delete_liste)       
-    stack_index = np.delete(stack_index,delete_liste)       
-    
+    delete_liste = np.hstack(delete_liste)
+
+    memory = np.delete(memory,delete_liste)
+    stack_flux = np.delete(stack_flux,delete_liste)
+    stack_wave = np.delete(stack_wave,delete_liste)
+    stack_index = np.delete(stack_index,delete_liste)
+
     minima = np.where(memory==-1)[0] ; maxima = np.where(memory==1)[0]
-    
+
     index = stack_index[minima] ; index2 = stack_index[maxima]
     flux = stack_flux[minima] ; flux2 = stack_flux[maxima]
     wave = stack_wave[minima] ; wave2 = stack_wave[maxima]
-    
+
     index = np.hstack([index[:,np.newaxis],index2[0:-1,np.newaxis],index2[1:,np.newaxis]])
     flux = np.hstack([flux[:,np.newaxis],flux2[0:-1,np.newaxis],flux2[1:,np.newaxis]])
     wave = np.hstack([wave[:,np.newaxis],wave2[0:-1,np.newaxis],flux2[1:,np.newaxis]])
-    
-    return index,wave,flux  
-    
 
-def save_pickle(filename,output,header=None): 
+    return index,wave,flux
+
+
+def save_pickle(filename,output,header=None):
     if filename.split('.')[-1]=='p':
         pickle.dump(output,open(filename,'wb'),protocol=protocol_pick)
     if filename.split('.')[-1]=='fits': #for futur work
         pass
-    
-    
+
+
 def smooth(y, box_pts, shape='rectangular'): #rectangular kernel for the smoothing
     box2_pts = int(2*box_pts-1)
     if shape=='savgol':
@@ -1827,33 +1830,33 @@ def smooth(y, box_pts, shape='rectangular'): #rectangular kernel for the smoothi
         y_smooth = np.convolve(y, box, mode='same')
         y_smooth[0:int((len(box)-1)/2)] = y[0:int((len(box)-1)/2)]
         y_smooth[-int((len(box)-1)/2):] = y[-int((len(box)-1)/2):]
-    return y_smooth    
+    return y_smooth
 
 
-def supress_low_snr_spectra(files_to_process, snr_cutoff = 100, supress=True):        
+def supress_low_snr_spectra(files_to_process, snr_cutoff = 100, supress=True):
     for j in files_to_process:
         file = pd.read_pickle(j)
         if 'parameters' not in file.keys():
             if file['SNR_5500']<snr_cutoff:
-                print('File deleted : %s '%(j))
-                if supress:
-                    os.system('rm '+j)  
-                else:
-                    new_name = 'rassine_'+j.split('_')[1]
-                    os.system('mv '+j+' '+new_name)
-        else:
-            if file['parameters']['SNR_5500']<snr_cutoff:
-                print('File deleted : %s '%(j))
+                logger.debug(f'File deleted : {j:s} ')
                 if supress:
                     os.system('rm '+j)
                 else:
                     new_name = 'rassine_'+j.split('_')[1]
                     os.system('mv '+j+' '+new_name)
-    
-    
+        else:
+            if file['parameters']['SNR_5500']<snr_cutoff:
+                logger.debug(f'File deleted :{j:s} ')
+                if supress:
+                    os.system('rm '+j)
+                else:
+                    new_name = 'rassine_'+j.split('_')[1]
+                    os.system('mv '+j+' '+new_name)
+
+
 def sphinx(sentence,rep=None,s2=''):
     answer='-99.9'
-    print(' ______________ \n\n --- SPHINX --- \n\n TTTTTTTTTTTTTT \n\n Question : '+sentence+'\n\n [Deafening silence ...] \n\n ______________ \n\n --- OEDIPE --- \n\n XXXXXXXXXXXXXX \n ')
+    logger.debug('______________ \n\n --- SPHINX --- \n\n TTTTTTTTTTTTTT \n\n Question : '+sentence+'\n\n [Deafening silence ...] \n\n ______________ \n\n --- OEDIPE --- \n\n XXXXXXXXXXXXXX \n ')
     if rep != None:
         while answer not in rep:
             answer = my_input('Answer : '+s2)
@@ -1864,7 +1867,7 @@ def sphinx(sentence,rep=None,s2=''):
 def supress_ccd_gap(files_to_process,continuum='linear'):
     """Fill the gap between the ccd of HARPS s1d"""
     for i,j in enumerate(files_to_process):
-        print('Modification of file (%.0f/%.0f) : %s'%(i+1,len(files_to_process),j))
+        logger.debug(f'Modification of file ({i+1:.0f}/{len(files_to_process):.0f}) : {j:s}')
         file = pd.read_pickle(j)
         conti = file['matching_anchors']['continuum_'+continuum]
         flux_norm = file['flux']/conti
@@ -1892,7 +1895,7 @@ def rm_outliers(array, m=1.5, kind='sigma', direction='sym'):
         if direction=='highest':
             mask = (array <= Q3+m*2*(Q3-median))
         if direction=='lowest':
-            mask = (array >= Q1-m*2*(median-Q1))    
+            mask = (array >= Q1-m*2*(median-Q1))
     if kind == 'sigma':
         mask = abs(array-np.nanmean(array)) <= m * np.nanstd(array)
     return mask,  array[mask]
