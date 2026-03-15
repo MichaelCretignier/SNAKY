@@ -71,7 +71,7 @@ class table(object):
 
             if (len(table)!=len(color)):
                 color = np.arange(len(table))
-                logger.warning('The color vector has not the same size (%.0f) than the table : '%(len(color)),np.shape(table))
+                logger.warning(f'The color vector has not the same size ({len(color):.0f}) than the table : ',np.shape(table))
 
         index = color
         mask = np.isnan(index)
@@ -899,15 +899,15 @@ class tableXY(object):
         model_xy = tableXY(x,1-model)
         model_xy.find_min(vicinity=5)
         rms2 = np.std(residuals)
-        logger.info('RMS model 1-component = %.2f'%(rms1*100))
-        logger.info('RMS model 2-components = %.2f'%(rms2*100))
+        logger.info(f'RMS model 1-component = {rms1*100:.2f}')
+        logger.info(f'RMS model 2-components = {rms2*100:.2f}')
 
         if amp1<amp2:
             ratio = np.round(100*amp1/amp2,2)
         else:
             ratio = np.round(100*amp2/amp1,2)
 
-        logger.info('Ratio of the two fitted components = %.1f'%(ratio))
+        logger.info(f'Ratio of the two fitted components = {ratio:.1f}')
         condition = 0
         if (ratio>10)&(len(model_xy.x_min)>1)&(rms2/rms1<0.80):
             condition = 1
@@ -975,7 +975,7 @@ class tableXY(object):
 
             used_region = ((10**log_grid)>=mask_shifted[1][:,np.newaxis])&((10**log_grid)<=mask_shifted[0][:,np.newaxis])
             used_region = (np.sum(used_region,axis=0)!=0).astype('bool')
-            logger.info('Percentage of the spectrum used : %.1f [%%] \n'%(100*sum(used_region)/len(grid)))
+            logger.info(f'Percentage of the spectrum used : {100*sum(used_region)/len(grid):.1f} [%] \n')
 
             if not os.path.exists(static):
                 mask_wave = np.log10(mask[:,0])
@@ -1079,7 +1079,7 @@ class tableXY(object):
                         plt.axvline(x=res.x_min[0],color='r',ls='-.',label='RV =%.1f | CT = %.1f'%(center2,contrast2*100))
                         self.warning_multipeak = 1
                         logger.warning('Multi peak detected!')
-                        logger.info('CT1 = %.1f (RV=%.1f km/s) & CT2 = %.1f (RV=%.1f km/s)'%(contrast1*100,contrast2*100,center1,center2))
+                        logger.info(f'CT1 = {contrast1*100:.1f} (RV={contrast2*100:.1f} km/s) & CT2 = {center1:.1f} (RV={center2:.1f} km/s)')
                         plt.legend(loc=4)
                 except:
                     pass

@@ -61,7 +61,7 @@ class start():
             query = mym.extract_header(files, ins, debug=self.debug, dec=dec, ra=ra)
             sinfo['Ra']['fixed'] = np.median(query['RA'])
             sinfo['Dec']['fixed'] = np.median(query['DEC'])
-            pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(starname),'wb'))
+            pickle.dump(sinfo,open(f'{dir_root}STAR_INFO/Stellar_info_{starname:s}.p','wb'))
             query['ins'] = ins
             dace_table = pd.concat([dace_table,query],axis=1)
             dace_table.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
@@ -111,7 +111,7 @@ class start():
         for kw in sy_user_object:
             if sy_user_object[kw] is not None:
                 self.sy_user_object[kw] = sy_user_object[kw]
-                logger.info('Stellar parameters updated: %s = %s'%(kw,str(sy_user_object[kw])))
+                logger.info(f'Stellar parameters updated: {kw} = {str(sy_user_object[kw])}')
 
     def estimate_computation_time(self):
         N = len(self.sy_files)
@@ -131,9 +131,9 @@ class start():
         rassine_time_required = str(int(rassine_processing//60))+'m'+str(int(rassine_processing - 60*(rassine_processing//60)))+'s'
         snaky_time_required = str(int(snaky_processing//60))+'m'+str(int(snaky_processing - 60*(snaky_processing//60)))+'s'
 
-        logger.info('For N=%.0f spectra:'%(N))
+        logger.info(f'For N={N}.0f spectra:')
 
-        logger.info(f"\nRASSINE computation time: {rassine_time_required} {['','(SKIPPED)'][int(self.sy_rassine_db)]}")
+        logger.info(f"RASSINE computation time: {rassine_time_required} {['','(SKIPPED)'][int(self.sy_rassine_db)]}")
         logger.info("SNAKY computation time: "+snaky_time_required)
         logger.info("\nTotal computation time estimated: "+total_time_required+" \n")
 
@@ -146,7 +146,7 @@ class start():
         starname,ins = mym.create_snaky_dir(self.sy_output_dir,starname,ins)
         self.sy_starname = starname
         self.sy_instrument = ins
-        self.sy_dir_root = self.sy_output_dir+'/'+starname+'/data/s1d/'+ins+'/'
+        self.sy_dir_root = self.sy_output_dir+starname+'/data/s1d/'+ins+'/'
         dir_root = self.sy_dir_root
 
         self.set_star()
@@ -361,8 +361,8 @@ class start():
         else:
             kept = (anomalous<15)
 
-        logger.info('Number of good spectra = %.0f'%(sum(kept)))
-        logger.info('Number of anomalous spectra = %.0f'%(len(kept)-sum(kept)))
+        logger.info(f'Number of good spectra = {sum(kept):.0f}')
+        logger.info(f'Number of anomalous spectra = {len(kept)-sum(kept):.0f}')
         logger.info(f'criterion = {anomalous}')
 
         summary['flag1'] = 0
@@ -401,7 +401,7 @@ class start():
             rv_sys_approx = rv_sys[np.argmin(anomalous)]
 
         rv_sys_std = np.nanstd(rv_sys)
-        logger.info('Final aproximated RV_sys = %.1f +/- %.1f kms'%(rv_sys_approx,rv_sys_std))
+        logger.info(f'Final aproximated RV_sys = {rv_sys_approx:.1f} +/- {rv_sys_std:.1f} kms')
 
         mask = np.ones(len(rv_sys)).astype('bool')
         if len(rv_sys)>10:
@@ -421,7 +421,7 @@ class start():
             files = [np.array(summary['filename'])]
             pd.DataFrame(np.array([files[-1],rv_sys]).T,columns=['files','rv_sys']).to_csv(dir_root+'WARNING/RV_SYS_JITTER.csv')
             rv_sys_approx = mym.yarara_rough_rv_sys(spec,teff=teff,verbose=self.debug)
-        logger.info('RV_sys initial guess = %.1f +/- %.1f kms'%(rv_sys_approx,rv_sys_std))
+        logger.info(f'RV_sys initial guess = {rv_sys_approx:.1f} +/- {rv_sys_std:.1f} kms')
         sinfo2,sb_flag1 = mym.yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag='')
 
         dace_summary = pd.read_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv',index_col=0)
@@ -460,7 +460,7 @@ class start():
 
         sinfo = myf.update_info_lvl2(sinfo,'SB1','SNAKY',int(sb_flag1))
         sinfo = myf.update_info_lvl2(sinfo,'SB2','SNAKY',int(sb_flag2))
-        pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+        pickle.dump(sinfo,open(f'{dir_root}STAR_INFO/Stellar_info_{star}.p','wb'))
 
         if (rcorr<0.75)&(teff<7500):
             logger.warning(f'[EMERGENCY STOP] The CCF is unusual (R = {rcorr:.2f}). The spectra is unusual.\n')
@@ -490,8 +490,8 @@ class start():
             ct = ccf_output['contrast'].y
             med_ct = np.nanmedian(ct)
             kept2 = abs(ct-med_ct)<2
-            logger.info('Number of good spectra (after CCF check) = %.0f'%(sum(kept2)))
-            logger.info('Number of bad spectra (after CCF check) = %.0f'%(len(kept)-sum(kept)+len(kept2)-sum(kept2)))
+            logger.info(f'Number of good spectra (after CCF check) = {sum(kept2):.0f}')
+            logger.info(f'Number of bad spectra (after CCF check) = {len(kept)-sum(kept)+len(kept2)-sum(kept2):.0f}')
             if np.sum(kept2)==0:
                 kept2 = np.ones(len(ct)).astype('bool')
             summary['flag2'] = 0
@@ -578,13 +578,13 @@ class start():
             sinfo['Contrast'][kw] = CT[kw]
         for kw in EW.keys():
             sinfo['EW'][kw] = EW[kw]
-        pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+        pickle.dump(sinfo,open(f'{dir_root}STAR_INFO/Stellar_info_{star}.p','wb'))
 
         atmos = mym.yarara_atmos_xgb_spectroscopy(dir_root, sinfo, resolution=80000, phot=True)
         teff,feh,logg,M,R,BV,vmicro,vmacro = atmos
 
         suffixe = 'ATLAS_T%.0f_g%.1f'%(np.round(teff,-2),np.round(logg,1))
-        logger.info('Atmospheric model set to : %s'%(suffixe))
+        logger.info(f'Atmospheric model set to : {suffixe}')
 
         sinfo = myf.update_info_lvl2(sinfo,'Mstar','SNAKY',M)
         sinfo = myf.update_info_lvl2(sinfo,'Rstar','SNAKY',R)
@@ -891,7 +891,7 @@ class start():
             self.warning_printed = 0
             logger.info('Reduction reset, you can now relaunch the reduction.')
         else:
-            logger.warning('\nResetting the reduction will erase all the products in:\n')
+            logger.warning('Resetting the reduction will erase all the products in:\n')
             liste = ['IMAGES/*','WORKSPACE/Analyse*','WARNING/*','STAR_INFO/*','REDUCTION_INFO/*','CCF_MASK/*.fits']
             if suppression=='all':
                 liste.append('WORKSPACE/RASSINE*')

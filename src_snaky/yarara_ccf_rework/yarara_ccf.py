@@ -1,19 +1,16 @@
 from collections import namedtuple
-import getopt
 import datetime
 import logging
 from colorama import Fore
 import pandas as pd
 import numpy as np
 import matplotlib.pylab as plt
-import pickle
 import os
 from astropy.io import fits
 from scipy.ndimage import map_coordinates
 from tqdm import tqdm
 import glob as glob
 import time
-import sys
 
 from . import snaky_variables as myv
 from . import snaky_functions as myf

@@ -248,19 +248,19 @@ def create_snaky_dir(output_dir,star,ins):
         return star, ins
     else:
         if len(star.split(' '))>1:
-            logger.warning('\nThe specified star (%s) contains spaces'%(star))
+            logger.warning(f'\nThe specified star ({star}) contains spaces')
             star = star.replace(' ','')
-            logger.warning('Spaces have been removed, new starname: %s'%(star))
+            logger.warning(f'Spaces have been removed, new starname: {star}')
 
         if len(ins.split('_'))!=2:
-            logger.warning('\nThe specified instrument (%s) is wrong'%(ins))
+            logger.warning(f'\nThe specified instrument ({ins}) is wrong')
             logger.warning('The format should follow: SPECTRO_DRS (ESPRESSO_3.3.1, HARPS_3.5)')
         if len(ins.split('_'))==1:
             ins = ins+'_1.0'
-            logger.warning('The instrument DRS version was set to 1.0 (%s)'%(ins))
+            logger.warning(f'The instrument DRS version was set to 1.0 ({ins})')
 
         directories = ['RAW','IMAGES','WORKSPACE','EXPORT','CCF_MASK','DACE_TABLE','DETECTION_LIMIT','FILM','KEPLERIAN','KITCAT','MASTER','PCA','REDUCTION_INFO','TEMP','STAR_INFO','WARNING']
-        logger.info('Star and instrument defined as %s and %s'%(star,ins))
+        logger.info(f'Star and instrument defined as {star} and {ins}')
         for d in directories:
             base = output_dir+'/'+star+'/data/s1d/'+ins+'/'+d
             os.makedirs(base, exist_ok=True)
@@ -1020,7 +1020,7 @@ def yarara_flux_density(dir_root,files,sub_dico='matching_diff',smooth=7):
         if used<95:
             warning = 1
             plt.figure('warning')
-            logger.warning('\nOnly %.1f%% of spectra used. Holes detected! Results may be inaccurate.'%(used))
+            logger.warning('Only %.1f%% of spectra used. Holes detected! Results may be inaccurate.'%(used))
             plt.plot(spec.x,spec.y+count)
             plt.figure('flux_density')
         ha,hb = np.histogram(flux_norm,bins=100,density=True)
@@ -1057,7 +1057,7 @@ def yarara_flux_density(dir_root,files,sub_dico='matching_diff',smooth=7):
     logger.info('Rough FeH estimation %.2f +/- ?? dex'%(FeH_rough_est))
 
     if Teff_rough_est>7000:
-        logger.warning('\nVery hot star! Parameters unreliable')
+        logger.warning('Very hot star! Parameters unreliable')
 
     plt.savefig(dir_root+'IMAGES/Teff_approximated'+myv.PRD_EXT+'.png')
     if warning:
@@ -1123,7 +1123,7 @@ def yarara_check_rv_sys(spec, fwhm, rv_sys_approx, ccf_tag, dir_root=None):
 
     mask_ccf = 'Magicat'
 
-    logger.info('Selected CCF mask : %s'%(mask_ccf))
+    logger.info(f'Selected CCF mask : {mask_ccf:s}')
     mask = np.genfromtxt(MATERIAL_DIR+'/MASK_CCF/%s.txt'%(mask_ccf))
     mask = np.array([0.5*(mask[:,0]+mask[:,1]),mask[:,2]]).T
 
@@ -1816,7 +1816,7 @@ def yarara_ccf(
             logger.info('Reference value for %s is %.1f km/_s'%(ins,ref))
             if abs(ref - fwhm_ins)>1:
                 warning = 1
-                logger.warning('\nInstrumental resolution is not usual (%.1f km/s)'%(fwhm_ins))
+                logger.warning('Instrumental resolution is not usual (%.1f km/s)'%(fwhm_ins))
         else:
             ref = np.nan
 
@@ -2122,14 +2122,14 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
 
         if (sinfo['Teff']['FluxD']>6500): #outside calibration range
             if abs(teff-teff_rough)>600:
-                logger.warning('\nToo much difference (dT=%.0fK) in Teff (%.0fK) with FluxD (%.0fK). XGB skipped.'%(abs(teff-teff_rough),teff,teff_rough))
+                logger.warning('Too much difference (dT=%.0fK) in Teff (%.0fK) with FluxD (%.0fK). XGB skipped.'%(abs(teff-teff_rough),teff,teff_rough))
             else:
-                logger.warning('\nThe temperature is outside the calibration range. XGB skipped.')
+                logger.warning('The temperature is outside the calibration range. XGB skipped.')
             teff = int(teff_rough)
             feh = 0
             logg = 4.0
         elif sinfo['Teff']['FluxD']<3500: #outside calibration range
-            logger.warning('\nThe temperature is outside the calibration range. XGB skipped.')
+            logger.warning('The temperature is outside the calibration range. XGB skipped.')
             teff = int(teff_rough)
             feh = 0
             logg = 5.0
@@ -2138,7 +2138,7 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
             feh = np.round(feh,3)
             logg = np.round(logg,3)
     else:
-        logger.warning('\nNaN detected indicated missing lines. Parameters computation skipped.')
+        logger.warning('NaN detected indicated missing lines. Parameters computation skipped.')
         teff,feh,logg,M,R,BV,vmicro,vmacro = np.nan*np.ones(8)
         teff = sinfo['Teff']['FluxD']
         logg = 4.5
@@ -2320,7 +2320,7 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False, std_
         else:
             loc = myf.find_nearest(list(myv.instrument_res_kms.values()),ref_resolution)[0][0]
             ins_calib = list(myv.instrument_res_kms.keys())[loc]
-            logger.warning('\n%s is no part of the calibrated instruments'%(ins))
+            logger.warning(f'{ins} is no part of the calibrated instruments')
             logger.warning('The list of existing instruments is:')
             for ins in myv.instrument_res_kms.keys():
                 logger.debug('○ ',ins)
@@ -3085,7 +3085,7 @@ def yarara_instrumental_resolution(dir_root, files, shift_rv, berv, sub_dico='ma
             master = np.array(master)
             flux_ref[c1:c2] = np.nanmedian(master,axis=0)
     else:
-        logger.warnin('\n [WARNING] BERV SPAN too small (%.1f), use of a reference spectrum'%(berv_mad))
+        logger.warning(f'BERV SPAN too small ({berv_mad:.1f}), use of a reference spectrum')
 
         sinfo = import_star_info(dir_root)
         teff = sinfo['Teff']['SNAKY']

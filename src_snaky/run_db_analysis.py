@@ -24,7 +24,7 @@ def check_snaky_processing(output_dir,instrument='*'):
     instruments = np.unique([i.split('/')[-2] for i in instruments])
     extract = []
     for instrument in instruments:
-        logger.info('Summary for the instrument : %s \n'%(instrument))
+        logger.info(f'Summary for the instrument : {instrument} \n')
         all_dir = glob.glob(output_dir+'/*/data/s1d/'+instrument+'/RAW')
         stars = [d.split('/data')[0].split('/')[-1] for d in all_dir]
         ins = [d.split('/RAW')[0].split('/')[-1] for d in all_dir]
@@ -65,9 +65,9 @@ def check_snaky_processing(output_dir,instrument='*'):
             nb = int(nb_stars-np.sum(all_info[kw.split('_')[1][0:5]]=='XXXX'))
             percentage = 100*nb/(nb_stars+1e-6)
             if percentage>99:
-                logger.info('%s = %.0f (%.1f%%)'%(kw,nb,percentage))
+                logger.info(f'{kw:s} = {nb:.0f} ({percentage:.1f}%)')
             else:
-                logger.warning('%s = %.0f (%.1f%%)'%(kw,nb,percentage))
+                logger.warning(f'{kw:s} = {nb:.0f} ({percentage:.1f}%)')
             save.append(nb)
         extract.append([instrument]+[nb_stars]+save)
         logger.info('File DB created: '+output_dir+'/database/Snaky_processing_db_'+instrument.replace('*','')+'.csv')
@@ -265,9 +265,9 @@ def create_snaky_db(output_dir, filename='All_stars', stars=['*'], branch=None):
     nb_processed = len(np.unique(infos['star']))
     logger.debug(infos)
 
-    logger.info('%.0f datasets'%(len(infos)))
+    logger.info(f'{len(infos):.0f} datasets')
     percentage = 100*nb_processed/ntot
-    logger.info('Nb unique stars processed = %.0f (%.0f%%)\n'%(nb_processed,percentage))
+    logger.info(f'Nb unique stars processed = {nb_processed:.0f} ({percentage:.0f}%)\n')
 
     infos.to_csv(output_dir+'/database/'+filename+'_summary_infos.csv')
 
@@ -379,7 +379,7 @@ def create_snaky_rv_db(output_dir,filename='All_stars', stars=['*'], infos=None,
                 rv_sys = info['Rv_sys']['SNAKY']
                 summary = pd.read_csv(f.split('STAR_INFO/')[0]+'WORKSPACE/Analyse_summary.csv',index_col=0)
             except:
-                logger.error('%s has no RV_SYS'%(s))
+                logger.error(f'{s} has no RV_SYS')
                 summary = {}
 
             if 'ccf_rv_G2' in summary.keys():

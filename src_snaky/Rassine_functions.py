@@ -1059,9 +1059,9 @@ def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound
                 time_it = (after_time - init_time)/100
                 init_time = after_time
                 if time_it>1:
-                    logger.info('Number of files preprocessed : --- %.0f/%0.f --- (%.2f s/it, remaining time : %.0f min %s s)'%(counter, number_of_files, time_it, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
+                    logger.info(f'Number of files preprocessed : --- {counter:.0f}/{number_of_files:.0f} --- ({time_it:.2f} s/it, remaining time : {((number_of_files-counter)*time_it)//60:.0f} min {str(int(((number_of_files-counter)*time_it)%60)).zfill(2):s} s)')
                 else:
-                    logger.info('Number of files preprocessed : --- %.0f/%0.f --- (%.2f it/s, remaining time : %.0f min %s s)'%(counter,number_of_files,time_it**-1, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
+                    logger.info(f'Number of files preprocessed : --- {counter:.0f}/{number_of_files:.0f} --- ({time_it**-1:.2f} it/s, remaining time : {((number_of_files-counter)*time_it)//60:.0f} min {str(int(((number_of_files-counter)*time_it)%60)).zfill(2):s} s)')
 
             directory, name = os.path.split(spectrum_name)
             if output_dir is not None:
@@ -1073,7 +1073,7 @@ def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound
             try:
                 header = fits.getheader(spectrum_name) # load the fits header
             except:
-                logger.warning('\nFile %s cannot be read'%(spectrum_name))
+                logger.warning(f'File {spectrum_name} cannot be read')
             spectre = fits.getdata(spectrum_name).astype('float64') # the flux of your spectrum
             spectre_step = np.round(fits.getheader(spectrum_name)['CDELT1'],8)
             wave_min = np.round(header['CRVAL1'],8) # to round float32
@@ -1142,9 +1142,9 @@ def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound
                 time_it = (after_time - init_time)/100
                 init_time = after_time
                 if time_it>1:
-                    logger.info('Number of files preprocessed : --- %.0f/%0.f --- (%.2f s/it, remaining time : %.0f min %s s)'%(counter, number_of_files, time_it, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
+                    logger.info(f'Number of files preprocessed : --- {counter:.0f}/{number_of_files:.0f} --- ({time_it:.2f} s/it, remaining time : {((number_of_files-counter)*time_it)//60:.0f} min {str(int(((number_of_files-counter)*time_it)%60)).zfill(2):s} s)')
                 else:
-                    logger.info('Number of files preprocessed : --- %.0f/%0.f --- (%.2f it/s, remaining time : %.0f min %s s)'%(counter,number_of_files,time_it**-1, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
+                    logger.info(f'Number of files preprocessed : --- {counter:.0f}/{number_of_files:.0f} --- ({time_it**-1:.2f} it/s, remaining time : {((number_of_files-counter)*time_it)//60:.0f} min {str(int(((number_of_files-counter)*time_it)%60)).zfill(2):s} s)')
 
             directory, name = os.path.split(spectrum_name)
             if output_dir is not None:
@@ -1224,9 +1224,9 @@ def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound
                 time_it = (after_time - init_time)/100
                 init_time = after_time
                 if time_it>1:
-                    logger.info('Number of files preprocessed : --- %.0f/%0.f --- (%.2f s/it, remaining time : %.0f min %s s)'%(counter, number_of_files, time_it, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
+                    logger.info(f'Number of files preprocessed : --- {counter:.0f}/{number_of_files:.0f} --- ({time_it:.2f} s/it, remaining time : {((number_of_files-counter)*time_it)//60:.0f} min {str(int(((number_of_files-counter)*time_it)%60)).zfill(2):s} s)')
                 else:
-                    logger.info('Number of files preprocessed : --- %.0f/%0.f --- (%.2f it/s, remaining time : %.0f min %s s)'%(counter,number_of_files,time_it**-1, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
+                    logger.info(f'Number of files preprocessed : --- {counter:.0f}/{number_of_files:.0f} --- ({time_it**-1:.2f} it/s, remaining time : {((number_of_files-counter)*time_it)//60:.0f} min {str(int(((number_of_files-counter)*time_it)%60)).zfill(2):s} s)')
 
             directory, name = os.path.split(spectrum_name)
             if output_dir is not None:
@@ -1290,9 +1290,9 @@ def preprocess_fits(files_to_process, instrument='HARPS', plx_mas=0, final_sound
                 time_it = (after_time - init_time)/100
                 init_time = after_time
                 if time_it>1:
-                    logger.info('Number of files preprocessed : --- %.0f/%0.f --- (%.2f s/it, remaining time : %.0f min %s s)'%(counter, number_of_files, time_it, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
+                    logger.info(f'Number of files preprocessed : --- {counter:.0f}/{number_of_files:.0f} --- ({time_it:.2f} s/it, remaining time : {((number_of_files-counter)*time_it)//60:.0f} min {str(int(((number_of_files-counter)*time_it)%60)).zfill(2):s} s)')
                 else:
-                    logger.info('Number of files preprocessed : --- %.0f/%0.f --- (%.2f it/s, remaining time : %.0f min %s s)'%(counter,number_of_files,time_it**-1, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
+                    logger.info(f'Number of files preprocessed : --- {counter:.0f}/{number_of_files:.0f} --- ({time_it**-1:.2f} it/s, remaining time : {((number_of_files-counter)*time_it)//60:.0f} min {str(int(((number_of_files-counter)*time_it)%60)).zfill(2):s} s)')
 
             directory, name = os.path.split(spectrum_name)
             if output_dir is not None:
@@ -1349,7 +1349,7 @@ def preprocess_prematch_stellar_frame(files_to_process, rv=0, dlambda=None, wave
 
     if np.max(abs(rv))>300:
         make_sound('Warning')
-        logger.warning('\nRV are certainly is m/s instead of km/s ! ')
+        logger.warning('RV are certainly is m/s instead of km/s ! ')
         rep = sphinx('Are you sure your RV are in km/s ? Purchase with these RV ? (y/n)',rep=['y','n'])
         if rep=='n':
             emergency=0
@@ -1365,7 +1365,7 @@ def preprocess_prematch_stellar_frame(files_to_process, rv=0, dlambda=None, wave
 
     if (len(rv)!=len(files_to_process)):
         make_sound('Warning')
-        logger.warning('\nRV vector is not the same size than the number of files (%.0f vs. %.0f) ! '%(len(rv),len(files_to_process)))
+        logger.warning(f'RV vector is not the same size than the number of files ({len(rv):.0f} vs. {len(files_to_process):.0f}) !')
         emergency=0
 
     if emergency:
@@ -1381,7 +1381,7 @@ def preprocess_prematch_stellar_frame(files_to_process, rv=0, dlambda=None, wave
         for j in files_to_process:
             i+=1
             if not (i%step):
-                logger.info('Number of files processed : %s/%.0f (%.1f %%)'%(str(i).zfill(len(str(nb_total))),nb_total,100*i/nb_total))
+                logger.info(f'Number of files processed : {str(i).zfill(len(str(nb_total))):s}/{nb_total:.0f} ({100*i/nb_total:.1f} %)')
             f = open_pickle(j)
 
             shift = rv[i]*(len(np.ravel(rv))!=1)
@@ -1421,7 +1421,7 @@ def preprocess_prematch_stellar_frame(files_to_process, rv=0, dlambda=None, wave
                 hole_left_k = np.min(hole_left)-0.5 #increase of 0.5 the gap limit by security
                 hole_right_k = np.max(hole_right)+0.5 #increase of 0.5 the gap limit by security
                 make_sound('Warning')
-                logger.warning('\nGAP detected in s1d between : %.2f and %.2f ! '%(hole_left_k, hole_right_k))
+                logger.warning(f'GAP detected in s1d between : {hole_left_k:.2f} and {hole_right_k:.2f} !')
             else:
                 hole_left_k = -99.9
                 hole_right_k = -99.9
@@ -1443,7 +1443,7 @@ def preprocess_prematch_stellar_frame(files_to_process, rv=0, dlambda=None, wave
         wave_min_k = np.round(100*wave_min_k,0)/100
         wave_max_k = np.round(100*wave_max_k,0)/100
 
-        logger.info('Spectra borders are found between : %.4f and %.4f'%(wave_min_k, wave_max_k))
+        logger.info(f'Spectra borders are found between : {wave_min_k:.4f} and {wave_max_k:.4f}')
 
         if dlambda is None:
             value = np.unique(np.round(np.hstack(diff),8))
@@ -1452,13 +1452,13 @@ def preprocess_prematch_stellar_frame(files_to_process, rv=0, dlambda=None, wave
                 dlambda = value[0]
             else:
                 make_sound('Warning')
-                logger.warning('\nThe algorithm has not managed to determine the dlambda value of your spectral wavelength grid')
+                logger.warning('The algorithm has not managed to determine the dlambda value of your spectral wavelength grid')
                 dlambda = sphinx('Which dlambda value are you selecting for the wavelength grid ?')
                 dlambda = np.round(float(dlambda),8)
         else:
             value = np.array([69,69])
 
-        logger.info('Spectra dwave is : %.4f \n'%(dlambda))
+        logger.info(f'Spectra dwave is : {dlambda:.4f} \n')
 
         if stc_grid is not None:
             static_grid = stc_grid
@@ -1483,7 +1483,7 @@ def preprocess_match_stellar_frame(files_to_process, args=None, rv=0, dlambda=No
 
     wave_min_k, wave_max_k, dlambda, hole_left_k, hole_right_k, static_grid, wave_min, berv, lamp, plx_mas, acc_sec, rv, rv_mean = args
 
-    logger.info('Spectra dwave is : %.6f \n'%(dlambda))
+    logger.info(f'Spectra dwave is : {dlambda:.4f} \n')
 
     wave_ref = int(find_nearest(np.arange(wave_min_k,wave_max_k+dlambda,dlambda),5500)[0])
 
@@ -1499,9 +1499,9 @@ def preprocess_match_stellar_frame(files_to_process, args=None, rv=0, dlambda=No
             init_time = after_time
             counter = k+1
             if time_it>1:
-                logger.info('Number of files preprocessed : --- %.0f/%0.f --- (%.2f s/it, remaining time : %.0f min %s s)'%(counter, number_of_files, time_it, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
+                logger.info(f'Number of files preprocessed : --- {counter:.0f}/{number_of_files:.0f} --- ({time_it:.2f} s/it, remaining time : {((number_of_files-counter)*time_it)//60:.0f} min {str(int(((number_of_files-counter)*time_it)%60)).zfill(2):s} s)')
             else:
-                logger.info('Number of files preprocessed : --- %.0f/%0.f --- (%.2f it/s, remaining time : %.0f min %s s)'%(counter, number_of_files,time_it**-1, ((number_of_files-counter)*time_it)//60, str(int(((number_of_files-counter)*time_it)%60)).zfill(2)))
+                logger.info(f'Number of files preprocessed : --- {counter:.0f}/{number_of_files:.0f} --- ({time_it**-1:.2f} it/s, remaining time : {((number_of_files-counter)*time_it)//60:.0f} min {str(int(((number_of_files-counter)*time_it)%60)).zfill(2):s} s)')
 
         f = open_pickle(name)
         flux = f['flux']
@@ -1666,7 +1666,7 @@ def preprocess_stack(files_to_process, bin_length = 1.00, dbin = 0.00, make_mast
                'nb_spectra_stacked':nb_spectra_stacked,
                'arcfiles':name_root_files}
 
-        save_pickle(directory+'/Stacked_spectrum_B%.2f'%(bin_length)+'_D'+date_name+'.p',out)
+        save_pickle(f'{directory}/Stacked_spectrum_B{bin_length:.2f}_D{date_name}.p',out)
 
     all_snr = np.array(all_snr)
 
@@ -1687,7 +1687,7 @@ def preprocess_stack(files_to_process, bin_length = 1.00, dbin = 0.00, make_mast
         #plt.figure(figsize=(16,6))
         #plt.plot(grid,stack,color='k')
 
-        master_name = 'Master_spectrum_%s.p'%(time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime()))
+        master_name = f'Master_spectrum_{time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime()):s}.p'
 
         save_pickle(directory+'/'+master_name,{'flux':stack, 'master_spectrum':True,
                                                     'RV_sys':RV_sys, 'RV_shift':0, 'SNR_5500':SNR,

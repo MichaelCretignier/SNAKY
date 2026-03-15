@@ -433,13 +433,13 @@ def main(argv=None):
 
         plt.figure('CCF',figsize=(10,6))
         plt.plot(vrad/1000,ccf,label='CCF')
-        plt.plot(vrad/1000,ras.gaussian(vrad/1000,popt[0],popt[1],popt[2],popt[3]),label='gaussian fit (%.2f km/s)'%(popt[-1]*2.35))
+        plt.plot(vrad/1000,ras.gaussian(vrad/1000,popt[0],popt[1],popt[2],popt[3]),label=f'gaussian fit ({popt[-1]*2.35:.2f} km/s)')
         plt.legend()
         plt.title('Debug graphic : CCF and fit to determine the FWHM\n Check that the fit has correctly converged')
         plt.xlabel('Vrad [km/s]')
         plt.ylabel('CCF')
         plt.savefig(output_dir+new_file+'_CCF.png')
-        logger.info('CCF saved under %s'%(output_dir+new_file+'_CCF.png'))
+        logger.info(f'CCF saved under {output_dir+new_file+'_CCF.png'}')
 
         if errors_fit[-1]/popt[-1]>0.2:
             logger.warning('Error on the FWHM of the CCF > 20% ! Check the CCF and/or enter you own mask')
@@ -932,12 +932,12 @@ def main(argv=None):
             expo2 = sexponent2.val
             if callback.model =='poly':
                 radius = law_chromatic * (par_R + (par_Rmax-par_R) * penalite_graph ** (expo))
-                par_model = 'poly_%.2f'%(expo)
+                par_model = f'poly_{expo:.2f}'
                 if not only_print_end:
                     logger.debug(f'You selected the poly law (exponent {expo:.2f}) with R : {par_R:.2f} and Rmax: {par_Rmax:.2f}')
             else:
                 radius = law_chromatic * (par_R + (par_Rmax-par_R) * (1+np.exp(-10*expo*(penalite_graph-expo2))) ** -1)
-                par_model = 'sigmoid_%.2f_%.2f'%(expo,expo2)
+                par_model = f'sigmoid_{expo:.2f}_{expo2:.2f}'
                 if not only_print_end:
                     logger.debug(f'You selected the sigmoid law (sigma {expo:.2f}, center {expo2:.2f}) with R: {par_R:%.2f} and Rmax: {par_Rmax:%.2f}')
             plt.close()
@@ -1030,7 +1030,7 @@ def main(argv=None):
             #ax.plot(np.linspace(-R_old, R_old, 100), np.sqrt(R_old**2-(np.linspace(-R_old, R_old, 100))**2), color='k')
             #ax.plot(np.linspace(-R_old, R_old, 100), -np.sqrt(R_old**2-(np.linspace(-R_old, R_old, 100))**2), color='k')
             plt.show(block = False)
-            loop = ras.sphinx('Do you want to perform a new loop with R = KxR (y/n)? Enter the K that you want (if (y) is given the default value is K=1.5)',rep=['y','n']+['%.0f'%(j) for j in np.arange(1,10)]+['%.1f'%(j) for j in np.arange(1,10,0.1)])
+            loop = ras.sphinx('Do you want to perform a new loop with R = KxR (y/n)? Enter the K that you want (if (y) is given the default value is K=1.5)',rep=['y','n']+[f'{f:.0f}' for j in np.arange(1,10)]+[f'{j:.1f}' for j in np.arange(1,10,0.1)])
             plt.close()
             if loop=='n':
                 break
@@ -1653,9 +1653,9 @@ def main(argv=None):
     if (feedback)|(plot_end)|(save_last_plot):
         fig = plt.figure(figsize=(16,6))
         plt.subplot(2,1,1)
-        plt.plot(grid[::jump_point], spectrei[::jump_point], label = 'spectrum (SNR=%.0f)'%(int(SNR_0)),color='g')
+        plt.plot(grid[::jump_point], spectrei[::jump_point], label = f'spectrum (SNR={int(SNR_0):.0f})',color='g')
         plt.plot(grid[::jump_point], spectre[::jump_point]*normalisation, label = 'spectrum reduced',color='b',alpha=0.3)
-        plt.scatter(wave, flux, color = 'k', label='anchor points (%s)'%(int(len(wave))),zorder=100)
+        plt.scatter(wave, flux, color = 'k', label=f'anchor points ({int(len(wave))})',zorder=100)
 
     if interpol=='cubic':
         continuum1, continuum3, continuum1_denoised, continuum3_denoised = ras.make_continuum(wave, flux, flux_denoised, grid, spectrei, continuum_to_produce = [interpol, 'undenoised'])
