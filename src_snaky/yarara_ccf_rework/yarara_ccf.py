@@ -1,7 +1,6 @@
 from collections import namedtuple
 import datetime
 import logging
-from colorama import Fore
 import pandas as pd
 import numpy as np
 import matplotlib.pylab as plt
@@ -12,105 +11,21 @@ from tqdm import tqdm
 import glob as glob
 import time
 
-from . import snaky_variables as myv
-from . import snaky_functions as myf
-from . import snaky_classes as myc
-from dataclasses import InitVar, dataclass, field
-from typing import Optional, Union
+from src_snaky.yarara_ccf_rework.ccf_config import CCFConfig
+from src_snaky.yarara_ccf_rework.mask_config import MaskConfig
+from src_snaky.yarara_ccf_rework.output_config import OutputConfig
+from src_snaky.yarara_ccf_rework.stellar_params import StellarParams
+
+from .observation_context import ObservationContext
+
+from .. import snaky_variables as myv
+from .. import snaky_functions as myf
+from .. import snaky_classes as myc
+
+from dataclasses import field
 import numpy as np
-from typing import TypeVar, Optional
 
 logger = logging.getLogger('snaky')
-
-def import_summary(dir_root):
-    material = pd.read_csv(dir_root+'WORKSPACE/Analyse_summary.csv',index_col=0)
-    return material
-
-def get_jdb(files,dir_root):
-    try:
-        summary = import_summary(dir_root)
-        mask = myf.in1d(np.array(summary['filename']),files)
-        jdb = np.array(summary.loc[mask,'jdb'])
-        if np.sum(jdb!=jdb)!=0:
-            jdb = np.arange(len(files))
-    except:
-        jdb = np.arange(len(files))
-    return jdb
-
-@dataclass
-class ObservationContext:
-    dir_root: str
-    files: list
-    rv_shift_input: InitVar[Optional[np.ndarray]] = None
-    spectra: Optional[tuple] = None
-    sub_dico: str = 'matching_diff'
-
-    # Derived from post_init
-    ins: str = field(init=False)
-    jdb: np.ndarray = field(init=False)
-    rv_shift: np.ndarray = field(init=False)
-
-    def __post_init__(self, rv_shift_input:Optional[np.ndarray]):
-        self.ins = self.dir_root.split('/')[-2]
-        self.jdb = get_jdb(self.files[-1], self.dir_root)
-        self.rv_shift = rv_shift_input or np.zeros(len(self.files[-1]))
-
-@dataclass
-class StellarParams:
-    rv_sys: float          # km/s
-    fwhm: float            # km/s
-    beta_gnd: float = 2.0
-
-    def __post_init__(self):
-        logger.info(f'RV sys : {self.rv_sys:.2f} [km/s]')
-        self.rv_sys *= 1000
-
-@dataclass
-class MaskConfig:
-    mask_input: InitVar[Union[str, pd.DataFrame, np.ndarray]]
-
-    mask_col: str = 'weight_rv'
-    weighted: bool = True
-    squared: bool = True
-    wave_min: float = 4000.0
-    wave_max: float = 10000.0
-    delta_window: int = 5
-
-    # Derived from post_init
-    mask_name: str = field(init=False)
-    mask: np.ndarray = field(init=False)
-
-    def __post_init__(self, mask_input: Union[str, pd.DataFrame, np.ndarray]):
-        if type(mask_input) is str:
-            # ccf_name = self.mask
-            self.mask_name = mask_input
-            mask_loc = '/MASK_CCF/'+mask_input+'.txt'
-            mask = np.genfromtxt(mask_loc)
-            self.mask = np.array([0.5*(mask[:,0]+mask[:,1]),mask[:,2]]).T
-            logger.info(f'CCF mask selected : {mask_loc}s')
-        elif isinstance(mask_input, pd.DataFrame):
-            self.mask = np.array([np.array(mask_input['freq_mask0']).astype('float'),np.array(mask_input[self.mask_col]).astype('float')]).T
-            self.mask_name = 'ManualDF'
-
-@dataclass
-class OutputConfig:
-    save: bool = True
-    return_ccf: bool = False
-    ccf_tag: int = 0
-    debug: bool = False
-
-@dataclass
-class CCFConfig:
-    rv_range: float
-    rv_borders: float
-    bis_range: float
-    ccf_oversampling: int = 1
-    analytical_model: str = 'auto'
-    continuum_method: str = 'flux'
-    normalisation: str = 'left'
-    del_outside_max: bool = False
-    check_non_transform: bool = True
-
 
 ''' This should be computed before calling the function. The function  always require a complete CCFConfig to work properly. The caller should ensure to pass all data
 T = TypeVar('T')
