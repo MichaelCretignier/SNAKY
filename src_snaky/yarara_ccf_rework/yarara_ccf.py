@@ -25,18 +25,17 @@ from .. import snaky_functions as myf
 from .. import snaky_classes as myc
 
 from dataclasses import field
-import numpy as np
 
 logger = logging.getLogger('snaky')
 
 PHOT_NOISE_CALIBRATION = {
-    'rv':       (0.98, -3.08),
+    'rv': (0.98, -3.08),
     'contrast': (0.98, -3.58),
-    'fwhm':     (0.98, -2.94),
-    'center':   (0.98, -2.83),
-    'depth':    (0.97, -3.62),
-    'ew':       (0.97, -3.47),
-    'vspan':    (0.98, -2.95),
+    'fwhm': (0.98, -2.94),
+    'center': (0.98, -2.83),
+    'depth': (0.97, -3.62),
+    'ew': (0.97, -3.47),
+    'vspan': (0.98, -2.95),
 }
 
 FALLBACK_NOISE = 0.01  # module-level constant
@@ -68,7 +67,7 @@ logger.info(f'CCF analytical model :{analytical_model}')'''
 
 def doppler_r(lamb, v):
     """Relativistic Doppler. Takes (wavelength, velocity in [m/s]) and returns lambda observed and lambda source."""
-    c      = 299.792e6
+    c = 299.792e6
     factor = np.where(v != 0, np.sqrt((1 + v / c) / (1 - v / c)), 1.0)
     return lamb * factor, lamb / factor
 
@@ -128,7 +127,7 @@ def filter_mask_to_grid(
 ) -> np.ndarray:
     blue_shifted, red_shifted = doppler_r(lines[:, 0], margin_kms)
 
-    within_grid  = (blue_shifted < grid.max()) & (red_shifted > grid.min())
+    within_grid = (blue_shifted < grid.max()) & (red_shifted > grid.min())
     within_range = (lines[:, 0] > wave_min) & (lines[:, 0] < wave_max)
 
     return lines[within_grid & within_range]
@@ -166,7 +165,7 @@ def generate_static_mask(
     match = myf.identify_nearest(mask_wave,grid_mask)
     offsets = np.arange(-delta_window, delta_window + 1, dtype=int)
     indices = (match[:, np.newaxis] + offsets[np.newaxis, :]).ravel()
-    values  = np.broadcast_to(mask_contrast[:, np.newaxis], (len(match), len(offsets))).ravel()
+    values = np.broadcast_to(mask_contrast[:, np.newaxis], (len(match), len(offsets))).ravel()
     log_mask[indices] = values
     # endregion
 
@@ -274,11 +273,11 @@ def yarara_ccf(
     logger.info(f'Computing CCFs (Current time {now.strftime('%H:%M:%S')})')
 
     # Replaces the chunking Might be wrong as the workflow is totally different
-    grid_log10  = np.log10(grid)
+    grid_log10 = np.log10(grid)
 
     pixel_coords = np.interp(log_grid, grid_log10, np.arange(len(grid_log10)))
-    row_coords  = np.arange(len(flux))[:, np.newaxis] * np.ones(len(log_grid))
-    col_coords  = np.ones(len(flux))[:, np.newaxis] * pixel_coords[np.newaxis, :]
+    row_coords = np.arange(len(flux))[:, np.newaxis] * np.ones(len(log_grid))
+    col_coords = np.ones(len(flux))[:, np.newaxis] * pixel_coords[np.newaxis, :]
 
     flux = map_coordinates(
         flux,
@@ -316,11 +315,11 @@ def yarara_ccf(
 
     if ccf_config.continuum_method=='flux':
         continuum_idx = np.argmax(ccf_ref)
-        n_top        = len(ccf_ref) // 2
-        top_ccf      = np.sort(np.argpartition(ccf_ref, -n_top)[-n_top:]) #roughly half of a CCF is made of the continuum
+        n_top = len(ccf_ref) // 2
+        top_ccf = np.sort(np.argpartition(ccf_ref, -n_top)[-n_top:]) #roughly half of a CCF is made of the continuum
     else:
         continuum_idx = np.argmax(abs(vrad))
-        n_top   = len(ccf_ref) // 2
+        n_top = len(ccf_ref) // 2
         top_ccf = np.sort(np.argpartition(np.abs(vrad), -n_top)[-n_top:]) #roughly half of a CCF is made of the continuum
 
     master_ccf = ccf_ref/np.max(ccf_ref)
@@ -363,13 +362,12 @@ def yarara_ccf(
 
     # Penalize oversampling in vrad
     svrad_phot *= np.sqrt(820 / np.mean(vrad_step))
-
-    svrad_phot[svrad_phot==0] = 2*np.max(svrad_phot) #in case of null values
+    svrad_phot[svrad_phot==0] = 2*np.max(svrad_phot)
 
     logger.info(f'Photon noise RV median : {np.median(svrad_phot):.2f} m/s\n ')
 
     # Compute all calibrated uncertainties in one pass
-    log_svrad = np.log10(svrad_phot)   # compute once, reuse for all observables
+    log_svrad = np.log10(svrad_phot)
     calibrated_phot_noise = {
         obs: 10 ** (slope * log_svrad + intercept)
         for obs, (slope, intercept) in PHOT_NOISE_CALIBRATION.items()
@@ -383,10 +381,10 @@ def yarara_ccf(
     nonzero_mean = np.mean(noise_ccf[nonzero_mask]) if nonzero_mask.any() else FALLBACK_NOISE
     noise_ccf = np.where(nonzero_mask, noise_ccf, nonzero_mean)
 
-    noise_75th  = np.percentile(noise_ccf, 75, axis=0)
+    noise_75th = np.percentile(noise_ccf, 75, axis=0)
     factor = 1.0 / noise_75th ** 2
 
-    ccf_power     = ccf_power * factor[np.newaxis, :]
+    ccf_power = ccf_power * factor[np.newaxis, :]
     ccf_power_std = ccf_power_std * factor[np.newaxis, :]
 
     # TBD optimize take 9s for N=360
