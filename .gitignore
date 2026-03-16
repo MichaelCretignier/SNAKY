@@ -6,3 +6,4 @@ snaky.egg-info/
 .out/**
 .venv/**
 snaky/**
+Material_snaky/*.npy
