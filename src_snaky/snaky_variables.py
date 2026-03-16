@@ -28,6 +28,15 @@ SKLEARN_VERSION = ['_sklearn_0.24.1','_sklearn_1.7.2'][int(version("scikit-learn
 DEV = False
 interp_degree = 'linear'
 
+INTERP_ORDER = {
+    'nearest':  0,
+    'linear':   1,
+    'quadratic':2,
+    'cubic':    3,
+    'quartic':  4,
+    'quintic':  5,
+}
+
 # =============================================================================
 # ACTIVITY PROXY
 # =============================================================================
@@ -48,8 +57,8 @@ Hb =    [4861.35, 0.50, 0, 1.5, 'Hb']
 Hc =    [4340.47, 0.50, 0, 1.5, 'Hc']
 Hd =    [4101.73, 0.20, 0, 1.5, 'Hd']
 Heps =  [3970.01, 0.20, 0, 1.5, 'Heps']
-Hzeta = [3889.06, 0.10, 0, 1.5, 'Hzeta'] 
-He1D3 = [5875.62, 0.15, 0, 0, 'HeID3'] 
+Hzeta = [3889.06, 0.10, 0, 1.5, 'Hzeta']
+He1D3 = [5875.62, 0.15, 0, 0, 'HeID3']
 CaIIa = [8498.00, 0.15, 0, 0, 'CaIIa']
 CaIIb = [8542.00, 0.15, 0, 0, 'CaIIb']
 CaIIc = [8662.00, 0.15, 0, 0, 'CaIIc']
@@ -85,7 +94,7 @@ calib_vmacro = [ #teff garfield kitty
     [6500, 9.0, 7.2, 6.6],
     [6750, 9.0, 7.2, 6.6]]
 
-instrument_res_kms = { 
+instrument_res_kms = {
     'CORALIE98': 5.34,    # R ≈ 56 000
     'CORALIE07': 5.07,    # R ≈ 59 000
     'CORALIE14': 5.01,    # R ≈ 60 000
@@ -115,10 +124,10 @@ instrument_lat_deg = {
     'NEID':31.9584,
     'KPF':19.8261,
     '2ES':-29.25786,
-    'FIES':28.7583,        
-    'UVES':-24.6270,       
-    'HERMES':-29.2567,     
-    'FEROS':-29.2584,     
+    'FIES':28.7583,
+    'UVES':-24.6270,
+    'HERMES':-29.2567,
+    'FEROS':-29.2584,
 }
 
 instrument_lon_deg = {
@@ -132,10 +141,10 @@ instrument_lon_deg = {
     'NEID':-111.5987,
     'KPF':-155.4700,
     '2ES':-70.73666,
-    'FIES':-17.8890,       
-    'UVES':-70.4045,       
-    'HERMES':-70.7345,     
-    'FEROS':-70.7346,     
+    'FIES':-17.8890,
+    'UVES':-70.4045,
+    'HERMES':-70.7345,
+    'FEROS':-70.7346,
 }
 
 instrument_altm = {
@@ -259,4 +268,3 @@ star_info = {
     'Prot':{'fixed':25.0},
     'Pmag':{'fixed':11.0},
     }
-

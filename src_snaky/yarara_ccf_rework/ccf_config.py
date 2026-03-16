@@ -5,7 +5,7 @@ class CCFConfig:
     rv_range: float
     rv_borders: float
     bis_range: float
-    ccf_oversampling: int = 1
+    oversampling: int = 1
     analytical_model: str = 'auto'
     continuum_method: str = 'flux'
     normalisation: str = 'left'

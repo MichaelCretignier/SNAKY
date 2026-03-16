@@ -716,7 +716,7 @@ def ccf(
 
     return velocity, convolution, conv_std
 
-def ccf(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=3, spec1_std=None, method='cubic'):
+def ccf(wave, spec1, spec2, extended=1500, rv_range:float=45, oversampling=3, spec1_std=None, method='cubic'):
     "CCF for a equidistant grid in log wavelength spec1 = spectrum, spec2 =  binary mask"
 
     dwave = np.median(np.diff(wave))
