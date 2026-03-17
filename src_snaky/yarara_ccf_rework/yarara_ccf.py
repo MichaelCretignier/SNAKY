@@ -388,9 +388,9 @@ def yarara_ccf(
     ccf_power_std = ccf_power_std * factor[np.newaxis, :]
 
     # TBD optimize take 9s for N=360
-    for j,i in enumerate(observations.files[-1]):
-        ccf_power_old = ccf_power[:,j]
-        ccf_power_old_std = ccf_power_std[:,j]
+    for (i, filename) in enumerate(observations.files[-1]):
+        ccf_power_old = ccf_power[:,i]
+        ccf_power_old_std = ccf_power_std[:,i]
         ccf = myc.tableXY(vrad/1000,ccf_power_old,ccf_power_old_std)
 
         ccf_backup = ccf.copy()
@@ -472,17 +472,17 @@ def yarara_ccf(
         rv_ccf = ccf.params['cen'].value+center
         rv_ccf_std = ccf.params['cen'].stderr
         rv_ccf,rv_ccf_std = replace_none(rv_ccf,rv_ccf_std)
-        rv_ccf_std = calibrated_phot_noise['rv'][j]
+        rv_ccf_std = calibrated_phot_noise['rv'][i]
 
         contrast_ccf = -ccf.params['amp'].value
         contrast_ccf_std = ccf.params['amp'].stderr
         contrast_ccf,contrast_ccf_std = replace_none(contrast_ccf,contrast_ccf_std)
-        contrast_ccf_std = calibrated_phot_noise['contrast'][j]
+        contrast_ccf_std = calibrated_phot_noise['contrast'][i]
 
         wid_ccf = ccf.params['wid'].value
         wid_ccf_std = ccf.params['wid'].stderr
         wid_ccf,wid_ccf_std = replace_none(wid_ccf,wid_ccf_std)
-        wid_ccf_std = calibrated_phot_noise['fwhm'][j]
+        wid_ccf_std = calibrated_phot_noise['fwhm'][i]
 
         offset_ccf = ccf.params['offset'].value
         offset_ccf_std = ccf.params['offset'].stderr
@@ -533,19 +533,19 @@ def yarara_ccf(
         vs = -b/(2*a)
 
         bisspan.append(vs)
-        bisspan_ccf_std = calibrated_phot_noise['vspan'][j]
+        bisspan_ccf_std = calibrated_phot_noise['vspan'][i]
         bisspan_std.append(bisspan_ccf_std)
 
-        ew_std.append(calibrated_phot_noise['ew'][j])
-        centers_std.append(calibrated_phot_noise['center'][j])
-        depths_std.append(calibrated_phot_noise['depth'][j])
+        ew_std.append(calibrated_phot_noise['ew'][i])
+        centers_std.append(calibrated_phot_noise['center'][i])
+        depths_std.append(calibrated_phot_noise['depth'][i])
 
-        save_ccf['ew_std'] = calibrated_phot_noise['ew'][j]
-        para_ccf['para_rv_std'] = calibrated_phot_noise['center'][j]
-        para_ccf['para_depth_std'] = calibrated_phot_noise['depth'][j]
+        save_ccf['ew_std'] = calibrated_phot_noise['ew'][i]
+        para_ccf['para_rv_std'] = calibrated_phot_noise['center'][i]
+        para_ccf['para_depth_std'] = calibrated_phot_noise['depth'][i]
 
         save_gauss = {'contrast':contrast_ccf,'contrast_std':contrast_ccf_std,
-                                'rv':rv_ccf,'rv_std':rv_ccf_std, 'rv_std_phot':calibrated_phot_noise['rv'][j],
+                                'rv':rv_ccf,'rv_std':rv_ccf_std, 'rv_std_phot':calibrated_phot_noise['rv'][i],
                                 'fwhm':wid_ccf,'fwhm_std':wid_ccf_std,
                                 'offset':offset_ccf,'offset_std':offset_ccf_std,
                                 'vspan':rv_ccf - para_center,'vspan_std':bisspan_ccf_std}
