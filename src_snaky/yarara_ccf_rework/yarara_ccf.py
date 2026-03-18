@@ -7,12 +7,12 @@ import matplotlib.pylab as plt
 import os
 from astropy.io import fits
 from scipy.ndimage import map_coordinates
-from tqdm import tqdm
 import glob as glob
 import time
 
 from scipy.interpolate import interp1d
 
+from src_snaky.snaky_main import replace_none
 from src_snaky.yarara_ccf_rework.ccf_config import CCFConfig
 from src_snaky.yarara_ccf_rework.mask_config import MaskConfig
 from src_snaky.yarara_ccf_rework.output_config import OutputConfig
@@ -25,6 +25,8 @@ from .. import snaky_functions as myf
 from .. import snaky_classes as myc
 
 from dataclasses import field
+
+import inspect
 
 logger = logging.getLogger('snaky')
 
@@ -141,7 +143,7 @@ def trim_grid_to_mask(
 ) -> GridTrimmingReturn:
     low = doppler_r(lines[:, 0].min(), -margin_kms)[0]
     high = doppler_r(lines[:, 0].max(),  margin_kms)[0]
-    logger.info(f'Wave min : { low:.0f } AA | Wave max :{ high:.0f } AA')
+    logger.info(f'Wave min : {low:.0f} AA | Wave max :{high:.0f} AA')
 
     #supress useless part of the spectra to speed up the CCF
     keep = (grid >= low) & (grid <= high)
@@ -208,7 +210,7 @@ def yarara_ccf(
         mask_config.wave_min,
         mask_config.wave_max
     )
-    logger.info(f'Nb lines in the mask : { len(mask):.0f }')
+    logger.info(f'Nb lines in the mask : { len(mask) }')
 
     grid, flux = trim_grid_to_mask(
             grid_base,
@@ -303,7 +305,7 @@ def yarara_ccf(
     end = time.time()
 
     logger.debug(f"Line number: {inspect.currentframe().f_lineno}")
-    logger.debug(f"Execution time {counter_dev}: {end - start:.3f} seconds")
+    #logger.debug(f"Execution time {counter_dev}: {end - start:.3f} seconds")
 
     now = datetime.datetime.now()
     dv = np.median(np.diff(vrad))
@@ -347,7 +349,7 @@ def yarara_ccf(
 
     logger.info(f'SNR CCF continuum median : {np.median(ccf_signal_noise_ratio):.0f}')
 
-    python# Noise profile — normalised by continuum level and CCF SNR
+    # Noise profile — normalised by continuum level and CCF SNR
     ccf_norm_sqrt = np.sqrt(ccf_ref / np.max(ccf_ref)) * ccf_ref[continuum_idx]
     noise_ccf = ccf_norm_sqrt[:, np.newaxis] / ccf_signal_noise_ratio
 
@@ -375,7 +377,7 @@ def yarara_ccf(
 
     logger.info(f'Photon noise RV from calibration : {np.median(calibrated_phot_noise['rv'])*1000:.2f} m/s ')
 
-    logger.info(f'Number of velocity bin ={len(vrad):%.0f}')
+    logger.info(f'Number of velocity bin ={len(vrad)}')
 
     nonzero_mask = noise_ccf != 0
     nonzero_mean = np.mean(noise_ccf[nonzero_mask]) if nonzero_mask.any() else FALLBACK_NOISE
@@ -426,14 +428,14 @@ def yarara_ccf(
         second_max = ccf.deri.x_max[np.argsort(ccf.deri.y_max)[-2]]
 
         ccf.y *= -1
-        if (np.min(abs(ccf.x_max-0.5*(first_max+second_max)))<5)&(fwhm<15):
+        if (np.min(abs(ccf.x_max-0.5*(first_max+second_max)))<5)&(star.fwhm<15):
             center=ccf.x_max[np.argmin(abs(ccf.x_max-0.5*(first_max+second_max)))]
         else:
             center=ccf.x[ccf.y.argmin()]
         ccf.x -= center
 
-        if not del_outside_max:
-            mask = (ccf.x>-rv_borders)&(ccf.x<rv_borders)
+        if not ccf_config.del_outside_max:
+            mask = (ccf.x>-ccf_config.rv_borders)&(ccf.x<ccf_config.rv_borders)
             ccf.supress_mask(mask)
         else:
             ccf.find_max(vicinity=10)
@@ -442,7 +444,7 @@ def yarara_ccf(
             mask[ccf.index_max[0]:ccf.index_max[1]+1]=True
             ccf.supress_mask(mask)
 
-        if normalisation=='left':
+        if ccf_config.normalisation=='left':
             norm = ccf.y[0]
         else:
             max1 = np.argmax(ccf.y[0:int(len(ccf.y)/2)])
@@ -453,17 +455,17 @@ def yarara_ccf(
         ccf.yerr /= norm
         ccf.y /= norm
 
-        if debug:
+        if output_config.debug:
             ccf.plot(color=None)
 
-        if analytical_model=='gaussian':
+        if ccf_config.analytical_model=='gaussian':
             ccf.fit_gaussian(Plot=False)
         else:
-            ccf.fit_GND(Plot=False,beta_fixed=beta0)
+            ccf.fit_GND(Plot=False,beta_fixed=int(beta0))
 
         ccf_backup.params['cen'].value -= center
 
-        if check_non_transform:
+        if ccf_config.check_non_transform:
             V1,V2 = ccf_backup.params['cen'].value,ccf.params['cen'].value
             if abs(V1-V2)>1:
                 logger.warning(f'Discrepancy detected between CCFs ({V1:.4f}/{V2:.4f}), value reset to non-transformed one')
@@ -495,7 +497,7 @@ def yarara_ccf(
         fwhms.append(wid_ccf)
         fwhms_std.append(wid_ccf_std)
 
-        ccf.clip(min=[-bis_range,None],max=[bis_range,None],replace=False)
+        ccf.clip(min=[-ccf_config.bis_range,None],max=[ccf_config.bis_range,None],replace=False)
         if len(ccf.clipped.x)<5:
             ccf.clip(min=[-0.5,None],max=[0.5,None],replace=False)
             logger.info('BISSPAN updated to +/- 0.5 km/s')
@@ -524,7 +526,7 @@ def yarara_ccf(
             ccf_core.x += center
             ccf_core.x -= rv_ccf
 
-        vrad_center = np.arange(0,bis_range+(dv/1000)*0.99,dv/1000)
+        vrad_center = np.arange(0,ccf_config.bis_range+(dv/1000)*0.99,dv/1000)
         vrad_center = np.hstack([-vrad_center[1:][::-1],vrad_center])
 
         ccf_core.interpolate(new_grid=vrad_center,replace=True,method='cubic')
@@ -551,22 +553,17 @@ def yarara_ccf(
                                 'vspan':rv_ccf - para_center,'vspan_std':bisspan_ccf_std}
 
     end = time.time()
-    if myv.DEV:
-        counter_dev+=1
-        logger.debug(f"Line number: {inspect.currentframe().f_lineno}")
-        logger.debug(f"Execution time {counter_dev}: {end - start:.3f} seconds")
 
     rvs_std = calibrated_phot_noise['rv']
     fwhms = np.array(fwhms).astype('float')*2.355
     fwhms_std = np.array(fwhms_std).astype('float')*2.355
 
     warning_rv_borders = False
-    if np.median(fwhms)>(rv_borders/1.5):
+    if np.median(fwhms)>(ccf_config.rv_borders/1.5):
         logger.warning('The CCF is larger than the RV borders for the fit')
         warning_rv_borders = True
 
-    if jdb is None:
-        jdb = np.arange(len(files[-1]))
+    jdb = observations.jdb if observations.jdb is not None else np.arange(len(mask_config.files[-1]))
     ccf_rv = myc.tableXY(jdb,np.array(rvs)*1000,np.array(rvs_std)*1000)
     ccf_centers = myc.tableXY(jdb,np.array(centers)*1000,np.array(centers_std)*1000)
     ccf_contrast = myc.tableXY(jdb,np.array(amplitudes)*100,np.array(amplitudes_std)*100)
@@ -577,16 +574,16 @@ def yarara_ccf(
     ccf_timeseries = np.array([ew,ew_std,amplitudes,amplitudes_std,rvs,rvs_std,calibrated_phot_noise['rv'],fwhms,fwhms_std,centers,centers_std,depths,depths_std,bisspan,bisspan_std])
     ccf_infos = pd.DataFrame(ccf_timeseries.T,columns=['ew','ew_std','contrast','contrast_std','rv','rv_std','rv_std_phot','fwhm','fwhm_std','center','center_std','depth','depth_std','bisspan','bisspan_std'])
     ccf_infos['jdb'] = jdb
-    ccf_infos['filename'] = files[-1]
+    ccf_infos['filename'] = observations.files[-1]
 
     #Update to remove nan value in RV 02.05.25
     ccf_rv.yerr[ccf_rv.y!=ccf_rv.y] = np.nanmedian(ccf_rv.yerr[ccf_rv.y!=ccf_rv.y])
     offset = np.nanmedian(ccf_centers.y - ccf_rv.y)
     ccf_rv.y[ccf_rv.y!=ccf_rv.y] = ccf_centers.y[ccf_rv.y!=ccf_rv.y] - offset
 
-    ccf_infos = {'table':ccf_infos,'model_parametric':model_parametric,'weighting':1.0+float(squared),'creation_date':datetime.datetime.now().isoformat()}
+    ccf_infos = {'table':ccf_infos,'model_parametric':model_parametric,'weighting':1.0+float(mask_config.squared),'creation_date':datetime.datetime.now().isoformat()}
 
-    file_summary_ccf = myf.touch_pickle(dir_root+'WORKSPACE/Analyse_ccf.p')
+    file_summary_ccf = myf.touch_pickle(obvservations.dir_root+'WORKSPACE/Analyse_ccf.p')
     file_summary_ccf['CCF_'+mask_name.split('.')[0]] = ccf_infos
 
     myf.pickle_dump(file_summary_ccf,open(dir_root+'WORKSPACE/Analyse_ccf.p','wb'))
@@ -603,17 +600,19 @@ def yarara_ccf(
     master_ccf = np.nanmean(ccf_shifted,axis=1)
     ccf_res = ccf_norm - np.nanmedian(ccf_norm,axis=1)[:,np.newaxis]
 
-    export = myf.touch_pickle(dir_root+'WORKSPACE/Analyse_ccf_saved.p')
+    ccf_name = mask_config.name
+
+    export = myf.touch_pickle(observations.dir_root+'WORKSPACE/Analyse_ccf_saved.p')
     export['CCF_'+ccf_name] = {}
-    export['CCF_'+ccf_name][sub_dico] = {'ccf_vrad':vrad,'ccf_flux':ccf_norm,'ccf_shifted':ccf_shifted,'ccf_master':master_ccf,'filename':files[-1]}
-    myf.pickle_dump(export,open(dir_root+'WORKSPACE/Analyse_ccf_saved.p','wb'))
+    export['CCF_'+ccf_name][sub_dico] = {'ccf_vrad':vrad,'ccf_flux':ccf_norm,'ccf_shifted':ccf_shifted,'ccf_master':master_ccf,'filename':observations.files[-1]}
+    myf.pickle_dump(export,open(observations.dir_root+'WORKSPACE/Analyse_ccf_saved.p','wb'))
 
     warning = 0
     if ccf_name=='mask_telluric_o2':
         fwhm_ins = np.nanmedian(ccf_fwhm.y)
-        if ins.split('_')[0] in myv.instrument_res_kms.keys():
-            ref = myv.instrument_res_kms[ins.split('_')[0]]
-            logger.info(f'Reference value for {ins} is {ref:.1f} km/_s')
+        if observations.ins.split('_')[0] in myv.instrument_res_kms.keys():
+            ref = myv.instrument_res_kms[observations.ins.split('_')[0]]
+            logger.info(f'Reference value for {observations.ins} is {ref:.1f} km/_s')
             if abs(ref - fwhm_ins)>1:
                 warning = 1
                 logger.warning(f'Instrumental resolution is not usual ({fwhm_ins:.1f} km/s)')
@@ -648,9 +647,9 @@ def yarara_ccf(
     plt.plot(vrad/1000,ccf_norm,alpha=0.2,color='k')
     plt.axvline(x=0,color='k',ls='-.',lw=1)
     plt.tick_params(top=True,labeltop=True,labelbottom=False)
-    plt.savefig(dir_root+'IMAGES/CCF_summary_%s'%(ccf_name)+myv.PRD_EXT+'.png')
+    plt.savefig(observations.dir_root+'IMAGES/CCF_summary_%s'%(ccf_name)+myv.PRD_EXT+'.png')
     if warning:
-        plt.savefig(dir_root+'WARNING/CCF_summary_%s'%(ccf_name)+myv.PRD_EXT+'.png')
+        plt.savefig(observations.dir_root+'WARNING/CCF_summary_%s'%(ccf_name)+myv.PRD_EXT+'.png')
 
     output = {
         'rv':ccf_rv,
@@ -658,21 +657,24 @@ def yarara_ccf(
         'fwhm':ccf_fwhm,
         'vspan':ccf_vspan}
 
-    if save:
-        summary = import_summary(dir_root)
-        mask = myf.in1d(np.array(summary['filename']),files[-1])
+    if output_config.save:
+        summary = import_summary(observations.dir_root)
+        mask = myf.in1d(np.array(summary['filename']),observations.files[-1])
         summary['ccf_rv_'+ccf_name] = np.nan ; summary.loc[mask,'ccf_rv_'+ccf_name] = np.round(ccf_rv.y,0) # DONT USE RV FROM SNAKY, PRECISION NOT BETTER THAN 3 M/S
         summary['ccf_ct_'+ccf_name] = np.nan ; summary.loc[mask,'ccf_ct_'+ccf_name] = np.round(ccf_contrast.y,4)
         summary['ccf_fwhm_'+ccf_name] = np.nan ; summary.loc[mask,'ccf_fwhm_'+ccf_name] = np.round(ccf_fwhm.y,4)
-        summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
+        summary.to_csv(observations.dir_root+'WORKSPACE/Analyse_summary.csv')
 
-    if return_ccf:
+    if output_config.return_ccf:
         return output, vrad, ccf_shifted
     else:
         return output
 
-observationContext = ObservationContext(dir_root='/data/HD189733/', files=[])
-stellarParams = StellarParams(rv_sys=-2.3, fwhm=7.2, beta_gnd=2.1)
-maskConfig = MaskConfig(mask_input='G2', wave_min=5000, wave_max=6800)
+# observationContext = ObservationContext(dir_root='/data/HD189733/', files=[])
+# stellarParams = StellarParams(rv_sys=-2.3, fwhm=7.2, beta_gnd=2.1)
+# maskConfig = MaskConfig(mask_input='G2', wave_min=5000, wave_max=6800)
 
-test = yarara_ccf(observationContext, stellarParams, maskConfig)
+
+def import_summary(dir_root):
+    material = pd.read_csv(dir_root+'WORKSPACE/Analyse_summary.csv',index_col=0)
+    return material

@@ -1,22 +1,24 @@
 from dataclasses import InitVar, dataclass, field
-from typing import Optional
+from typing import Any
 import numpy as np
 import pandas as pd
+
+from src_snaky import myf
 
 @dataclass
 class ObservationContext:
     dir_root: str
-    files: list
-    rv_shift_input: InitVar[Optional[np.ndarray]] = None
-    spectra: Optional[tuple] = None
+    files: list[Any]
+    rv_shift_input: InitVar[np.ndarray[Any] | None] = None
+    spectra: tuple | None = None
     sub_dico: str = 'matching_diff'
 
     # Derived from post_init
     ins: str = field(init=False)
-    jdb: np.ndarray = field(init=False)
-    rv_shift: np.ndarray = field(init=False)
+    jdb: np.ndarray[Any] = field(init=False)
+    rv_shift: np.ndarray[Any] = field(init=False)
 
-    def __post_init__(self, rv_shift_input:Optional[np.ndarray]):
+    def __post_init__(self, rv_shift_input: np.ndarray | None):
         self.ins = self.dir_root.split('/')[-2]
         self.jdb = get_jdb(self.files[-1], self.dir_root)
         self.rv_shift = rv_shift_input or np.zeros(len(self.files[-1]))

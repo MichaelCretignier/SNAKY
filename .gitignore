@@ -4,6 +4,13 @@ __pycache__/
 dist/
 snaky.egg-info/
 .out/**
+out/**
 .venv/**
 snaky/**
 Material_snaky/*.npy
+src_snaky/out/**
+DATA_SET/**
+compute_ccf/**
+gen_dataset.py
+.vscode
+.zed

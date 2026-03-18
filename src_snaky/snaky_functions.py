@@ -204,17 +204,25 @@ def touch_npy(filename):
     else:
         return np.load(filename)
 
-def local_max(spectre,vicinity):
-    vec_base = spectre[vicinity:-vicinity]
-    maxima = np.ones(len(vec_base))
-    for k in range(1,vicinity):
-        maxima *= 0.5*(1+np.sign(vec_base - spectre[vicinity-k:-vicinity-k]))*0.5*(1+np.sign(vec_base - spectre[vicinity+k:-vicinity+k]))
+def local_max(spectrum: np.ndarray, vicinity: int) -> np.ndarray:
+    vec_base = spectrum[vicinity:-vicinity]
 
-    index = np.where(maxima==1)[0]+vicinity
-    if len(index)==0:
-        index = np.array([0,len(spectre)-1])
-    flux = spectre[index]
-    return np.array([index,flux])
+    # Build a 2D array of all neighbour comparisons at once
+    # shape: (2*(vicinity-1), N - 2*vicinity)
+    offsets = np.arange(1, vicinity)
+    left = spectrum[vicinity - offsets[:, np.newaxis] + np.arange(len(vec_base))]
+    right = spectrum[vicinity + offsets[:, np.newaxis] + np.arange(len(vec_base))]
+
+    neighbours = np.vstack([left, right])
+
+    is_max = np.all(vec_base[np.newaxis, :] > neighbours, axis=0)  # (M,)
+
+    index = np.where(is_max)[0] + vicinity
+
+    if len(index) == 0:
+        index = np.array([0, len(spectrum) - 1])
+
+    return np.array([index, spectrum[index]])
 
 def smooth(y, box_pts, shape='rectangular'): #rectangular kernel for the smoothing
     box2_pts = int(2*box_pts-1)

@@ -1,29 +1,13 @@
-from collections import namedtuple
-import datetime
-import logging
-import pandas as pd
-import numpy as np
-import matplotlib.pylab as plt
-import os
-from astropy.io import fits
-from scipy.ndimage import map_coordinates
-from tqdm import tqdm
 import glob as glob
-import time
+import sys
 
-from scipy.interpolate import interp1d
+import matplotlib.pylab as plt
+import numpy as np
 
+from src_snaky.snaky_classes import tableXY
 from src_snaky.yarara_ccf_rework.ccf_config import CCFConfig
-from src_snaky.yarara_ccf_rework.mask_config import MaskConfig
 from src_snaky.yarara_ccf_rework.output_config import OutputConfig
 from src_snaky.yarara_ccf_rework.stellar_params import StellarParams
-
-from .observation_context import ObservationContext
-
-from .. import snaky_variables as myv
-from .. import snaky_functions as myf
-from ..snaky_classes import tableXY
-from dataclasses import field
 
 
 def parabola_vertex(a: float, b: float, c: float) -> tuple[float, float]:
@@ -40,6 +24,7 @@ def replace_none(y: float, yerr: float) -> tuple[float, float]:
     if yerr is None:
         return np.nan, 1e6
     return y, yerr
+
 
 def normalize_ccf_backup(ccf: tableXY) -> tableXY:
     """
@@ -61,15 +46,16 @@ def normalize_ccf_backup(ccf: tableXY) -> tableXY:
     if p75 == 0:
         return ccf_backup
 
-    ccf_backup.y    /= p75
+    ccf_backup.y /= p75
     ccf_backup.yerr /= p75
     return ccf_backup
 
+
 def fit_ccf_model(
-    ccf:              tableXY,
+    ccf: tableXY,
     analytical_model: str,
-    beta0:            float,
-    plot:             bool = False,
+    beta0: float,
+    plot: bool = False,
 ) -> None:
     """
     Fit a Gaussian or GND model to a CCF object in place.
@@ -82,7 +68,7 @@ def fit_ccf_model(
     beta0            : float     fixed beta for GND fit
     plot             : bool      whether to plot the fit
     """
-    if analytical_model == 'gaussian':
+    if analytical_model == "gaussian":
         ccf.fit_gaussian(Plot=plot)
     else:
         ccf.fit_GND(Plot=plot, beta_fixed=int(beta0))
@@ -93,7 +79,7 @@ def resolve_model_parametric(analytical_model: str, beta0: float) -> str:
     Return the string label for the fitted model.
     Used for persistence and logging.
     """
-    return 'GND2.0' if analytical_model == 'gaussian' else f'GND{beta0:.1f}'
+    return "GND2.0" if analytical_model == "gaussian" else f"GND{beta0:.1f}"
 
 
 def find_ccf_center(ccf: tableXY, fwhm: float) -> float:
@@ -113,8 +99,8 @@ def find_ccf_center(ccf: tableXY, fwhm: float) -> float:
     -------
     center : float   velocity of the CCF minimum in km/s
     """
-    ccf.y    *= -1
-    ccf.yerr  = np.sqrt(np.abs(ccf.y))
+    ccf.y *= -1
+    ccf.yerr = np.sqrt(np.abs(ccf.y))
     ccf.find_max(vicinity=5)
 
     # Derivative peak detection — relax vicinity until two peaks are found
@@ -127,11 +113,13 @@ def find_ccf_center(ccf: tableXY, fwhm: float) -> float:
 
     sorted_peaks = np.argsort(ccf.deri.y_max)
 
-    first_max    = ccf.deri.x_max[sorted_peaks[-1]]
-    second_max   = ccf.deri.x_max[sorted_peaks[-2]]
-
+    first_max = ccf.deri.x_max[sorted_peaks[-1]]
+    second_max = ccf.deri.x_max[sorted_peaks[-2]]
 
     ccf.y *= -1
+
+    if type(first_max) is not np.ndarray:
+        sys.exit("My error message")
 
     # Prefer the local maximum closest to the midpoint of the two shoulders
     # Fall back to the global minimum for broad lines (fwhm >= 15 km/s)
@@ -164,8 +152,8 @@ def trim_ccf(ccf: tableXY, rv_borders: float, del_outside_max: bool) -> None:
     else:
         ccf.find_max(vicinity=10)
         ccf.index_max = np.sort(ccf.index_max)
-        window        = np.zeros(len(ccf.x), dtype=bool)
-        window[ccf.index_max[0]: ccf.index_max[1] + 1] = True
+        window = np.zeros(len(ccf.x), dtype=bool)
+        window[ccf.index_max[0] : ccf.index_max[1] + 1] = True
         ccf.supress_mask(window)
 
 
@@ -182,19 +170,19 @@ def normalize_ccf(ccf: tableXY, normalisation: str) -> None:
     ccf           : tableXY   trimmed CCF (modified in place)
     normalisation : str       'left' or 'slope'
     """
-    if normalisation == 'left':
+    if normalisation == "left":
         norm = ccf.y[0]
     else:
-        half  = len(ccf.y) // 2
-        max1  = np.argmax(ccf.y[:half])
-        max2  = np.argmax(ccf.y[half:]) + half
+        half = len(ccf.y) // 2
+        max1 = np.argmax(ccf.y[:half])
+        max2 = np.argmax(ccf.y[half:]) + half
         slope = (ccf.y[max2] - ccf.y[max1]) / (max2 - max1)
-        norm  = slope * (np.arange(len(ccf.y)) - max2) + ccf.y[max2]
+        norm = slope * (np.arange(len(ccf.y)) - max2) + ccf.y[max2]
 
     # Guard against degenerate continuum
     norm = np.where(norm != 0, norm, 1.0)
 
-    ccf.y    /= norm
+    ccf.y /= norm
     ccf.yerr /= norm
 
 
@@ -202,10 +190,11 @@ def normalize_ccf(ccf: tableXY, normalisation: str) -> None:
 # SUB-BLOCK 5 — CONSISTENCY CHECK & PARAMETER EXTRACTION
 # ---------------------------------------------------------------------------
 
+
 def check_ccf_consistency(
-    ccf:                tableXY,
-    ccf_backup:         tableXY,
-    center:             float,
+    ccf: tableXY,
+    ccf_backup: tableXY,
+    center: float,
     check_non_transform: bool,
 ) -> None:
     """
@@ -220,27 +209,27 @@ def check_ccf_consistency(
     center              : float     velocity offset applied to ccf.x
     check_non_transform : bool      whether to perform the check
     """
-    ccf_backup.params['cen'].value -= center
+    ccf_backup.params["cen"].value -= center
 
     if not check_non_transform:
         return
 
-    V1 = ccf_backup.params['cen'].value
-    V2 = ccf.params['cen'].value
+    V1 = ccf_backup.params["cen"].value
+    V2 = ccf.params["cen"].value
 
     if abs(V1 - V2) > 1:
         logger.warning(
-            f'Discrepancy detected between CCFs (*{V1:.4f}*/*{V2:.4f}* km/s), '
-            f'reverting to non-transformed fit'
+            f"Discrepancy detected between CCFs (*{V1:.4f}*/*{V2:.4f}* km/s), "
+            f"reverting to non-transformed fit"
         )
         ccf.params = ccf_backup.params
 
 
 def extract_ccf_parameters(
-    ccf:                    tableXY,
-    i:                      int,
-    center:                 float,
-    calibrated_phot_noise:  dict,
+    ccf: tableXY,
+    i: int,
+    center: float,
+    calibrated_phot_noise: dict,
 ) -> dict:
     """
     Extract RV, contrast, FWHM and offset from the fitted CCF params.
@@ -258,24 +247,33 @@ def extract_ccf_parameters(
     dict with keys: rv, rv_std, contrast, contrast_std,
                     fwhm, fwhm_std, offset, offset_std
     """
-    rv_ccf,       rv_ccf_std       = replace_none(ccf.params['cen'].value + center,  ccf.params['cen'].stderr)
-    contrast_ccf, contrast_ccf_std = replace_none(-ccf.params['amp'].value,           ccf.params['amp'].stderr)
-    wid_ccf,      wid_ccf_std      = replace_none(ccf.params['wid'].value,             ccf.params['wid'].stderr)
-    offset_ccf,   offset_ccf_std   = replace_none(ccf.params['offset'].value,          ccf.params['offset'].stderr)
+    rv_ccf, rv_ccf_std = replace_none(
+        ccf.params["cen"].value + center, ccf.params["cen"].stderr
+    )
+    contrast_ccf, contrast_ccf_std = replace_none(
+        -ccf.params["amp"].value, ccf.params["amp"].stderr
+    )
+    wid_ccf, wid_ccf_std = replace_none(
+        ccf.params["wid"].value, ccf.params["wid"].stderr
+    )
+    offset_ccf, offset_ccf_std = replace_none(
+        ccf.params["offset"].value, ccf.params["offset"].stderr
+    )
 
     return {
-        'rv':           rv_ccf,
-        'rv_std':       calibrated_phot_noise['rv'][i],        # override with calibrated noise
-        'contrast':     contrast_ccf,
-        'contrast_std': calibrated_phot_noise['contrast'][i],
-        'fwhm':         wid_ccf,
-        'fwhm_std':     calibrated_phot_noise['fwhm'][i],
-        'offset':       offset_ccf,
-        'offset_std':   offset_ccf_std,
+        "rv": rv_ccf,
+        "rv_std": calibrated_phot_noise["rv"][i],  # override with calibrated noise
+        "contrast": contrast_ccf,
+        "contrast_std": calibrated_phot_noise["contrast"][i],
+        "fwhm": wid_ccf,
+        "fwhm_std": calibrated_phot_noise["fwhm"][i],
+        "offset": offset_ccf,
+        "offset_std": offset_ccf_std,
     }
 
 
 _BISSPAN_FALLBACK_WINDOWS = (0.5, 2.0, 5.0)  # km/s — progressive fallback windows
+
 
 def clip_ccf_for_bisspan(ccf: tableXY, bis_range: float) -> None:
     """
@@ -292,10 +290,10 @@ def clip_ccf_for_bisspan(ccf: tableXY, bis_range: float) -> None:
         ccf.clip(min=[-window, None], max=[window, None], replace=False)
         if len(ccf.clipped.x) >= 5:
             if window != bis_range:
-                logger.info(f'BISSPAN window expanded to *±{window}* km/s')
+                logger.info(f"BISSPAN window expanded to *±{window}* km/s")
             return
 
-    logger.warning('Could not find enough points for BISSPAN even at ±5 km/s')
+    logger.warning("Could not find enough points for BISSPAN even at ±5 km/s")
 
 
 def compute_parabolic_center(ccf: tableXY, center: float) -> tuple[float, float]:
@@ -313,8 +311,8 @@ def compute_parabolic_center(ccf: tableXY, center: float) -> tuple[float, float]
     para_depth  : float   CCF depth at the parabolic center
     """
     ccf.clipped.fit_poly()
-    a, b, c     = ccf.clipped.poly_coefficient
-    x_v, y_v   = parabola_vertex(a, b, c)
+    a, b, c = ccf.clipped.poly_coefficient
+    x_v, y_v = parabola_vertex(a, b, c)
     return x_v + center, y_v
 
 
@@ -339,15 +337,15 @@ def compute_bisspan(ccf: tableXY, rv_ccf: float, dv: float, bis_range: float) ->
     if rv_ccf == rv_ccf:  # guard NaN
         ccf_core.x -= rv_ccf
 
-    step        = dv / 1000                                              # m/s -> km/s
-    half_grid   = np.arange(0, bis_range + step * 0.99, step)
-    vrad_center = np.concatenate([-half_grid[1:][::-1], half_grid])     # symmetric grid
+    step = dv / 1000  # m/s -> km/s
+    half_grid = np.arange(0, bis_range + step * 0.99, step)
+    vrad_center = np.concatenate([-half_grid[1:][::-1], half_grid])  # symmetric grid
 
-    ccf_core.interpolate(new_grid=vrad_center, replace=True, method='cubic')
+    ccf_core.interpolate(new_grid=vrad_center, replace=True, method="cubic")
     ccf_core.fit_poly()
 
     a, b, _ = ccf_core.poly_coefficient
-    x_v, _  = parabola_vertex(a, b, _)
+    x_v, _ = parabola_vertex(a, b, _)
     return x_v
 
 
@@ -369,12 +367,12 @@ def compute_equivalent_width(ccf: tableXY) -> float:
 
 
 def compute_ccf_diagnostics(
-    ccf:                   tableXY,
-    rv_ccf:                float,
-    center:                float,
-    dv:                    float,
-    bis_range:             float,
-    i:                     int,
+    ccf: tableXY,
+    rv_ccf: float,
+    center: float,
+    dv: float,
+    bis_range: float,
+    i: int,
     calibrated_phot_noise: dict,
 ) -> dict:
     """
@@ -397,32 +395,32 @@ def compute_ccf_diagnostics(
     """
     clip_ccf_for_bisspan(ccf, bis_range)
     para_center, para_depth = compute_parabolic_center(ccf, center)
-    ew                      = compute_equivalent_width(ccf)
-    bisspan                 = compute_bisspan(ccf, rv_ccf, dv, bis_range)
+    ew = compute_equivalent_width(ccf)
+    bisspan = compute_bisspan(ccf, rv_ccf, dv, bis_range)
 
     return {
-        'ew':          ew,
-        'ew_std':      calibrated_phot_noise['ew'][i],
-        'center':      para_center,
-        'center_std':  calibrated_phot_noise['center'][i],
-        'depth':       1.0 - para_depth,
-        'depth_std':   calibrated_phot_noise['depth'][i],
-        'bisspan':     bisspan,
-        'bisspan_std': calibrated_phot_noise['vspan'][i],
+        "ew": ew,
+        "ew_std": calibrated_phot_noise["ew"][i],
+        "center": para_center,
+        "center_std": calibrated_phot_noise["center"][i],
+        "depth": 1.0 - para_depth,
+        "depth_std": calibrated_phot_noise["depth"][i],
+        "bisspan": bisspan,
+        "bisspan_std": calibrated_phot_noise["vspan"][i],
     }
 
 
 def process_single_ccf(
-    i:                     int,
-    vrad:                  np.ndarray,
-    ccf_power_col:         np.ndarray,
-    ccf_power_std_col:     np.ndarray,
-    dv:                    float,
-    stellar_params:        StellarParams,
-    ccf_config:            CCFConfig,
-    output_config:         OutputConfig,
+    i: int,
+    vrad: np.ndarray,
+    ccf_power_col: np.ndarray,
+    ccf_power_std_col: np.ndarray,
+    dv: float,
+    stellar_params: StellarParams,
+    ccf_config: CCFConfig,
+    output_config: OutputConfig,
     calibrated_phot_noise: dict,
-    beta0:                 float,
+    beta0: float,
 ) -> dict:
     """
     Full processing pipeline for a single CCF spectrum.
@@ -444,20 +442,22 @@ def process_single_ccf(
     -------
     dict merging parameter extraction and diagnostics results
     """
-    ccf        = tableXY(vrad / 1000, ccf_power_col, ccf_power_std_col)
+    ccf = tableXY(vrad / 1000, ccf_power_col, ccf_power_std_col)
     ccf_backup = normalize_ccf_backup(ccf)
 
     # Initial fit on raw CCF for consistency check reference
-    fit_ccf_model(ccf_backup, ccf_config.analytical_model, beta0, plot=output_config.debug)
+    fit_ccf_model(
+        ccf_backup, ccf_config.analytical_model, beta0, plot=output_config.debug
+    )
 
     if output_config.debug:
-        plt.figure('debug')
+        plt.figure("debug")
         ccf_backup.plot()
-        plt.close('debug')
+        plt.close("debug")
 
     # Center detection
-    center  = find_ccf_center(ccf, stellar_params.fwhm)
-    ccf.x  -= center
+    center = find_ccf_center(ccf, stellar_params.fwhm)
+    ccf.x -= center
 
     # Trim, normalize, refit
     trim_ccf(ccf, ccf_config.rv_borders, ccf_config.del_outside_max)
@@ -471,11 +471,11 @@ def process_single_ccf(
     check_ccf_consistency(ccf, ccf_backup, center, ccf_config.check_non_transform)
 
     # Parameter extraction
-    params      = extract_ccf_parameters(ccf, i, center, calibrated_phot_noise)
+    params = extract_ccf_parameters(ccf, i, center, calibrated_phot_noise)
 
     # Diagnostics
     diagnostics = compute_ccf_diagnostics(
-        ccf, params['rv'], center, dv, ccf_config.bis_range, i, calibrated_phot_noise
+        ccf, params["rv"], center, dv, ccf_config.bis_range, i, calibrated_phot_noise
     )
 
     return {**params, **diagnostics}
