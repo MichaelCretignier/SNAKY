@@ -1898,6 +1898,10 @@ def import_stellar_template(teff,feh=0.0,logg=4.5,model='ATLAS',rv_sys=0.0):
 
     loc = np.where(table_columns==final_model)[0][0]
     template = (table[:,loc]/10000).astype('float')
+
+    print(len(wave))
+    print(len(template))
+    pouet
     template = myc.tableXY(wave,template,0*wave)
 
     template.rv_shift(rv=rv_sys)

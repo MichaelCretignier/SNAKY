@@ -16,7 +16,7 @@ process = np.array(process)
 
 if len(process)==0:
     print(' [INFO] No files were found to be merged. Did you already build the code?')
-else:
+elif len(process)==7:
     for p in np.unique(process[:,1]):
         split_files = process[process[:,1]==p]
         files = split_files[np.argsort(process[:,2])][:,0]
@@ -39,3 +39,6 @@ else:
         for f in files:
             print(' [INFO] %s was deleted'%(f))
             os.system('rm '+f)
+else:
+    print(' [INFO] You should have 7 split files, check again the GitHub.')
+
