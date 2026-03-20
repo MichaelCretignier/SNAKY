@@ -8,6 +8,7 @@ out/**
 .venv/**
 snaky/**
 Material_snaky/*.npy
+!Material_snaky/compile*.npy
 src_snaky/out/**
 DATA_SET/**
 compute_ccf/**

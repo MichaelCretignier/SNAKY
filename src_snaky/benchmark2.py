@@ -1,6 +1,6 @@
 import sys
 
-sys.path.append("../")  # Changer par mon path
+sys.path.append("./")  # Changer par mon path
 import src_snaky.run as snaky
 
 output_dir = "out/"

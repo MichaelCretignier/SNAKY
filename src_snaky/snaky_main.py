@@ -374,7 +374,7 @@ def plot_mhk(dir_root, hide_outliers=True, daily_binned=True, debug=False):
 
 def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offset_instrument='yes', automatic_fit=False, x_unit='years',predict='today', predict_samples=None,print_reference=True, rm_source=['DACE','Yu+23'], rm_ins=[], add_source=[], add_ins=[], offset_fixed=['SNAKY','HYDRA']):
 
-    myf.print_box('\n---- RECIPE : FINCH MAGNETIC CYCLE PERIOD ----\n')
+    myf.print_box('---- RECIPE : FINCH MAGNETIC CYCLE PERIOD ----')
 
     starname = dir_root.split('/')[-5]
     ins = dir_root.split('/')[-2]
@@ -1226,7 +1226,7 @@ def yarara_check_sb(dir_root):
 
 def yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag=0):
 
-    myf.print_box('\n---- RECIPE : RV_SYS EXTRACTION ---- \n')
+    myf.print_box('---- RECIPE : RV_SYS EXTRACTION ---- ')
 
     if ccf_tag!=0:
         os.system('rm -f '+dir_root+'CCF_MASK/*.fits')
@@ -1979,7 +1979,7 @@ def import_ccf(dir_root,mask_name):
 
 def yarara_iron_lines(dir_root, master, fwhm, rv_sys=0.0):
 
-    myf.print_box('\n---- RECIPE : EW OF LINE SPECIES ----\n')
+    myf.print_box('---- RECIPE : EW OF LINE SPECIES ----')
 
     logger.info('Metallicity abundances recipe launched')
     logger.info('FWHM = %.2f km/s'%(fwhm))
@@ -2081,7 +2081,7 @@ def yarara_iron_lines(dir_root, master, fwhm, rv_sys=0.0):
 
 def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=False):
 
-    myf.print_box('\n---- RECIPE : XGB ATMOSPHERIC PARAMETERS ----\n')
+    myf.print_box('---- RECIPE : XGB ATMOSPHERIC PARAMETERS ----')
 
     sinfo = import_star_info(dir_root)
 
@@ -2200,7 +2200,7 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
 
 def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False, std_bias_kms = 0.1):
 
-    myf.print_box('\n---- RECIPE : VSINI EXTRACTION ----\n')
+    myf.print_box('---- RECIPE : VSINI EXTRACTION ----')
 
     sinfo = import_star_info(dir_root)
 
@@ -2665,7 +2665,7 @@ def yarara_vsini(dir_root, Prot=None, Rs=None):
 
 def yarara_activity_index(files, rv_sys, shift_rv, fwhm=6.0, material=None, sub_dico='matching_diff'):
 
-    myf.print_box('\n---- RECIPE : ACTIVITY PROXIES EXTRACTION ----\n')
+    myf.print_box('---- RECIPE : ACTIVITY PROXIES EXTRACTION ----')
 
     #[center, half-window, hole_size, half-window-continuum,database_kw, subplot]
     Ca2H =  myv.Ca2H+[None]
@@ -2857,7 +2857,7 @@ def yarara_compute_snr(dir_root,sub_dico):
 
 def yarara_correct_continuum_absorption(dir_root, rv_sys, feh, model):
 
-    myf.print_box('\n---- RECIPE : CORRECT ABSORPTION CONTINUUM ----\n')
+    myf.print_box('---- RECIPE : CORRECT ABSORPTION CONTINUUM ----')
 
     ins = dir_root.split('/')[-2].split('_')[0]
 
@@ -3057,7 +3057,7 @@ def yarara_measure_berv(dir_root,files,sub_dico='matchinf_diff'):
 
 
 def yarara_instrumental_resolution(dir_root, files, shift_rv, berv, sub_dico='matching_diff'):
-    myf.print_box('\n---- RECIPE : EXTRACTION INSTRUMENTAL RESOLUTION ----\n')
+    myf.print_box('---- RECIPE : EXTRACTION INSTRUMENTAL RESOLUTION ----')
 
     grid, flux, err_flux = import_sts(files, rv_shift=shift_rv, err=False, sub_dico=sub_dico)
     missing_values = (berv!=berv)
@@ -3135,7 +3135,7 @@ def mhk_rhk(mhk):
 
 def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy, sub_dico='matching_diff'):
 
-    myf.print_box('\n---- RECIPE : NEW MHK EXTRACTION ----\n')
+    myf.print_box('---- RECIPE : NEW MHK EXTRACTION ----')
 
     jdb = get_jdb(files[-1],dir_root)
     photosphere = pd.read_pickle(MATERIAL_DIR+'/Photospheric_profiles_V.p')
