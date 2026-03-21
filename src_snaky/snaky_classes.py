@@ -5,17 +5,21 @@
 
 import os
 import sys
+from typing import Any
 
 import numpy as np
+import numpy.typing as npt
+
 import pandas as pd
 import matplotlib.pylab as plt
+import matplotlib.colors as mplcolors
+import matplotlib.cm as cmx
 from scipy.interpolate import interp1d
 from scipy.optimize import nnls
 from lmfit import Model, Parameters
 from tqdm import tqdm
 import warnings
-import matplotlib.colors as mplcolors
-import matplotlib.cm as cmx
+
 
 from . import snaky_functions as myf
 from . import snaky_variables as myv
@@ -186,41 +190,136 @@ class table(object):
         self.vec_residues = vec_residues
 
 class tableXY(object):
-    def __init__(self, x, y, *yerr):
+    # Core attributes — x can be None (handled in __init__)
+    x:        npt.NDArray[np.float64]
+    y:        npt.NDArray[np.float64]
+    xerr:     npt.NDArray[np.float64]
+    yerr:     npt.NDArray[np.float64]
+    mask_qc:  npt.NDArray[np.bool_]
+    stats:    pd.DataFrame
+
+    # Set by find_max — only exist after find_max is called
+    index_max:    npt.NDArray[np.int_] | None
+    y_max:        npt.NDArray[np.float64] | None
+    x_max:        npt.NDArray[np.float64] | None
+    max_extremum: 'tableXY | None'
+
+    # Set by find_min — only exist after find_min is called
+    index_min:    npt.NDArray[np.int_] | None
+    y_min:        npt.NDArray[np.float64] | None
+    x_min:        npt.NDArray[np.float64] | None
+    min_extremum: 'tableXY | None'
+
+    # Set by diff — only exist after diff is called
+    deri:     'tableXY | None'
+    y_backup: npt.NDArray[np.float64] | None
+
+    # Set by smooth — only exist after smooth is called
+    y_smoothed: npt.NDArray[np.float64] | None
+    smoothed:   'tableXY | None'
+
+    # Set by clip — only exist after clip is called
+    clipped:   'tableXY | None'
+    clip_mask: npt.NDArray[np.bool_] | None
+    clipx:     npt.NDArray[np.float64] | None
+    clipy:     npt.NDArray[np.float64] | None
+    clipyerr:  npt.NDArray[np.float64] | None
+    clipxerr:  npt.NDArray[np.float64] | None
+
+    # Set by interpolate — only exist after interpolate is called
+    x_interp:     npt.NDArray[np.float64] | None
+    y_interp:     npt.NDArray[np.float64] | None
+    xerr_interp:  npt.NDArray[np.float64] | None
+    yerr_interp:  npt.NDArray[np.float64] | None
+    interpolated: 'tableXY | None'
+
+    # Set by rv_shift — only exist after rv_shift is called
+    shifted: 'tableXY | None'
+
+    # Set by fit_line — only exist after fit_line is called
+    vec_res:            'tableXY | None'
+    r:                  npt.NDArray[np.float64] | None
+    s:                  npt.NDArray[np.float64] | None
+    i:                  npt.NDArray[np.float64] | None
+    lin_slope_w:        float | None
+    lin_errslope_w:     float | None
+    lin_intercept_w:    float | None
+    lin_errintercept_w: float | None
+    r_pearson_w:        float | None
+    r_errpearson_w:     float | None
+
+    # Set by fit_gaussian / fit_GND — params.stderr can be None (lmfit behavior)
+    params:         'dict[str, Any] | Parameters | None'
+    lmfit:          Any | None
+    convergence:    bool | None
+    model_gaussian: npt.NDArray[np.float64] | None
+    model_gnd:      npt.NDArray[np.float64] | None
+    res:            npt.NDArray[np.float64] | None
+
+    # Set by fit_poly — only exist after fit_poly is called
+    poly_coefficient: npt.NDArray[np.float64] | None
+    vec_fitted:       npt.NDArray[np.float64] | None
+    chi2:             float | None
+    bic:              float | None
+    cov:              npt.NDArray[np.float64] | None
+    err:              npt.NDArray[np.float64] | None
+
+    # Set by night_stack — only exist after night_stack is called
+    stacked: 'tableXY | None'
+
+    # Set by ccf method — only exist after ccf is called
+    ccf_profile:       'tableXY | None'
+    ccf_params:        Any | None
+    params_beta:       float | None
+    warning_multipeak: int | None
+    ccf_Rcorr:         float | None
+
+    # Set by fit_rassine — only exist after fit_rassine is called
+    rassine_continuum: 'tableXY | None'
+    rassine_output:    'dict[str, Any] | None'
+
+    # Backup attributes — only exist after methods that create backups
+    x_backup:    npt.NDArray[np.float64] | None
+    y_backup:    npt.NDArray[np.float64] | None
+    xerr_backup: npt.NDArray[np.float64] | None
+    yerr_backup: npt.NDArray[np.float64] | None
+
+    # Set by order — only exist after order is called
+    order_liste: npt.NDArray[np.int_] | None
+
+    # Set by fit_multi_sb
+    debug: 'tuple[Any, ...] | None'
+
+    def __init__(
+            self,
+            x: np.ndarray[Any, Any],
+            y: np.ndarray[Any, Any],
+            *yerr: np.ndarray[Any, Any] | None
+        ):
+
         self.stats = pd.DataFrame({},index=[0])
-        self.y = np.array(y)  #vector of y
 
-        if x is None:# for a fast table initialisation
-            x = np.arange(len(y))
-        self.x = np.array(x)  #vector of x
-
-        try:
-            np.sum(self.y)
-        except: #in case of None
-            self.y = np.zeros(len(self.x))
-            yerr = [np.ones(len(self.y))]
+        self.x = np.array(x)
+        self.y = np.array(y)
 
         if len(x)!=len(y):
-            logger.debug(f'X et Y have no the same lenght ({len(x):.0f} vs {len(y):.0f})')
+            logger.error(f'X et Y have no the same lenght ({len(x):.0f} vs {len(y):.0f})')
 
         if len(yerr)!=0:
             if len(yerr)==1:
                 self.yerr = np.array(yerr[0])
-                self.xerr =  np.zeros(len(self.x))
             elif len(yerr)==2:
-                self.xerr = np.array(yerr[0])
                 self.yerr = np.array(yerr[1])
         else :
             if sum(~np.isnan(self.y.astype('float'))):
-                self.yerr = np.ones(len(self.x))*myf.mad(myf.rm_outliers(self.y.astype('float'),m=2,kind='sigma')[1])
+                self.yerr = np.ones(len(self.x)) * myf.mad(myf.rm_outliers(self.y.astype('float'),m=2,kind='sigma')[1])
                 if not np.sum(abs(self.yerr)):
                     self.yerr = np.ones(len(self.x))
             else:
                 self.yerr = np.ones(len(self.x))
-            self.xerr =  np.zeros(len(self.x))
 
         self.yerr = np.abs(self.yerr)
-        self.xerr = np.abs(self.xerr)
+        self.xerr = np.zeros(len(self.yerr))
         self.mask_qc = np.ones(len(self.x)).astype('bool')
 
     def null(self):
@@ -231,7 +330,7 @@ class tableXY(object):
         new_table.mask_qc = self.mask_qc
         return new_table
 
-    def diff(self,replace=True):
+    def diff(self, replace:bool=True):
         diff = np.diff(self.y)/np.diff(self.x)
         new = tableXY(self.x[0:-1]+np.diff(self.x)/2,diff)
         new.interpolate(new_grid=self.x,replace=True)
@@ -242,7 +341,7 @@ class tableXY(object):
             self.y_backup = self.y
             self.y = new.y
 
-    def find_max(self, vicinity = 3, sort=False):
+    def find_max(self, vicinity = 3, sort=False) -> tuple:
         self.index_max, self.y_max = myf.local_max(self.y,vicinity = vicinity)
         self.index_max = self.index_max.astype('int')
         self.x_max = self.x[self.index_max.astype('int')]
@@ -251,6 +350,17 @@ class tableXY(object):
             self.y_max = self.y_max[ordering]
             self.x_max = self.x_max[ordering]
         self.max_extremum = tableXY(self.x_max,self.y_max)
+
+
+    # def getMaxTable(self, vicinity = 3, sort=False) -> tableXY:
+    #     index_max, y_max = myf.local_max(self.y,vicinity = vicinity)
+
+    #     x_max = self.x[index_max]
+    #     if sort:
+    #         ordering = np.argsort(y_max)
+    #         y_max = y_max[ordering]
+    #         x_max = x_max[ordering]
+    #     return tableXY(x_max, y_max)
 
     def find_min(self, vicinity = 3, sort=False):
         self.index_min, self.y_min = myf.local_max(-self.y,vicinity = vicinity)

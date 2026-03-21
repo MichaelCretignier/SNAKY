@@ -11,6 +11,7 @@ import warnings
 
 import matplotlib.pylab as plt
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import scipy.stats as stats
 from scipy.stats import norm
@@ -29,7 +30,7 @@ import functools
 from colorama import Fore
 
 from collections import namedtuple
-from typing import TypeVar
+from typing import Any, TypeVar
 import logging
 
 logger = logging.getLogger('snaky')
@@ -177,8 +178,7 @@ def pickle_dump(obj,obj_file,protocol=None):
 def parabole(x, a, b, c):
     return a+b*x+c*x**2
 
-def mad(array,axis=0,sigma_conv=True):
-    """"""
+def mad(array: np.ndarray[Any, Any], axis:int=0,sigma_conv:bool=True) -> float:
     if axis == 0:
         step = abs(array-np.nanmedian(array,axis=axis))
     else:
@@ -204,7 +204,7 @@ def touch_npy(filename):
     else:
         return np.load(filename)
 
-def local_max(spectrum: np.ndarray, vicinity: int) -> np.ndarray:
+def local_max(spectrum: np.ndarray, vicinity: int) -> tuple[npt.NDArray[int], npt.NDArray[float]]:
     vec_base = spectrum[vicinity:-vicinity]
 
     # Build a 2D array of all neighbour comparisons at once
@@ -222,7 +222,7 @@ def local_max(spectrum: np.ndarray, vicinity: int) -> np.ndarray:
     if len(index) == 0:
         index = np.array([0, len(spectrum) - 1])
 
-    return np.array([index, spectrum[index]])
+    return (index, spectrum[index])
 
 def smooth(y, box_pts, shape='rectangular'): #rectangular kernel for the smoothing
     box2_pts = int(2*box_pts-1)
@@ -802,7 +802,7 @@ def string_contained_in(array,string,inv=False,exclusion=[]):
     return mask, array[mask]
 
 
-def rm_outliers(array, m=1.5, kind='sigma',axis=0, return_borders=False,Plot=False):
+def rm_outliers(array, m=1.5, kind='sigma',axis=0, return_borders=False,Plot=False) -> tuple[np.ndarray[Any, Any],  np.ndarray[Any, Any]] | tuple[np.ndarray[Any, Any],  np.ndarray[Any, Any], float, float] :
     if type(array)!=np.ndarray:
         array=np.array(array)
 

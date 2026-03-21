@@ -3,10 +3,12 @@ import datetime
 import logging
 import pandas as pd
 import numpy as np
+import numpy.typing as npt
 import matplotlib.pylab as plt
 import os
 from astropy.io import fits
 from scipy.ndimage import map_coordinates
+from scipy.interpolate import interp1d
 import glob as glob
 import time
 
@@ -14,15 +16,16 @@ from scipy.interpolate import interp1d
 
 from src_snaky.snaky_main import replace_none
 from src_snaky.yarara_ccf_rework.ccf_config import CCFConfig
+from src_snaky.yarara_ccf_rework.ccf_processing import process_all_ccf, stack_ccf_results
 from src_snaky.yarara_ccf_rework.mask_config import MaskConfig
 from src_snaky.yarara_ccf_rework.output_config import OutputConfig
 from src_snaky.yarara_ccf_rework.stellar_params import StellarParams
+from src_snaky.yarara_ccf_rework.observation_context import ObservationContext
 
-from .observation_context import ObservationContext
 
-from .. import snaky_variables as myv
-from .. import snaky_functions as myf
-from .. import snaky_classes as myc
+from src_snaky import snaky_variables as myv
+from src_snaky import snaky_functions as myf
+from src_snaky import snaky_classes as myc
 
 from dataclasses import field
 
@@ -74,25 +77,45 @@ def doppler_r(lamb, v):
     return lamb * factor, lamb / factor
 
 def interpolate_rv_shift(
-    x,
-    y,
-    rv_shift:np.ndarray,
-    xnew=None,
-    fill_value=0,
-    kind='linear'
-):
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    rv_shift: npt.NDArray[np.float64],
+    xnew: npt.NDArray[np.float64] | None = None,
+    fill_value: float = 0,
+    kind: str = 'linear',
+) -> npt.NDArray[np.float64]:
+
     if xnew is None:
         xnew = x.copy()
-    if rv_shift is None:
-        rv_shift = np.zeros(len(y))
 
+    # Shift all grids at once — (N_spec, N_pix)
     shifted_grids = doppler_r(x[np.newaxis, :], rv_shift[:, np.newaxis])[1]
 
-    pixel_coords = np.interp(shifted_grids, xnew, np.arange(len(xnew)))
+    # Find insertion indices for all spectra at once — (N_spec, N_pix)
+    idx = np.searchsorted(xnew, shifted_grids)
+    idx = np.clip(idx, 1, len(xnew) - 1)
 
-    row_coords = np.arange(len(y))[:, np.newaxis] * np.ones(len(xnew))
+    # Linear interpolation weights
+    lo = xnew[idx - 1]                              # (N_spec, N_pix)
+    hi = xnew[idx]                                  # (N_spec, N_pix)
+    t  = (shifted_grids - lo) / (hi - lo + 1e-20)  # (N_spec, N_pix)
 
-    y = map_coordinates(
+    # Gather values at lo and hi indices for all spectra
+    # y shape: (N_spec, N_pix)
+    spec_idx = np.arange(len(y))[:, np.newaxis]     # (N_spec, 1)
+    y_lo = y[spec_idx, idx - 1]                     # (N_spec, N_pix)
+    y_hi = y[spec_idx, idx]                         # (N_spec, N_pix)
+
+    # Interpolated values
+    result = (1 - t) * y_lo + t * y_hi              # (N_spec, N_pix)
+
+    # Apply fill_value outside bounds
+    out_of_bounds = (shifted_grids < xnew[0]) | (shifted_grids > xnew[-1])
+    result[out_of_bounds] = fill_value
+
+    return result.astype(y.dtype)
+
+    return map_coordinates(
         y,
         [row_coords, pixel_coords],
         order=1 if kind == 'linear' else 3,
@@ -100,12 +123,8 @@ def interpolate_rv_shift(
         cval=fill_value,
     ).astype(y.dtype)
 
-    return y
-
 ImportSpectrumReturn = namedtuple("ImportSpectrumReturn", ("grid", "flux"))
 def import_spectrums(files, rv_shift:np.ndarray, scale=True) -> ImportSpectrumReturn:
-    "rv_shift in m/s"
-
     if scale:
         wave_grid = np.round(files[0]/100.,2)
         spectrums = (files[1]/10000.).astype('float32')
@@ -113,10 +132,10 @@ def import_spectrums(files, rv_shift:np.ndarray, scale=True) -> ImportSpectrumRe
         wave_grid = files[0]
         spectrums = files[1]
 
-    if rv_shift is not None:
-            sts = interpolate_rv_shift(wave_grid, spectrums, rv_shift=rv_shift, fill_value=1, kind='linear')
+    if rv_shift is not None and np.any(rv_shift != 0):
+        spectrums = interpolate_rv_shift(wave_grid, spectrums, rv_shift=rv_shift, fill_value=1, kind='linear')
 
-    return ImportSpectrumReturn(wave_grid, sts)
+    return ImportSpectrumReturn(wave_grid, spectrums)
 
 CCF_GRID_MARGIN_KMS = 30_000 # safety margin
 
@@ -199,6 +218,7 @@ def yarara_ccf(
         grid_base, flux_base = import_spectrums(observations.files, rv_shift=observations.rv_shift)
     else:
         grid_base, flux_base = observations.spectra
+    elapsed = time.perf_counter() - start
 
     flux_err = None
 
@@ -390,173 +410,38 @@ def yarara_ccf(
     ccf_power_std = ccf_power_std * factor[np.newaxis, :]
 
     # TBD optimize take 9s for N=360
-    for (i, filename) in enumerate(observations.files[-1]):
-        ccf_power_old = ccf_power[:,i]
-        ccf_power_old_std = ccf_power_std[:,i]
-        ccf = myc.tableXY(vrad/1000,ccf_power_old,ccf_power_old_std)
+    # results = stack_ccf_results([
+    #     process_single_ccf(
+    #         i,
+    #         vrad,
+    #         ccf_power[:,i],
+    #         ccf_power_std[:, i],
+    #         dv,
+    #         star,
+    #         ccf_config,
+    #         output_config,
+    #         calibrated_phot_noise,
+    #         beta0
+    #     )
+    #     for i, _ in enumerate(observations.files[-1])
+    # ])
 
-        ccf_backup = ccf.copy()
-        ccf_backup.yerr/=np.nanpercentile(ccf_backup.y,75)
-        ccf_backup.y/=np.nanpercentile(ccf_backup.y,75)
+    results = process_all_ccf(
+        vrad,
+        ccf_power,
+        dv,
+        ccf_config,
+        calibrated_phot_noise
+    )
 
-        if output_config.debug:
-            plt.figure('debug')
-            ccf_backup.plot()
-
-        if ccf_config.analytical_model=='gaussian':
-            ccf_backup.fit_gaussian(Plot=output_config.debug)
-            model_parametric = 'GND2.0'
-        else:
-            ccf_backup.fit_GND(Plot=output_config.debug,beta_fixed=int(beta0))
-            model_parametric = f'GND{beta0}.1f'
-
-        plt.close('debug')
-
-        ccf.yerr = np.sqrt(abs(ccf.y))
-
-        ccf.y *= -1
-        ccf.find_max(vicinity=5)
-
-        ccf.diff(replace=False)
-        ccf.deri.y = np.abs(ccf.deri.y)
-        for jj in range(3):
-            ccf.deri.find_max(vicinity=4-jj)
-            if len(ccf.deri.x_max)>1:
-                break
-
-        first_max = ccf.deri.x_max[np.argsort(ccf.deri.y_max)[-1]]
-        second_max = ccf.deri.x_max[np.argsort(ccf.deri.y_max)[-2]]
-
-        ccf.y *= -1
-        if (np.min(abs(ccf.x_max-0.5*(first_max+second_max)))<5)&(star.fwhm<15):
-            center=ccf.x_max[np.argmin(abs(ccf.x_max-0.5*(first_max+second_max)))]
-        else:
-            center=ccf.x[ccf.y.argmin()]
-        ccf.x -= center
-
-        if not ccf_config.del_outside_max:
-            mask = (ccf.x>-ccf_config.rv_borders)&(ccf.x<ccf_config.rv_borders)
-            ccf.supress_mask(mask)
-        else:
-            ccf.find_max(vicinity=10)
-            ccf.index_max = np.sort(ccf.index_max)
-            mask = np.zeros(len(ccf.x)).astype('bool')
-            mask[ccf.index_max[0]:ccf.index_max[1]+1]=True
-            ccf.supress_mask(mask)
-
-        if ccf_config.normalisation=='left':
-            norm = ccf.y[0]
-        else:
-            max1 = np.argmax(ccf.y[0:int(len(ccf.y)/2)])
-            max2 = np.argmax(ccf.y[int(len(ccf.y)/2):])+int(len(ccf.y)/2)
-            fmax1 = ccf.y[max1]
-            fmax2 = ccf.y[max2]
-            norm = (fmax2-fmax1)/(max2-max1)*(np.arange(len(ccf.y))-max2)+fmax2
-        ccf.yerr /= norm
-        ccf.y /= norm
-
-        if output_config.debug:
-            ccf.plot(color=None)
-
-        if ccf_config.analytical_model=='gaussian':
-            ccf.fit_gaussian(Plot=False)
-        else:
-            ccf.fit_GND(Plot=False,beta_fixed=int(beta0))
-
-        ccf_backup.params['cen'].value -= center
-
-        if ccf_config.check_non_transform:
-            V1,V2 = ccf_backup.params['cen'].value,ccf.params['cen'].value
-            if abs(V1-V2)>1:
-                logger.warning(f'Discrepancy detected between CCFs ({V1:.4f}/{V2:.4f}), value reset to non-transformed one')
-                ccf.params = ccf_backup.params
-
-        rv_ccf = ccf.params['cen'].value+center
-        rv_ccf_std = ccf.params['cen'].stderr
-        rv_ccf,rv_ccf_std = replace_none(rv_ccf,rv_ccf_std)
-        rv_ccf_std = calibrated_phot_noise['rv'][i]
-
-        contrast_ccf = -ccf.params['amp'].value
-        contrast_ccf_std = ccf.params['amp'].stderr
-        contrast_ccf,contrast_ccf_std = replace_none(contrast_ccf,contrast_ccf_std)
-        contrast_ccf_std = calibrated_phot_noise['contrast'][i]
-
-        wid_ccf = ccf.params['wid'].value
-        wid_ccf_std = ccf.params['wid'].stderr
-        wid_ccf,wid_ccf_std = replace_none(wid_ccf,wid_ccf_std)
-        wid_ccf_std = calibrated_phot_noise['fwhm'][i]
-
-        offset_ccf = ccf.params['offset'].value
-        offset_ccf_std = ccf.params['offset'].stderr
-        offset_ccf,offset_ccf_std = replace_none(offset_ccf,offset_ccf_std)
-
-        amplitudes.append(contrast_ccf)
-        amplitudes_std.append(contrast_ccf_std)
-        rvs.append(rv_ccf)
-        rvs_std.append(rv_ccf_std)
-        fwhms.append(wid_ccf)
-        fwhms_std.append(wid_ccf_std)
-
-        ccf.clip(min=[-ccf_config.bis_range,None],max=[ccf_config.bis_range,None],replace=False)
-        if len(ccf.clipped.x)<5:
-            ccf.clip(min=[-0.5,None],max=[0.5,None],replace=False)
-            logger.info('BISSPAN updated to +/- 0.5 km/s')
-        if len(ccf.clipped.x)<5:
-            ccf.clip(min=[-2,None],max=[2,None],replace=False)
-            logger.info('BISSPAN updated to +/- 2 km/s')
-        if len(ccf.clipped.x)<5:
-            ccf.clip(min=[-5,None],max=[5,None],replace=False)
-            logger.info('BISSPAN updated to +/- 5 km/s')
-
-        ccf.clipped.fit_poly()
-        a,b,c = ccf.clipped.poly_coefficient
-        para_center = -b/(2*a)+center
-        para_depth = a*(-b/(2*a))**2+b*(-b/(2*a))+c
-        centers.append(para_center)
-        depths.append(1-para_depth)
-
-        EW = np.sum(1-ccf.y)/len(ccf.y)
-        ew.append(EW)
-        save_ccf = {'ccf_flux':ccf.y,'ccf_flux_std':ccf.yerr,'ccf_rv':ccf.x+center,'ew':EW}
-
-        para_ccf = {'para_rv':para_center,'para_depth':para_depth}
-
-        ccf_core = ccf.copy()
-        if rv_ccf==rv_ccf:
-            ccf_core.x += center
-            ccf_core.x -= rv_ccf
-
-        vrad_center = np.arange(0,ccf_config.bis_range+(dv/1000)*0.99,dv/1000)
-        vrad_center = np.hstack([-vrad_center[1:][::-1],vrad_center])
-
-        ccf_core.interpolate(new_grid=vrad_center,replace=True,method='cubic')
-        ccf_core.fit_poly()
-        a,b,c = ccf_core.poly_coefficient
-        vs = -b/(2*a)
-
-        bisspan.append(vs)
-        bisspan_ccf_std = calibrated_phot_noise['vspan'][i]
-        bisspan_std.append(bisspan_ccf_std)
-
-        ew_std.append(calibrated_phot_noise['ew'][i])
-        centers_std.append(calibrated_phot_noise['center'][i])
-        depths_std.append(calibrated_phot_noise['depth'][i])
-
-        save_ccf['ew_std'] = calibrated_phot_noise['ew'][i]
-        para_ccf['para_rv_std'] = calibrated_phot_noise['center'][i]
-        para_ccf['para_depth_std'] = calibrated_phot_noise['depth'][i]
-
-        save_gauss = {'contrast':contrast_ccf,'contrast_std':contrast_ccf_std,
-                                'rv':rv_ccf,'rv_std':rv_ccf_std, 'rv_std_phot':calibrated_phot_noise['rv'][i],
-                                'fwhm':wid_ccf,'fwhm_std':wid_ccf_std,
-                                'offset':offset_ccf,'offset_std':offset_ccf_std,
-                                'vspan':rv_ccf - para_center,'vspan_std':bisspan_ccf_std}
-
-    end = time.time()
+    if ccf_config.analytical_model=='gaussian':
+        model_parametric = 'GND2.0'
+    else:
+        model_parametric = f'GND{beta0}.1f'
 
     rvs_std = calibrated_phot_noise['rv']
-    fwhms = np.array(fwhms).astype('float')*2.355
-    fwhms_std = np.array(fwhms_std).astype('float')*2.355
+    fwhms = results["fwhm"] * 2.355
+    fwhms_std = results["fwhm_std"] * 2.355
 
     warning_rv_borders = False
     if np.median(fwhms)>(ccf_config.rv_borders/1.5):
@@ -564,14 +449,30 @@ def yarara_ccf(
         warning_rv_borders = True
 
     jdb = observations.jdb if observations.jdb is not None else np.arange(len(mask_config.files[-1]))
-    ccf_rv = myc.tableXY(jdb,np.array(rvs)*1000,np.array(rvs_std)*1000)
-    ccf_centers = myc.tableXY(jdb,np.array(centers)*1000,np.array(centers_std)*1000)
-    ccf_contrast = myc.tableXY(jdb,np.array(amplitudes)*100,np.array(amplitudes_std)*100)
+    ccf_rv = myc.tableXY(jdb,np.array(results["rv"])*1000,np.array(results["rv_std"])*1000)
+    ccf_centers = myc.tableXY(jdb,np.array(results["center"])*1000,np.array(results["center_std"])*1000)
+    ccf_contrast = myc.tableXY(jdb,np.array(results["contrast"])*100,np.array(results["contrast_std"])*100)
     ccf_depth = myc.tableXY(jdb,depths,depths_std)
     ccf_fwhm = myc.tableXY(jdb,fwhms,fwhms_std)
-    ccf_vspan = myc.tableXY(jdb,np.array(bisspan)*1000,np.array(bisspan_std)*1000)
-    ccf_ew = myc.tableXY(jdb,np.array(ew),np.array(ew_std))
-    ccf_timeseries = np.array([ew,ew_std,amplitudes,amplitudes_std,rvs,rvs_std,calibrated_phot_noise['rv'],fwhms,fwhms_std,centers,centers_std,depths,depths_std,bisspan,bisspan_std])
+    ccf_vspan = myc.tableXY(jdb,np.array(results["bisspan"])*1000,np.array(results["bisspan_std"])*1000)
+    ccf_ew = myc.tableXY(jdb,np.array(results["ew"]),np.array(results["ew_std"]))
+    ccf_timeseries = np.array([
+        results["ew"],
+        results["ew_std"],
+        results["contrast"],
+        results["contrast_std"],
+        results["rv"],
+        results["rv_std"],
+        calibrated_phot_noise['rv'],
+        results["fwhm"],
+        results["fwhm_std"],
+        results["center"],
+        results["center_std"],
+        results["depth"],
+        results["depth_std"],
+        results["bisspan"],
+        results["bisspan_std"]
+    ])
     ccf_infos = pd.DataFrame(ccf_timeseries.T,columns=['ew','ew_std','contrast','contrast_std','rv','rv_std','rv_std_phot','fwhm','fwhm_std','center','center_std','depth','depth_std','bisspan','bisspan_std'])
     ccf_infos['jdb'] = jdb
     ccf_infos['filename'] = observations.files[-1]
@@ -583,10 +484,10 @@ def yarara_ccf(
 
     ccf_infos = {'table':ccf_infos,'model_parametric':model_parametric,'weighting':1.0+float(mask_config.squared),'creation_date':datetime.datetime.now().isoformat()}
 
-    file_summary_ccf = myf.touch_pickle(obvservations.dir_root+'WORKSPACE/Analyse_ccf.p')
-    file_summary_ccf['CCF_'+mask_name.split('.')[0]] = ccf_infos
+    file_summary_ccf = myf.touch_pickle(observations.dir_root+'WORKSPACE/Analyse_ccf.p')
+    file_summary_ccf['CCF_'+mask_config.name.split('.')[0]] = ccf_infos
 
-    myf.pickle_dump(file_summary_ccf,open(dir_root+'WORKSPACE/Analyse_ccf.p','wb'))
+    myf.pickle_dump(file_summary_ccf,open(observations.dir_root+'WORKSPACE/Analyse_ccf.p','wb'))
 
     ccf_norm = (ccf_power.T/np.percentile(ccf_power,75,axis=0)[:,np.newaxis]).T
     ccf_shifted = ccf_norm.copy()
@@ -604,7 +505,7 @@ def yarara_ccf(
 
     export = myf.touch_pickle(observations.dir_root+'WORKSPACE/Analyse_ccf_saved.p')
     export['CCF_'+ccf_name] = {}
-    export['CCF_'+ccf_name][sub_dico] = {'ccf_vrad':vrad,'ccf_flux':ccf_norm,'ccf_shifted':ccf_shifted,'ccf_master':master_ccf,'filename':observations.files[-1]}
+    export['CCF_'+ccf_name][observations.sub_dico] = {'ccf_vrad':vrad,'ccf_flux':ccf_norm,'ccf_shifted':ccf_shifted,'ccf_master':master_ccf,'filename':observations.files[-1]}
     myf.pickle_dump(export,open(observations.dir_root+'WORKSPACE/Analyse_ccf_saved.p','wb'))
 
     warning = 0
@@ -640,7 +541,7 @@ def yarara_ccf(
     med = np.nanmedian(ccf_vspan.y)
     ccf_vspan.plot() ; plt.ylabel('VSPAN [m/s]') ; plt.axhline(y=med,color='r',label='%.1f'%(med))
     plt.axes([0.75,0.06,0.22,0.66])
-    plt.imshow(ccf_res.T,vmin=-0.02,vmax=0.02,aspect='auto',cmap='seismic') ;
+    plt.imshow(ccf_res.T,vmin=-0.005,vmax=0.005,aspect='auto',cmap='seismic') ;
     plt.axvline(x=len(vrad)*0.5,color='k',ls='-.',lw=1)
     plt.axes([0.75,0.72,0.22,0.22])
     plt.plot(vrad/1000,master_ccf,color='k')
