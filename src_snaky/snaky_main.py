@@ -44,7 +44,7 @@ SNAKY — Spectroscopic Novel Analysis Kit of Yarara
 
 """
 
-__version__ = '1.2.5'
+__version__ = '1.3.0'
 
 print(Fore.GREEN+"""\n[INFO SNAKY]
 [INFO USER] SNAKY version = """+__version__ +""" 
@@ -100,133 +100,133 @@ def snaky_print_sequence():
 
 ##### CONTROL CHECK FUNCTIONS (DB PROCESSING)
 
-def check_force_pre(dir_root):
+def check_force_pre(dir_root,step_nb=''):
     try:
         test = pd.read_pickle(glob.glob(dir_root+'WORKSPACE/RASSINE*')[0])
         os.system('touch '+dir_root+'REDUCTION_INFO/force_pre.txt')
-        print(Fore.GREEN+' [INFO] Recipe PRE done!'+Fore.RESET) ; QC=1
+        print(Fore.GREEN+' [INFO] Recipe PRE done! %s'%(step_nb)+Fore.RESET) ; QC=1
     except:
-        print(Fore.YELLOW+' [INFO] Recipe PRE not launched or crashed!'+Fore.RESET) ; QC=0
+        print(Fore.YELLOW+' [INFO] Recipe PRE not launched or crashed! %s'%(step_nb)+Fore.RESET) ; QC=0
     return QC
 
-def check_force_summary(dir_root):
+def check_force_summary(dir_root,step_nb=''):
     try:
         os.system('rm -f '+dir_root+'REDUCTION_INFO/force_summary.txt')
         test = pd.read_csv(dir_root+'WORKSPACE/Analyse_summary.csv',index_col=0)['flag1']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_summary.txt')
-        print(Fore.GREEN+' [INFO] Recipe SUMMARY done!'+Fore.RESET) ; QC=1
+        print(Fore.GREEN+' [INFO] Recipe SUMMARY done! %s'%(step_nb)+Fore.RESET) ; QC=1
     except:
-        print(Fore.YELLOW+' [INFO] Recipe SUMMARY not launched or crashed!'+Fore.RESET) ; QC=0
+        print(Fore.YELLOW+' [INFO] Recipe SUMMARY not launched or crashed! %s'%(step_nb)+Fore.RESET) ; QC=0
     return QC
 
-def check_force_rvsys(dir_root):
+def check_force_rvsys(dir_root,step_nb=''):
     try:
         os.system('rm -f '+dir_root+'REDUCTION_INFO/force_rvsys.txt')
         test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['Rv_sys']['SNAKY']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_rvsys.txt')
-        print(Fore.GREEN+' [INFO] Recipe RVSYS done!'+Fore.RESET) ; QC=1
+        print(Fore.GREEN+' [INFO] Recipe RVSYS done! %s'%(step_nb)+Fore.RESET) ; QC=1
     except:
-        print(Fore.YELLOW+' [INFO] Recipe RVSYS not launched or crashed!'+Fore.RESET) ; QC=0
+        print(Fore.YELLOW+' [INFO] Recipe RVSYS not launched or crashed! %s'%(step_nb)+Fore.RESET) ; QC=0
     return QC
 
-def check_force_ccf(dir_root):
+def check_force_ccf(dir_root,step_nb=''):
     try:
         os.system('rm -f '+dir_root+'REDUCTION_INFO/force_ccf.txt')
         test = pd.read_pickle(dir_root+'WORKSPACE/Analyse_ccf.p')['CCF_G2']['table']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_ccf.txt')
-        print(Fore.GREEN+' [INFO] Recipe CCF done!'+Fore.RESET) ; QC=1
+        print(Fore.GREEN+' [INFO] Recipe CCF done! %s'%(step_nb)+Fore.RESET) ; QC=1
     except:
-        print(Fore.YELLOW+' [INFO] Recipe CCF not launched or crashed!'+Fore.RESET) ; QC=0
+        print(Fore.YELLOW+' [INFO] Recipe CCF not launched or crashed! %s'%(step_nb)+Fore.RESET) ; QC=0
     return QC
 
-def check_force_master(dir_root):
+def check_force_master(dir_root,step_nb=''):
     try:
         os.system('rm -f '+dir_root+'REDUCTION_INFO/force_master.txt')
         test = pd.read_pickle(dir_root+'WORKSPACE/Analyse_material.p')['reference_spectrum']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_master.txt')
-        print(Fore.GREEN+' [INFO] Recipe MASTER done!'+Fore.RESET) ; QC=1
+        print(Fore.GREEN+' [INFO] Recipe MASTER done! %s'%(step_nb)+Fore.RESET) ; QC=1
     except:
-        print(Fore.YELLOW+' [INFO] Recipe MASTER not launched or crashed!'+Fore.RESET) ; QC=0
+        print(Fore.YELLOW+' [INFO] Recipe MASTER not launched or crashed! %s'%(step_nb)+Fore.RESET) ; QC=0
     return QC
 
-def check_force_atmos(dir_root):
+def check_force_atmos(dir_root,step_nb=''):
     try:
         os.system('rm -f '+dir_root+'REDUCTION_INFO/force_atmos.txt')
         test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['Mstar']['SNAKY']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_atmos.txt')
-        print(Fore.GREEN+' [INFO] Recipe ATMOS done!'+Fore.RESET) ; QC=1
+        print(Fore.GREEN+' [INFO] Recipe ATMOS done! %s'%(step_nb)+Fore.RESET) ; QC=1
     except:
-        print(Fore.YELLOW+' [INFO] Recipe ATMOS not launched or crashed!'+Fore.RESET) ; QC=0
+        print(Fore.YELLOW+' [INFO] Recipe ATMOS not launched or crashed! %s'%(step_nb)+Fore.RESET) ; QC=0
     return QC
 
-def check_force_resolution(dir_root):
+def check_force_resolution(dir_root,step_nb=''):
     try:
         os.system('rm -f '+dir_root+'REDUCTION_INFO/force_resolution.txt')
         test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['FWHM']['O2']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_resolution.txt')
-        print(Fore.GREEN+' [INFO] Recipe RESOLUTION done!'+Fore.RESET) ; QC=1
+        print(Fore.GREEN+' [INFO] Recipe RESOLUTION done! %s'%(step_nb)+Fore.RESET) ; QC=1
     except:
-        print(Fore.YELLOW+' [INFO] Recipe RESOLUTION not launched or crashed!'+Fore.RESET) ; QC=0
+        print(Fore.YELLOW+' [INFO] Recipe RESOLUTION not launched or crashed! %s'%(step_nb)+Fore.RESET) ; QC=0
     return QC
 
-def check_force_vsini(dir_root):
+def check_force_vsini(dir_root,step_nb=''):
     try:
         os.system('rm -f '+dir_root+'REDUCTION_INFO/force_vsini.txt')
         test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['Vsini']['SNAKY']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_vsini.txt')
-        print(Fore.GREEN+' [INFO] Recipe VSINI done!'+Fore.RESET) ; QC=1
+        print(Fore.GREEN+' [INFO] Recipe VSINI done! %s'%(step_nb)+Fore.RESET) ; QC=1
     except:
-        print(Fore.YELLOW+' [INFO] Recipe VSINI not launched or crashed!'+Fore.RESET) ; QC=0
+        print(Fore.YELLOW+' [INFO] Recipe VSINI not launched or crashed! %s'%(step_nb)+Fore.RESET) ; QC=0
     return QC
 
-def check_force_abs_continuum(dir_root):
+def check_force_abs_continuum(dir_root,step_nb=''):
     try:
         os.system('rm -f '+dir_root+'REDUCTION_INFO/force_abs_continuum.txt')
         test = pd.read_pickle(dir_root+'WORKSPACE/Analyse_material.p')['correction_factor']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_abs_continuum.txt')
-        print(Fore.GREEN+' [INFO] Recipe ABSCONTINUUM done!'+Fore.RESET) ; QC=1
+        print(Fore.GREEN+' [INFO] Recipe ABSCONTINUUM done! %s'%(step_nb)+Fore.RESET) ; QC=1
     except:
-        print(Fore.YELLOW+' [INFO] Recipe ABSCONTINUUM not launched or crashed!'+Fore.RESET) ; QC=0
+        print(Fore.YELLOW+' [INFO] Recipe ABSCONTINUUM not launched or crashed! %s'%(step_nb)+Fore.RESET) ; QC=0
     return QC
 
-def check_force_activity(dir_root):
+def check_force_activity(dir_root,step_nb=''):
     try:
         os.system('rm -f '+dir_root+'REDUCTION_INFO/force_activity.txt')
         test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['Contrast']['Ha']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_activity.txt')
-        print(Fore.GREEN+' [INFO] Recipe ACTIVITY done!'+Fore.RESET) ; QC=1
+        print(Fore.GREEN+' [INFO] Recipe ACTIVITY done! %s'%(step_nb)+Fore.RESET) ; QC=1
     except:
-        print(Fore.YELLOW+' [INFO] Recipe ACTIVITY not launched or crashed!'+Fore.RESET) ; QC=0
+        print(Fore.YELLOW+' [INFO] Recipe ACTIVITY not launched or crashed! %s'%(step_nb)+Fore.RESET) ; QC=0
     return QC
 
-def check_force_mhk(dir_root):
+def check_force_mhk(dir_root,step_nb=''):
     try:
         os.system('rm -f '+dir_root+'REDUCTION_INFO/force_mhk.txt')
         test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['MHK']['SNAKY']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_mhk.txt')
-        print(Fore.GREEN+' [INFO] Recipe MHK done!'+Fore.RESET) ; QC=1
+        print(Fore.GREEN+' [INFO] Recipe MHK done! %s'%(step_nb)+Fore.RESET) ; QC=1
     except:
-        print(Fore.YELLOW+' [INFO] Recipe MHK not launched or crashed!'+Fore.RESET) ; QC=0
+        print(Fore.YELLOW+' [INFO] Recipe MHK not launched or crashed! %s'%(step_nb)+Fore.RESET) ; QC=0
     return QC
 
-def check_force_spectroscopy(dir_root):
+def check_force_spectroscopy(dir_root,step_nb=''):
     try:
         os.system('rm -f '+dir_root+'REDUCTION_INFO/force_spectroscopy.txt')
         test = pd.read_pickle(dir_root+'WORKSPACE/Analyse_spectroscopy.p')['flux_corrected']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_spectroscopy.txt')
-        print(Fore.GREEN+' [INFO] Recipe SPECTROSCOPY done!'+Fore.RESET) ; QC=1
+        print(Fore.GREEN+' [INFO] Recipe SPECTROSCOPY done! %s'%(step_nb)+Fore.RESET) ; QC=1
     except:
-        print(Fore.YELLOW+' [INFO] Recipe SPECTROSCOPY not launched or crashed!'+Fore.RESET) ; QC=0
+        print(Fore.YELLOW+' [INFO] Recipe SPECTROSCOPY not launched or crashed! %s'%(step_nb)+Fore.RESET) ; QC=0
     return QC
 
-def check_force_magcycle(dir_root):
+def check_force_magcycle(dir_root,step_nb=''):
     try:
         os.system('rm -f '+dir_root+'REDUCTION_INFO/force_magcycle.txt')
         test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['Pmag']['SNAKY']
         os.system('touch '+dir_root+'REDUCTION_INFO/force_magcycle.txt')
-        print(Fore.GREEN+' [INFO] Recipe MAGCYCLE done!'+Fore.RESET) ; QC=1
+        print(Fore.GREEN+' [INFO] Recipe MAGCYCLE done! %s'%(step_nb)+Fore.RESET) ; QC=1
     except:
-        print(Fore.YELLOW+' [INFO] Recipe MAGCYCLE not launched or crashed!'+Fore.RESET) ; QC=0
+        print(Fore.YELLOW+' [INFO] Recipe MAGCYCLE not launched or crashed! %s'%(step_nb)+Fore.RESET) ; QC=0
     return QC
 
 #
@@ -452,6 +452,7 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
     ext = '_'+proxy_name+ext
 
     instru = np.array([i.split('_')[0] for i in instrument])
+    #reference[(instru=='NEID')|(instru=='NEID-HE')] = 'snaky'
 
     vec = Finch.tableXY(proxy.x, proxy.y, proxy.yerr, proxy_name = proxy_name) 
     vec.set_instrument(instru)
@@ -651,7 +652,7 @@ def import_sts(files, rv_shift=None, err=False, sub_dico='matching_diff', scale=
 
 def create_sts(files, grid = np.round(np.arange(3900,6830.001,0.01),2), sub_dico='matching_diff'):
     sts = []
-    print(' [INFO] Creating the npy Spectrum time-series...')
+    print(' [INFO] Creating the npy Spectrum time-series...\n')
     for f in files:
         rassine_file = pd.read_pickle(f)
         spec_norm = rassine_file['flux']/rassine_file[sub_dico]['continuum_linear']
@@ -882,6 +883,7 @@ def extract_header(files, instru, debug=False, ra=None, dec=None):
            'harps':{'ESO DRS BJD':'rjd', 'ESO DRS BERV':'berv', 'ESO DRS SPE EXT SN50':'snr', 'ESO TEL TARG ALPHA':'RA', 'ESO TEL TARG DELTA':'DEC'}, #old DRS (3.5)
            'HARPS':{'ESO QC BJD':'rjd', 'ESO QC BERV':'berv', 'ESO QC ORDER50 SNR':'snr', 'ESO TEL TARG ALPHA':'RA', 'ESO TEL TARG DELTA':'DEC'}, #new DRS (3.3.6)
            'HARPN':{'MJD-OBS':'rjd', 'TNG QC BERV':'berv', 'TNG QC ORDER50 SNR':'snr', 'TNG TEL TARG ALPHA':'RA', 'TNG TEL TARG DELTA':'DEC'}, #new DRS (3.0.1)
+           'PEPSI':{'JD-TDB':'rjd', 'SSBVEL':'berv', 'SNR':'snr', 'RA':'RA', 'DEC':'DEC'},
            'CORAL':{'ESO DRS BJD':'rjd', 'ESO DRS BERV':'berv', 'ESO DRS SPE EXT SN50':'snr', 'ESO TEL TARG ALPHA':'RA', 'ESO TEL TARG DELTA':'DEC'},
            'ESPRE':{'HIERARCH ESO QC BJD':'rjd', 'HIERARCH ESO QC BERV':'berv', 'HIERARCH ESO QC ORDER100 SNR':'snr', 'HIERARCH ESO TEL1 TARG ALPHA':'RA', 'HIERARCH ESO TEL1 TARG DELTA':'DEC'},
            'RASSINE':{'jdb':'rjd', 'berv':'berv', 'SNR_5500':'snr'},
@@ -900,7 +902,15 @@ def extract_header(files, instru, debug=False, ra=None, dec=None):
         snaky_help()
         print(summary, ins)
 
-    if ins=='SOPHI': 
+    if ins=='PEPSI':
+        for i in summary.index:
+            RA = summary.loc[i,'RA'].replace(':','')
+            summary.loc[i,'RA'] = RA
+            DEC = summary.loc[i,'DEC'].replace(':','')
+            summary.loc[i,'DEC'] = DEC
+        summary['RA'] = np.round(np.array([ra_to_deg(ra) for ra in np.array(summary['RA'])]),6)
+        summary['DEC'] = np.round(np.array([dec_to_deg(dec) for dec in np.array(summary['DEC'])]),6)
+    if ins=='SOPHI':
         for i in summary.index:
             RA = summary.loc[i,'RA']
             length = len(str(RA).split('.')[0])
@@ -1284,7 +1294,7 @@ def replace_none(y,yerr):
         return y,yerr
 
 def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_tag=0,
-                mask_col='weight_rv', analytical_model='auto', sub_dico='matching_diff',
+                mask_col='weight_rv', analytical_model='auto', sub_dico='matching_diff', rv_mode='RV',
                 weighted=True, debug=False, normalisation='left', return_ccf=False, save=True,
                 del_outside_max = False, ccf_oversampling=1, check_non_transform=True, continuum_method='flux',
                 rv_range=None, rv_borders=None, bis_range=None, delta_window=5, rv_shift=None,
@@ -1354,7 +1364,14 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
 
     flux_err = None
 
-    print('\n [INFO] Reference color : flat normalised continuum')
+    if rv_mode=='EPRV':
+        print('\n [INFO] Reference color : ESPRESSO Procyon (Red weighting)')
+        color = pd.read_csv(MATERIAL_DIR+'/EPRV_color.csv',index_col=0)
+        color = myc.tableXY(color.wave.astype('float')/100,color.continuum.astype('float')/10000)
+        color.interpolate(new_grid=grid, fill_value=0, method='linear')
+        flux = flux * color.y
+    else:
+        print('\n [INFO] Reference color : flat normalised continuum')
     
     mask_shifted = myf.doppler_r(mask[:,0],(rv_range+5)*1000)
     
@@ -1507,7 +1524,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
 
     try:
         master_ccf.fit_GND(beta_fixed=0,Plot=False)
-        beta0 = master_ccf.params['beta']
+        beta0 = master_ccf.params['beta'].value
     except:
         beta0 = 2.0
 
@@ -1757,7 +1774,13 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
     offset = np.nanmedian(ccf_centers.y - ccf_rv.y)
     ccf_rv.y[ccf_rv.y!=ccf_rv.y] = ccf_centers.y[ccf_rv.y!=ccf_rv.y] - offset
 
-    ccf_infos = {'table':ccf_infos,'model_parametric':model_parametric,'weighting':1.0+float(squared),'creation_date':datetime.datetime.now().isoformat()}
+    ccf_infos = {
+        'table':ccf_infos,
+        'model_parametric':model_parametric,
+        'rv_sys':rv_sys/1000,
+        'rv_mode':rv_mode,
+        'weighting':1.0+float(squared),
+        'creation_date':datetime.datetime.now().isoformat()}
     
     file_summary_ccf = myf.touch_pickle(dir_root+'WORKSPACE/Analyse_ccf.p')
     file_summary_ccf['CCF_'+mask_name.split('.')[0]] = ccf_infos
@@ -1898,10 +1921,6 @@ def import_stellar_template(teff,feh=0.0,logg=4.5,model='ATLAS',rv_sys=0.0):
 
     loc = np.where(table_columns==final_model)[0][0]
     template = (table[:,loc]/10000).astype('float')
-
-    print(len(wave))
-    print(len(template))
-    pouet
     template = myc.tableXY(wave,template,0*wave)
 
     template.rv_shift(rv=rv_sys)
@@ -1969,7 +1988,6 @@ def yarara_iron_lines(dir_root, master, fwhm, rv_sys=0.0):
     Contrast = {}
     EW = {}
     if (np.min(master.x)<6800)&(np.max(master.x)>5150):
-        
         ew0 = 0
         w1 = myf.doppler_r(6341.16,rv_sys*1000)[0] ; w2 = myf.doppler_r(6346.39,rv_sys*1000)[0]
         w1 = myf.find_nearest(master.x,w1)[0][0] ; w2 = myf.find_nearest(master.x,w2)[0][0]
@@ -3024,11 +3042,11 @@ def yarara_measure_berv(dir_root,files,sub_dico='matchinf_diff'):
     ratio[ratio<0.001] = 0.001
     model = 1-model.y
     models = np.array([np.roll(model,i) for i in np.arange(-1000,1001,1)])
-    ccfs = np.array([np.sum(r*models,axis=1) for r in ratio])
-    dw = (np.argmax(ccfs,axis=1)-1000)*np.mean(np.diff(grid))
+    ccfs = np.array([np.nansum(r*models,axis=1) for r in ratio])
+    dw = (np.nanargmax(ccfs,axis=1)-1000)*np.nanmean(np.diff(grid))
     berv_computed = dw*3e5/6300
 
-    print(' [INFO] BERV values derived:',berv_computed)
+    print('\n [INFO] BERV values derived:',berv_computed)
 
     return berv_computed
     
@@ -3039,7 +3057,7 @@ def yarara_instrumental_resolution(dir_root, files, shift_rv, berv, sub_dico='ma
     grid, flux, err_flux = import_sts(files, rv_shift=shift_rv, err=False, sub_dico=sub_dico) 
     missing_values = (berv!=berv)
     if (sub_dico=='matching_diff')&(sum(missing_values)!=0):
-        berv_computed = yarara_measure_berv(dir_root,files[-1][missing_values],sub_dico='matching_diff')
+        berv_computed = yarara_measure_berv(dir_root,(grid*100, flux[missing_values]*10000, files[-1][missing_values]),sub_dico='matching_diff')
         berv[missing_values] = berv_computed
         
     berv_mad = myf.mad(berv)

@@ -1,4 +1,4 @@
-# SNAKY (a Spectroscopic Novel Analysis Kit of Yᴀʀᴀʀᴀ) v1.2.5
+# SNAKY (a Spectroscopic Novel Analysis Kit of Yᴀʀᴀʀᴀ) v1.3.0
 
 <p align="center">
   <img src="logo.png" alt="Project logo" width="400">
@@ -276,7 +276,7 @@ $$
 # Let's use the Alpha Cen B RASSINE dataset
 import src_snaky.run as snaky
 
-files = snaky.glob.glob(snaky.myv.TEST_DATASET2)
+files = snaky.glob.glob(snaky.myv.TEST_DATASET2) # a list of RASSINE spectra
 #output_dir = '/Users/cretignier/Desktop/Snaky'
 
 job = snaky.start()

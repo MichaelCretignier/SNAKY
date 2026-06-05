@@ -305,6 +305,7 @@ class start():
         ins = self.sy_instrument
         files = self.sy_files
         dir_root = self.sy_dir_root
+        dace_table = mym.import_dace_table(dir_root)
 
         if self.sy_rassine_db==False:
             if ins[0:6]=='SOPHIE':
@@ -323,6 +324,15 @@ class start():
                 for f,w0,dw in zip(files,cval1,cdelta1): #no more used
                     mym.read_static(f,dir_root,w0,dw,force=True)
             self.sy_rassine_files = np.sort(glob.glob(dir_root+'WORKSPACE/RASSINE*.p'))
+            print(' [INFO] Venting DACE table in RASSINE files...')
+            for rf in self.sy_rassine_files:
+                file_to_update = pd.read_pickle(rf)
+                arcfile = file_to_update['parameters']['arcfiles'][0]
+                entry = dace_table.loc[dace_table['fileroot']==arcfile]
+                file_to_update['parameters']['jdb'] = entry['rjd'].values[0]
+                file_to_update['parameters']['berv'] = entry['berv'].values[0]
+                file_to_update['parameters']['SNR_5500'] = entry['snr'].values[0]
+                pickle.dump(file_to_update,open(rf,'wb'))
         else:
             print(' [INFO] No preprocessing needed, spectra already in RASSINE format.')
             self.sy_rassine_files = self.sy_files
@@ -472,10 +482,13 @@ class start():
             print('\n')
 
     #@profile
-    def compute_ccf(self):
+    def compute_ccf(self, rv_mode=None):
         dir_root = self.sy_dir_root
         sub_dico = self.sy_sub_dico
         star = self.sy_starname
+
+        if rv_mode is None: #either RV or EPRV
+            rv_mode = self.sy_rv_mode
 
         sinfo = mym.import_star_info(dir_root)
         summary = mym.import_summary(dir_root)
@@ -489,7 +502,7 @@ class start():
             sub = summary.loc[mask]
             files = np.array(sub['filename'])
             files = (self.sy_sts_wave,self.sy_sts_flux[mask], files)
-            ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'G2', debug=self.debug, sub_dico=sub_dico, ccf_tag='', save=False)
+            ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'G2', debug=self.debug, sub_dico=sub_dico, ccf_tag='', save=False, rv_mode=rv_mode)
             ct = ccf_output['contrast'].y
             med_ct = np.nanmedian(ct)
             kept2 = abs(ct-med_ct)<2
@@ -521,7 +534,7 @@ class start():
             files = (self.sy_sts_wave,self.sy_sts_flux[mask],files)
             ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Magicat', debug=self.debug, sub_dico=sub_dico, ccf_tag='')
             del ccf_output
-            ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'G2', debug=self.debug, sub_dico=sub_dico, ccf_tag='')
+            ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'G2', debug=self.debug, sub_dico=sub_dico, ccf_tag='', rv_mode=rv_mode)
             sinfo['FWHM']['G2'] = np.round(np.nanmedian(ccf_output['fwhm'].y),2)
             ccf_output1 = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Kitty', ccf_oversampling=3, debug=self.debug, sub_dico=sub_dico, ccf_tag='',rv_shift=ccf_output['rv'].y)
             sinfo['FWHM']['KITTY'] = np.round(np.nanmedian(ccf_output1['fwhm'].y),2)
@@ -999,6 +1012,7 @@ class start():
             end=14,
             automatic_db = False,
             atmos_db = False,
+            rv_mode = 'RV', #either RV or EPRV 
             debug = False, 
             copy_rassine_files = True,
             ):
@@ -1055,6 +1069,7 @@ class start():
 
         self.sy_begin = begin
         self.sy_end = end
+        self.sy_rv_mode = rv_mode
 
         star = self.sy_starname
         ins = self.sy_instrument
@@ -1098,19 +1113,19 @@ class start():
 
         if automatic_db:
             print(' [INFO] Automatic sequence build...')
-            force_pre = bool(1-mym.check_force_pre(dir_root))&force_pre
-            force_summary = bool(1-mym.check_force_summary(dir_root))&force_summary
-            force_rvsys = bool(1-mym.check_force_rvsys(dir_root))&force_rvsys
-            force_ccf = bool(1-mym.check_force_ccf(dir_root))&force_ccf
-            force_master = bool(1-mym.check_force_master(dir_root))&force_master
-            force_atmos = bool(1-mym.check_force_atmos(dir_root))&force_atmos
-            force_resolution = bool(1-mym.check_force_resolution(dir_root))&force_resolution
-            force_vsini = bool(1-mym.check_force_vsini(dir_root))&force_vsini
-            force_abs_continuum = bool(1-mym.check_force_abs_continuum(dir_root))&force_abs_continuum
-            force_activity = bool(1-mym.check_force_activity(dir_root))&force_activity
-            force_mhk = bool(1-mym.check_force_mhk(dir_root))&force_mhk
-            force_spectroscopy = bool(1-mym.check_force_spectroscopy(dir_root))&force_spectroscopy
-            force_magcycle = bool(1-mym.check_force_magcycle(dir_root))&force_magcycle
+            force_pre = bool(1-mym.check_force_pre(dir_root,step_nb='(1)'))&force_pre
+            force_summary = bool(1-mym.check_force_summary(dir_root,step_nb='(2)'))&force_summary
+            force_rvsys = bool(1-mym.check_force_rvsys(dir_root,step_nb='(3)'))&force_rvsys
+            force_ccf = bool(1-mym.check_force_ccf(dir_root,step_nb='(4)'))&force_ccf
+            force_master = bool(1-mym.check_force_master(dir_root,step_nb='(5)'))&force_master
+            force_atmos = bool(1-mym.check_force_atmos(dir_root,step_nb='(6)'))&force_atmos
+            force_resolution = bool(1-mym.check_force_resolution(dir_root,step_nb='(7)'))&force_resolution
+            force_vsini = bool(1-mym.check_force_vsini(dir_root,step_nb='(8)'))&force_vsini
+            force_abs_continuum = bool(1-mym.check_force_abs_continuum(dir_root,step_nb='(9)'))&force_abs_continuum
+            force_activity = bool(1-mym.check_force_activity(dir_root,step_nb='(10)'))&force_activity
+            force_mhk = bool(1-mym.check_force_mhk(dir_root,step_nb='(11)'))&force_mhk
+            force_spectroscopy = bool(1-mym.check_force_spectroscopy(dir_root,step_nb='(12)'))&force_spectroscopy
+            force_magcycle = bool(1-mym.check_force_magcycle(dir_root,step_nb='(3)'))&force_magcycle
             print(' [INFO] Automatic sequence done!\n')
             print(' [INFO] Reduction launched, wait...\n')
 
@@ -1128,7 +1143,7 @@ class start():
             self.init_workspace(ra=ra, dec=dec, copy_rassine_files=copy_rassine_files)
             self.preprocess()
             self.write_progress(1, 'pre', savefile=filename_time)
-        qc = mym.check_force_pre(dir_root)
+        qc = mym.check_force_pre(dir_root,step_nb='(1)')
 
         if force_summary: #2
             self.set_summary()
@@ -1145,12 +1160,12 @@ class start():
         if force_summary: #2
             self.check_spectra()
             self.write_progress(2, 'summary', savefile=filename_time)
-        qc = mym.check_force_summary(dir_root)
+        qc = mym.check_force_summary(dir_root,step_nb='(2)')
 
         if force_rvsys: #3
             self.compute_rv_sys()
             self.write_progress(3, 'rv_sys', savefile=filename_time)
-        qc = mym.check_force_rvsys(dir_root)
+        qc = mym.check_force_rvsys(dir_root,step_nb='(3)')
 
         try:
             teff = mym.import_star_info(dir_root)['Teff']['FluxD']
@@ -1170,17 +1185,17 @@ class start():
         if force_ccf: #4
             self.compute_ccf()
             self.write_progress(4, 'ccf', savefile=filename_time)
-        qc = mym.check_force_ccf(dir_root)
+        qc = mym.check_force_ccf(dir_root,step_nb='(4)')
 
         if force_master: #5
             self.compute_master()
             self.write_progress(5, 'master', savefile=filename_time)
-        qc = mym.check_force_master(dir_root)
+        qc = mym.check_force_master(dir_root,step_nb='(5)')
 
         if force_atmos: #6
             self.compute_atmos()
             self.write_progress(6, 'atmos', savefile=filename_time)
-        qc = mym.check_force_atmos(dir_root)
+        qc = mym.check_force_atmos(dir_root,step_nb='(6)')
 
         if self.sy_sub_dico != 'matching_diff':
             force_resolution = False
@@ -1188,38 +1203,38 @@ class start():
         if force_resolution: #7
             self.compute_resolution()
             self.write_progress(7, 'resolution', savefile=filename_time)
-        qc = mym.check_force_resolution(dir_root)
+        qc = mym.check_force_resolution(dir_root,step_nb='(7)')
 
         if force_vsini: #8
             self.compute_vsini(Prot=Prot, Rs=Rs)
             self.write_progress(8, 'vsini', savefile=filename_time)
-        qc = mym.check_force_vsini(dir_root)
+        qc = mym.check_force_vsini(dir_root,step_nb='(8)')
 
         if force_abs_continuum: #9
             self.compute_abs_continuum()
             self.write_progress(9, 'abs_continuum', savefile=filename_time)
-        qc = mym.check_force_abs_continuum(dir_root)
+        qc = mym.check_force_abs_continuum(dir_root,step_nb='(9)')
 
         if force_activity: #10
             self.compute_activity()
             self.write_progress(10, 'activity',savefile=filename_time)
-        qc = mym.check_force_activity(dir_root)
+        qc = mym.check_force_activity(dir_root,step_nb='(10)')
 
         if force_mhk: #11
             self.compute_mhk()
             self.write_progress(11, 'mhk', savefile=filename_time)
-        qc = mym.check_force_mhk(dir_root)
+        qc = mym.check_force_mhk(dir_root,step_nb='(11)')
 
         if force_spectroscopy: #12
             self.compute_spectroscopy()
             self.write_progress(12, 'spectroscopy', savefile=filename_time)
-        qc = mym.check_force_spectroscopy(dir_root)
+        qc = mym.check_force_spectroscopy(dir_root,step_nb='(12)')
 
         try: #Until a proper test condition is implemented
             if force_magcycle: #13
                 self.compute_mag_cycle()
                 self.write_progress(13, 'mag_cycle', savefile=filename_time)
-            qc = mym.check_force_magcycle(dir_root)
+            qc = mym.check_force_magcycle(dir_root,step_nb='(13)')
         except:
             pass
 

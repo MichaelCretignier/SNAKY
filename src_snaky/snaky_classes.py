@@ -185,26 +185,16 @@ class tableXY(object):
     def __init__(self, x, y, *yerr):
         self.stats = pd.DataFrame({},index=[0])
         self.y = np.array(y)  #vector of y
-
-        if x is None:# for a fast table initialisation
-            x = np.arange(len(y))
         self.x = np.array(x)  #vector of x
-        
-        try:
-            np.sum(self.y) 
-        except: #in case of None
-            self.y = np.zeros(len(self.x))
-            yerr = [np.ones(len(self.y))]
-                
+        self.yerr = np.array(yerr)  #vector of x
+
         if len(x)!=len(y):
             print('X et Y have no the same lenght (%.0f vs %.0f)'%(len(x),len(y)))
 
         if len(yerr)!=0:
             if len(yerr)==1:
                 self.yerr = np.array(yerr[0])
-                self.xerr =  np.zeros(len(self.x))
             elif len(yerr)==2:
-                self.xerr = np.array(yerr[0])
                 self.yerr = np.array(yerr[1])
         else :
             if sum(~np.isnan(self.y.astype('float'))):
@@ -213,10 +203,9 @@ class tableXY(object):
                     self.yerr = np.ones(len(self.x))
             else:
                 self.yerr = np.ones(len(self.x))
-            self.xerr =  np.zeros(len(self.x))
         
         self.yerr = np.abs(self.yerr)
-        self.xerr = np.abs(self.xerr)
+        self.xerr = np.zeros(len(self.yerr))
         self.mask_qc = np.ones(len(self.x)).astype('bool')
             
     def null(self):
