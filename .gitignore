@@ -3,4 +3,5 @@
 __pycache__/
 dist/
 snaky.egg-info/
-
+Material_snaky/
+Material_snaky.zip
