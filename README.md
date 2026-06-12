@@ -31,19 +31,7 @@ SNAKY includes a packaged version of [RASSINE](https://github.com/MichaelCretign
 
 If you have any problem, please contact me at: michael.cretignier@physics.ox.ac.uk
 
-## ② Citations
-
-Please cite the relevant works:
-
-- **RASSINE** — [Cretignier et al. 2020b](https://ui.adsabs.harvard.edu/abs/2021A%26A...653A..43C/abstract)
-
-- **Atmospheric parameters** — [Cretignier et al. 2024b](https://ui.adsabs.harvard.edu/abs/2024MNRAS.535.2562C/abstract)
-
-- **MHK activity index** — [Cretignier et al. 2024a](https://ui.adsabs.harvard.edu/abs/2024MNRAS.527.2940C/abstract) + [Cretignier et al. 2024b](https://ui.adsabs.harvard.edu/abs/2024MNRAS.535.2562C/abstract)
-
-- **VSINI** — Cretignier et al. (in prep.)
-
-## ③ Installation
+## ② Installation
 
 *Git Clone / Download this GitHub repository on your own machine and move in the directory.*
 
@@ -82,14 +70,14 @@ pip install --upgrade pip
 pip install -r requirements_3.10.15.txt
 ```
 
-## ④ Download the material
+## ③ Download the material
 
 *SNAKY contains materials stored in a directory that need to be downloaded on Zenodo `https://doi.org/10.5281/zenodo.20659152`*.
 
 You can run the following code that will curl/download the directory, unzip it, and move it in `../SNAKY/`
 
 ```bash
-cd ../SNAKY/src_snaky/
+cd .../GitHub/SNAKY/src_snaky/
 python snaky_install.py
 ```
 
@@ -109,7 +97,7 @@ python snaky_build.py
 
 -->
 
-## ⑤ Tutorial
+## ④ Tutorial
 
 *The code is close to being fully packaged.  
 For now, if you want to run `snaky` from anywhere on your machine (without launching it from inside the `SNAKY/` directory), you can manually add `SNAKY/` to your `sys.path` in your Python scripts:*
@@ -269,7 +257,7 @@ job.reduce(begin=8, end=8) # Eps.Eridani inclination ~26° !
 
 *If you process DRS datasets, SNAKY will provide the RASSINE normalised spectra saved in the directory `../WORKSPACE/RASSINE*.p`. Since RASSINE is the slowest step (see next section), it's recommended to save the produced `RASSINE_*.p` files somewhere on your local machine in order to send them as input of SNAKY rather than the usual DRS `.fits` files.*
 
-## ⑥ Launching a RASSINE dataset
+## ⑤ Launching a RASSINE dataset
 
 *SNAKY itself is very fast and scales as O(N). However, within the reduction pipeline, RASSINE is the most time-consuming step (about 20–30% of the total execution time in the previous single-spectrum example). RASSINE typically requires ~15 seconds per spectrum and can quickly dominate the total runtime, exceeding the SNAKY processing time by orders of magnitude when many (N>50) spectra are processed:*
 
@@ -309,7 +297,7 @@ job.reduce(begin=1, end=14)
 
 -->
 
-## ⑦ An accurate multi-instruments MHK time-series
+## ⑥ An accurate multi-instruments MHK time-series
 
 *The MHK index is a precise activity indicator, but its extraction depends on the stellar effective temperature (`Teff`). Currently, `Teff` is determined independently by SNAKY for each dataset. Therefore, when combining multi-instrument MHK time series, you should ensure that the same `Teff` value is used consistently across all instruments.*
 
@@ -358,7 +346,7 @@ job1.reduce(begin=9, end=14, atmos_db=True)
 job2.reduce(begin=9, end=14, atmos_db=True) 
 ```
 
-## ⑧ Large-Scale Processing (SLURM / sbatch parallelization)
+## ⑦ Large-Scale Processing (SLURM / sbatch parallelization)
 
 *SNAKY is designed to process easily and rapidly thousands of datasets (as a recall a dataset corresponds to a star + an instrument combination). For large runs, the recommended approach is to use `sbatch`.* \
 *This is possible by using the `run_snaky_med.s` SLURM script, that calls the `snaky_trigger.py` Python script.*
@@ -368,7 +356,7 @@ sbatch run_snaky_med.s HD128621 HARPS15_3.3.6 1 14
 ```
 
 
-## ⑨ Your favourite instrument missing?
+## ⑧ Your favourite instrument missing?
 
 <a id="flag4"></a>
 
@@ -405,7 +393,7 @@ and modify the `extract_header()` function too.
 If only e2ds spectra exist and not s1d, follow the `read_neid()` example.
 NB: s1d spectra should always be preferred over e2ds/s2d spectra
 
-## ⑩ BENCHMARK (Computation time)
+## ⑨ BENCHMARK (Computation time)
 
 <a id="flag3"></a>
 
@@ -448,7 +436,7 @@ $$
 4.2 + 0.72 \times \left( \frac{N}{100} \right) \quad [GB]
 $$
 
-## ⑪ Analysing SNAKY DB
+## ⑩ Analysing SNAKY DB
 
 *While SNAKY can perfectly be used for single-based star analysis, the code was developed for large DB processing.* 
 
@@ -498,6 +486,17 @@ snaky_db.plot_starinfo(output_dir, ins='*', xvar='Teff_SNAKY', yvar='FWHM_G2')
 
 ```
 
+## ⑪ Citations
+
+Please cite the relevant works:
+
+- **RASSINE** — [Cretignier et al. 2020b](https://ui.adsabs.harvard.edu/abs/2021A%26A...653A..43C/abstract)
+
+- **Atmospheric parameters** — [Cretignier et al. 2024b](https://ui.adsabs.harvard.edu/abs/2024MNRAS.535.2562C/abstract)
+
+- **MHK activity index** — [Cretignier et al. 2024a](https://ui.adsabs.harvard.edu/abs/2024MNRAS.527.2940C/abstract) + [Cretignier et al. 2024b](https://ui.adsabs.harvard.edu/abs/2024MNRAS.535.2562C/abstract)
+
+- **VSINI** — Cretignier et al. (in prep.)
 
 ## ⑫ Uninstall
 
