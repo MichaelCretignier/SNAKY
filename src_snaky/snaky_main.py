@@ -1488,7 +1488,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
     start3 = time.time()
     vrad, ccf_power, ccf_power_std = myf.ccf(log_grid, flux, log_template, 
                                                 rv_range = rv_range, oversampling = ccf_oversampling, spec1_std = flux_err) #to compute on all the ccf simultaneously
-    
+
     del log_grid
     del log_mask
     del log_template
@@ -1768,7 +1768,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
     ccf_infos = pd.DataFrame(ccf_timeseries.T,columns=['ew','ew_std','contrast','contrast_std','rv','rv_std','rv_std_phot','fwhm','fwhm_std','center','center_std','depth','depth_std','bisspan','bisspan_std'])
     ccf_infos['jdb'] = jdb
     ccf_infos['filename'] = files[-1]
-
+    
     #Update to remove nan value in RV 02.05.25
     ccf_rv.yerr[ccf_rv.y!=ccf_rv.y] = np.nanmedian(ccf_rv.yerr[ccf_rv.y!=ccf_rv.y])
     offset = np.nanmedian(ccf_centers.y - ccf_rv.y)
