@@ -82,6 +82,20 @@ pip install --upgrade pip
 pip install -r requirements_3.10.15.txt
 ```
 
+## ④ Download the material
+
+*SNAKY contains a material that need to be download on Zenodo `https://doi.org/10.5281/zenodo.20659152`*.
+
+You can also run the following code that will download the directory, unzip it, and move it in `../SNAKY/`
+
+```bash
+cd ../SNAKY/src_snaky/
+python snaky_builder.py
+```
+
+*You should now have a `../SNAKY/Material_snaky/` directory.*
+
+<!--
 ## ④ Build the code
 
 *SNAKY contains a table too heavy for GitHub that need to be merged using the build script `snaky_build.py`*
@@ -92,6 +106,8 @@ python snaky_build.py
 ```
 
 *You should now have a `../SNAKY/Material_snaky/template_star_SNAKY_3900_6800.npy` file.*
+
+-->
 
 ## ⑤ Tutorial
 
