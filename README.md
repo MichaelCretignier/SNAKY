@@ -84,16 +84,16 @@ pip install -r requirements_3.10.15.txt
 
 ## ④ Download the material
 
-*SNAKY contains a material that need to be download on Zenodo `https://doi.org/10.5281/zenodo.20659152`*.
+*SNAKY contains a material directory that need to be download on Zenodo `https://doi.org/10.5281/zenodo.20659152`*.
 
-You can also run the following code that will download the directory, unzip it, and move it in `../SNAKY/`
+You can run the following code that will download the directory, unzip it, and move it in `../SNAKY/`
 
 ```bash
 cd ../SNAKY/src_snaky/
-python snaky_builder.py
+python snaky_install.py
 ```
 
-*You should now have a `../SNAKY/Material_snaky/` directory.*
+*You should now have a `../SNAKY/Material_snaky/` directory with files inside.*
 
 <!--
 ## ④ Build the code
