@@ -44,7 +44,7 @@ SNAKY — Spectroscopic Novel Analysis Kit of Yarara
 
 """
 
-__version__ = '1.3.0'
+__version__ = '1.4.0'
 
 print(Fore.GREEN+"""\n[INFO SNAKY]
 [INFO USER] SNAKY version = """+__version__ +""" 
@@ -317,12 +317,14 @@ def plot_master(dir_root, srf=False, color='k', alpha=1.0, offset=0, print_info=
     plt.ylabel('Flux normalised',fontsize=14)
     return dir_root
 
-def plot_mhk(dir_root, hide_outliers=True, daily_binned=True, debug=False):
+def plot_mhk(dir_root, hide_outliers=True, daily_binned=True, debug=False, rhk_ref=None):
     directory = '/'.join(dir_root.split('/')[0:-2])
     ins = dir_root.split('/')[-2]
     summaries = glob.glob(directory+'/*/WORKSPACE/Analyse_summary.csv')
     plt.figure(figsize=(15,6))
+    plt.axes([0.05,0.09,0.75,0.84])
     count=-1
+    samples = []
     for s in summaries:
         count+=1
         instrument = s.split('/WORKSPACE')[0].split('/')[-1]
@@ -339,8 +341,10 @@ def plot_mhk(dir_root, hide_outliers=True, daily_binned=True, debug=False):
                 valid = proxy.yerr<20
             else:
                 valid = proxy.yerr>0
+            proxy.x[proxy.x==0] = 43850.0   #minimum of the solar plot
             plt.errorbar(proxy.x[valid],proxy.y[valid],yerr=proxy.yerr[valid],label=instrument,marker=['o','s','^'][int(count//10)],ls='',capsize=0,color='C%.0f'%(count),mec='k')
             plt.scatter(proxy.x[~valid],proxy.y[~valid],marker='x',color='C%.0f'%(count))
+            samples.append(np.ravel(np.random.randn(5000,len(proxy.y))*proxy.yerr+proxy.y))
 
     plt.legend()
     plt.ylabel('M-index [%]',fontsize=14)
@@ -351,6 +355,8 @@ def plot_mhk(dir_root, hide_outliers=True, daily_binned=True, debug=False):
     sun_mag.smooth(box_pts=100,shape='savgol')
     plt.plot(sun_mag.x,sun_mag.y,color='gold',lw=1,alpha=0.7)
     plt.fill_between(sun_mag.x,0,sun_mag.y,color='gold',alpha=0.25)
+    if rhk_ref is not None:
+        plt.axhline(y=rhk_mhk(rhk_ref),color='k',ls='-.')
 
     ax = plt.gca()
     x_ticks = ax.get_xticks()[1:-1]
@@ -361,8 +367,22 @@ def plot_mhk(dir_root, hide_outliers=True, daily_binned=True, debug=False):
     plt.xlim(xlim)
     plt.xticks(x_ticks,np.round(2000+(x_ticks-51544.5)/365,1))
     plt.xlabel('Date [year]',fontsize=14)
+    plt.axes([0.83,0.09,0.10,0.84])
+    plt.tick_params(labelleft=False)
+    ax = plt.gca()
     ax.twinx()
     plt.ylim(ylim)
+    for n,s in enumerate(samples):
+        a,b = np.histogram(s,np.linspace(ylim[0],ylim[1],100),density=True)
+        b = 0.5*(b[1:]+b[0:-1])
+        plt.fill_between(a,0*b,b,alpha=0.3,color='C%.0f'%(n))
+        plt.plot(a,b,color='C%.0f'%(n),lw=1)
+    a,b = np.histogram(np.hstack(samples),np.linspace(ylim[0],ylim[1],100),density=True)
+    b = 0.5*(b[1:]+b[0:-1])
+    if rhk_ref is not None:
+        plt.axhline(y=rhk_mhk(rhk_ref),color='k',ls='-.')
+    plt.plot(a,b,alpha=1.0,color='k',lw=1)
+    plt.xlim(0,None)
     plt.yticks(y_ticks,np.round(mhk_rhk(y_ticks),2))
     plt.ylabel(r'$\log$ $R_{HK}$ [dex]',fontsize=14)
     plt.savefig(dir_root+'IMAGES/MHK'+myv.PRD_EXT+'.png')
@@ -473,6 +493,7 @@ def yarara_finch(dir_root, proxy_name='MHK',ext='',trend_degree=0, harm=0, offse
     vec.create_hydra()
 
     vec.mask_flag[vec.yerr>20] = True
+    vec.mask_flag[vec.x==0] = True      #remove to time datapoint
 
     #self.debug = vec,trend_degree,harm,automatic_fit,automatic_fit,offset_instrument,predict,x_unit
 
@@ -770,6 +791,136 @@ def read_static(file, dir_root, cval1, cdelt1, force=False, debug=False):
         else:
             print('[WARNING] RASSINE continuum size wrong, potential multiprocessing issue')
     
+def read_gr8(file, dir_root, instrument, force=False, debug=False):
+    fname = file.split('/')[-1]
+    outname = dir_root+'WORKSPACE/RASSINE_Stacked_spectrum_B0.00_'+fname.replace('.fits','.p')
+    if (not os.path.exists(outname))|(force):
+        t = fits.open(file)
+        if (instrument=='FIES')|(instrument=='HERMES'):
+            flux = np.round(t[1].data['flux'],8).astype('float')
+            wave = np.round(t[1].data['wavelength'],2).astype('float')
+        elif (instrument=='UVES')|(instrument=='FEROS'):
+            flux = np.round(t[1].data['flux'],8).astype('float')
+            wave = np.round(t[1].data['wavelength']*10,2).astype('float')
+        wave_first = np.where(flux!=0)[0][0]
+        wave = wave[wave_first:]
+        flux = flux[wave_first:]
+        if wave[0]>3700:
+            flux = flux[wave>3700]
+            wave = wave[wave>3700]
+        flux_std = 0*flux
+        spec = myc.tableXY(wave,flux,flux_std)
+
+        wmin = np.round(wave[0],0)+1
+        wmax = np.round(wave[-1],0)-1
+        grid_static = np.round(np.arange(wmin,wmax,0.01),2)
+
+        spec.interpolate(new_grid=grid_static,replace=True,method='cubic')
+        spec = rassine_normalise(spec)
+        if debug:
+            plt.plot(spec.x,spec.y/spec.rassine_continuum.y)
+
+        if len(spec.x)==len(spec.rassine_continuum.y):
+            export = {
+                'wave':spec.x,
+                'flux':spec.y,
+                'matching_diff':{'continuum_linear':spec.rassine_continuum.y},
+                'parameters':{'arcfiles':[file]}}
+            pickle.dump(export,open(outname,'wb'))
+        else:
+            print('[WARNING] RASSINE continuum size wrong, potential multiprocessing issue')
+
+def pepsi_summary(files,output_dir):
+    summary = []
+    for f in files:
+        file = fits.open(f)
+        w0 = int(file[1].data['Arg'][0])
+        w1 = int(file[1].data['Arg'][-1])
+        snr = np.nanmedian(1/np.sqrt(file[1].data['Var']))
+        summary.append([f,file[0].header['JD-OBS']-2400000,file[0].header['ORDER1'],file[0].header['ORDER2'],w0,w1,file[0].header['SNR']])
+    summary = pd.DataFrame(summary,columns=['fileroot','jdb','order1','order2','w0','w1','SNR'])
+    summary['iso'] = myf.conv_time(list(summary['jdb']))[2]
+    summary.sort_values(by=['jdb','order1'],inplace=True)
+    summary = summary.reset_index(drop=True)
+    summary['night'] = summary['jdb'].astype('int')
+
+    grid_pepsi = np.round(np.arange(3850,9000.001,0.01),2)
+    
+    new_summary = []
+    for m,n in enumerate(np.unique(summary['night'])):
+        sub = summary.loc[summary['night']==n].reset_index(drop=True)
+        jdb = np.mean(sub['jdb'])
+        matrix = []
+        matrix_err = []
+        snr = []
+        for s in sub['fileroot']:
+            wave = fits.open(s)[1].data['Arg']
+            flux = fits.open(s)[1].data['Fun']
+            flux_err = fits.open(s)[1].data['Var']
+            flux[0:2] = 0 ; flux[-2:] = 0
+            snr.append(1/np.sqrt(np.nanmedian(flux_err)))
+            spec = myc.tableXY(wave,flux)
+            spec.interpolate(new_grid=grid_pepsi,method='linear',fill_value=0)
+            matrix.append(spec.y)
+            matrix_err.append(spec.y*0+snr[-1]**4)
+            #plt.plot(wave,flux)
+        matrix = np.array(matrix)
+        matrix_err = np.array(matrix_err)
+        matrix_err = 1/np.array(matrix_err)**2
+        matrix_err[matrix==0] = 0
+        matrix_err /= np.sum(matrix_err,axis=0)
+        snr = np.array(snr)
+        stack = np.sum(matrix*matrix_err,axis=0)
+        stack[stack!=stack] = 0
+        #plt.plot(grid_pepsi,stack+m*2,color='k')
+        snr_stack = np.sqrt(np.sum(snr**2))
+
+        ref_fits = sub['fileroot'][0]
+        ref_iso = sub['iso'][0]
+        fits_file = fits.open(ref_fits)
+        fits_file[0].header['SNR'] = snr_stack
+        fits_file[0].header['JD-OBS'] = jdb+2400000
+
+        cols = [
+            fits.Column(name='Arg',  format='D', array=grid_pepsi),
+            fits.Column(name='Fun',  format='D', array=stack),
+            fits.Column(name='Var',  format='D', array=0*stack),
+            fits.Column(name='Mask', format='L', array=(0*stack).astype(bool))
+        ]
+
+        hdu = fits.BinTableHDU.from_columns(cols)
+        fits_file[1] = hdu
+
+        output_file = output_dir+'RAW/PEPSI.'+ref_iso+'.fits'
+        fits_file.writeto(output_file, overwrite=True)
+        new_summary.append([output_file,jdb,snr_stack])
+        print(' [INFO] Spectrum %s created!'%(output_file))
+    new_summary = pd.DataFrame(new_summary,columns=['fileroot','jdb','snr'])
+    return new_summary
+
+def read_pepsi(file,dir_root,force=False,debug=False):
+    fname = file.split('/')[-1]
+    outname = dir_root+'WORKSPACE/RASSINE_Stacked_spectrum_B0.00_'+fname.replace('.fits','.p')
+    if (not os.path.exists(outname))|(force):
+        t = fits.open(file)
+        flux = t[1].data['Fun']
+        wave = t[1].data['Arg']
+        flux_std = 0*flux
+        spec = myc.tableXY(wave,flux,flux_std)
+        spec = rassine_normalise(spec)
+        if debug:
+            plt.plot(spec.x,spec.y/spec.rassine_continuum.y)
+
+        if len(spec.x)==len(spec.rassine_continuum.y):
+            export = {
+                'wave':spec.x,
+                'flux':spec.y,
+                'matching_diff':{'continuum_linear':spec.rassine_continuum.y},
+                'parameters':{'arcfiles':[file]}}
+            pickle.dump(export,open(outname,'wb'))
+        else:
+            print('[WARNING] RASSINE continuum size wrong, potential multiprocessing issue')
+    
 
 def read_sophie(file,dir_root,force=False,debug=False):
     fname = file.split('/')[-1]
@@ -866,7 +1017,7 @@ def get_vmacro(teff,logg,feh,source='Cretignier+26'):
     return value
 
     
-def extract_header(files, instru, debug=False, ra=None, dec=None):
+def extract_header(files, instru, debug=False, ra=None, dec=None, source=None):
     instrument = instru.split('_')[0]
     ins = instrument[0:5]
     if files[0].split('/')[-1][0:7]=='RASSINE':
@@ -876,6 +1027,9 @@ def extract_header(files, instru, debug=False, ra=None, dec=None):
         ins = 'harps'
     if ins=='NEID-':
         ins='NEID'
+
+    if source=='GR8':
+        ins = 'GR8'
     
     all_infos = []
     kws = {'SOPHI':{'HIERARCH OHP DRS BJD':'rjd', 'HIERARCH OHP DRS BERV':'berv', 'HIERARCH OHP DRS CAL EXT SN30':'snr', 'HIERARCH OHP TARG ALPHA':'RA', 'HIERARCH OHP TARG DELTA':'DEC'},
@@ -886,9 +1040,11 @@ def extract_header(files, instru, debug=False, ra=None, dec=None):
            'PEPSI':{'JD-TDB':'rjd', 'SSBVEL':'berv', 'SNR':'snr', 'RA':'RA', 'DEC':'DEC'},
            'CORAL':{'ESO DRS BJD':'rjd', 'ESO DRS BERV':'berv', 'ESO DRS SPE EXT SN50':'snr', 'ESO TEL TARG ALPHA':'RA', 'ESO TEL TARG DELTA':'DEC'},
            'ESPRE':{'HIERARCH ESO QC BJD':'rjd', 'HIERARCH ESO QC BERV':'berv', 'HIERARCH ESO QC ORDER100 SNR':'snr', 'HIERARCH ESO TEL1 TARG ALPHA':'RA', 'HIERARCH ESO TEL1 TARG DELTA':'DEC'},
+           'GR8':{'ESTSNR':'snr','RA':'RA', 'DEC':'DEC'},
            'RASSINE':{'jdb':'rjd', 'berv':'berv', 'SNR_5500':'snr'},
            'TBD':{'KEYWORD BJD':'rjd', 'KEYWORD BERV':'berv', 'KEYWORD SNR':'snr', 'KEYWORD ALPHA':'RA', 'KEYWORD DELTA':'DEC'},
            }
+    
     for file in tqdm(files):
         if ins!='RASSINE':
             header = fits.open(file)[0].header
@@ -901,6 +1057,10 @@ def extract_header(files, instru, debug=False, ra=None, dec=None):
     if debug:
         snaky_help()
         print(summary, ins)
+
+    if ins=='GR8':
+        summary['rjd'] = np.nan
+        summary['berv'] = np.nan
 
     if ins=='PEPSI':
         for i in summary.index:
@@ -2330,6 +2490,9 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False, std_
 
         if ins_calib == 'NEID-HE':
             ins_calib = 'SOPHIE'
+        
+        if ins_calib=='PEPSI':
+            ins_calib = 'ESPRESSO'
 
         calib_ins = pd.read_csv(MATERIAL_DIR+'/Table_calib_vsini_%s.csv'%('GARFIELD'),index_col=0)
         calib_ins = myc.tableXY(calib_ins[ins_calib],calib_ins['HARPN'],0*calib_ins[ins_calib]) #reference HARPN
@@ -3127,6 +3290,11 @@ def mhk_rhk(mhk):
     mhk[mhk<-40] = -40
     rhk = np.array(np.log10((mhk-mhk_c1)/mhk_c2))    
     return rhk
+
+def rhk_mhk(rhk):
+    rhk = np.array(rhk)
+    mhk = mhk_c1 + mhk_c2 * 10**rhk
+    return mhk
 
 def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy, sub_dico='matching_diff'):
     

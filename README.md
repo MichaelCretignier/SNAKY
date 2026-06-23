@@ -1,4 +1,4 @@
-# SNAKY v1.3.0
+# SNAKY v1.4.0
 
 <p align="center">
   <img src="logo.png" alt="Project logo" width="400">
@@ -367,6 +367,7 @@ SNAKY can process spectra from the following products from the following spectro
 | CORALIE98 | irrelevant | S1D | CORALIE98_3.3 |
 | CORALIE07 | irrelevant | S1D | CORALIE07_3.4 |
 | CORALIE14 | irrelevant | S1D | CORALIE14_3.8 |
+| PEPSI | irrelevant | S1D | PEPSI_1.0 |
 | [SOPHIE](http://atlas.obs-hp.fr/sophie/) | irrelevant | S1D | SOPHIE_0.5 |
 | [SOPHIE-HE](http://atlas.obs-hp.fr/sophie/) (high efficiency) | irrelevant | S1D | SOPHIE-HE_0.5 |
 | [HARPN](http://archives.ia2.inaf.it/tng/) | >= 3.0.1 (new) | S1D |  HARPN_3.0.1 |

@@ -40,9 +40,8 @@ class start():
         self.sy_output_dir = myv.WORKSPACE+'/'
         self.sy_job_id = job_id
         self.warning_printed = 0
-        self.debug = False
         self.prd_ext = ''
-        self.sy_user_object = {'Name': None,'Ra': None,'Dec': None,'Rv_sys': None,'Prot': None,'Rs': None,'Ms': None,'Teff': None,'Log_g': None,'FeH': None, 'stellar_template': None}
+        self.sy_user_object = {'Name': None,'Ra': None,'Dec': None,'Rv_sys': None,'Prot': None,'Rs': None,'Ms': None,'Teff': None,'Log_g': None,'FeH': None,'RHK': None, 'stellar_template': None}
         self.missing_file = False
 
     def set_output_dir(self,outputdir):
@@ -52,12 +51,13 @@ class start():
         dir_root = self.sy_dir_root
         starname = self.sy_starname
         ins = self.sy_instrument
+        source = self.sy_source_files
         if starname.split('_')[0]!='Sun':
             print(' [INFO] Formatting SNAKY with basic minimal information...')
             dace_table = mym.import_dace_table(dir_root)
             files = np.array(dace_table['fileroot'])
             sinfo = mym.import_star_info(dir_root)
-            query = mym.extract_header(files, ins, debug=self.debug, dec=dec, ra=ra)
+            query = mym.extract_header(files, ins, debug=self.debug, dec=dec, ra=ra, source=source)
             sinfo['Ra']['fixed'] = np.median(query['RA'])
             sinfo['Dec']['fixed'] = np.median(query['DEC'])
             pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(starname),'wb'))
@@ -92,7 +92,7 @@ class start():
         else:
             print(Fore.YELLOW+' [ERROR] The atmospheric databases is not yet existing.'+Fore.RESET)
 
-    def set_star(self, ra=None, dec=None, rv_sys=None, prot=None, rs=None, ms=None, teff=None, logg=None, feh=None, stellar_template=None):
+    def set_star(self, ra=None, dec=None, rv_sys=None, prot=None, rs=None, ms=None, teff=None, logg=None, feh=None, rhk=None, stellar_template=None):
         sy_user_object = {
             'Name'  : self.sy_starname,
             'Ra'    : ra,
@@ -104,6 +104,7 @@ class start():
             'Teff'  : teff,
             'Log_g'  : logg,
             'FeH'   : feh,
+            'RHK'   : rhk,
             'stellar_template' : None,
         }
         
@@ -138,7 +139,7 @@ class start():
         
         self.sy_time_required_est = total_time_required
 
-    def set_dataset(self, starname, ins, files, sub_dico='matching_diff'):
+    def set_dataset(self, starname, ins, files, sub_dico='matching_diff', source=None):
         if len(files)==0:
             print(Fore.YELLOW+' [WARNING] The input list of files is empty')
 
@@ -158,6 +159,7 @@ class start():
 
         self.sy_files = files
         self.sy_sub_dico = sub_dico
+        self.sy_source_files = source
 
         self.sy_rassine_db = False
         self.sy_yarara_db = False
@@ -197,7 +199,7 @@ class start():
 
         self.set_starinfo()
 
-        if copy_rassine_files:
+        if (copy_rassine_files)&(self.sy_rassine_db):
             print(' [INFO] Copying RASSINE files...')
             for f in self.sy_files:
                 os.system('cp '+f+' '+dir_root+'WORKSPACE/')
@@ -305,6 +307,7 @@ class start():
         ins = self.sy_instrument
         files = self.sy_files
         dir_root = self.sy_dir_root
+        source = self.sy_source_files
         dace_table = mym.import_dace_table(dir_root)
 
         if self.sy_rassine_db==False:
@@ -317,9 +320,20 @@ class start():
             elif (ins.split('_')[0][0:5]=='HARPS')|(ins.split('_')[0]=='HARPN')|(ins.split('_')[0]=='ESPRESSO'):
                 for f in files:
                     mym.read_espresso(f,dir_root,force=True)
+            elif ins[0:5]=='PEPSI':
+                new_summary = mym.pepsi_summary(files,self.sy_dir_root)
+                files = new_summary['fileroot'].values
+                self.sy_files = files
+                self.init_workspace()
+                dace_table = mym.import_dace_table(dir_root)
+                for f in files:
+                    mym.read_pepsi(f,dir_root,force=True)
             elif ins[0:4]=='NEID':
                 for f in files:
                     mym.read_neid(f,dir_root,force=True)
+            elif source=='GR8':
+                for f in files:
+                    mym.read_gr8(f,dir_root,ins.split('_')[0],force=True)
             else:
                 for f,w0,dw in zip(files,cval1,cdelta1): #no more used
                     mym.read_static(f,dir_root,w0,dw,force=True)
@@ -354,7 +368,7 @@ class start():
 
         del sts_err
     
-        anomalous = np.sum((sts>1.02*10000)|(sts<0),axis=1)*100/len(wave_grid)
+        anomalous = np.sum((sts>1.02*10000)|(sts<0.01),axis=1)*100/len(wave_grid)
         anomalous = np.round(anomalous,0).astype('int')
 
         del wave_grid
@@ -754,6 +768,8 @@ class start():
         sinfo = mym.import_star_info(dir_root)
         material = mym.import_material(dir_root)
 
+        rhk_ref = self.sy_user_object['RHK']
+
         ccf_output = mym.import_ccf(dir_root,'G2')
         rv = ccf_output['rv'].y
         rv_sys_correction = np.nanmedian(rv)/1000
@@ -792,7 +808,7 @@ class start():
         sinfo = myf.update_info_lvl2(sinfo,'Prot','VSINI', prot_vsini)
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
-        mym.plot_mhk(dir_root)
+        mym.plot_mhk(dir_root,rhk_ref=rhk_ref)
         mym.create_finch_db(dir_root,sub_dico=self.sy_sub_dico)
 
     def compute_spectroscopy(self):

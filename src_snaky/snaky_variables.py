@@ -102,6 +102,7 @@ instrument_res_kms = {
     'ESPRESSO': 2.74,     # R ≈ 109 000
     'ESPRESSO18': 2.74,   # R ≈ 109 000
     'ESPRESSO19': 2.74,   # R ≈ 109 000
+    'PEPSI': 2.89,        # R ≈ 109 000
 }
 
 instrument_lat_deg = {
@@ -119,6 +120,7 @@ instrument_lat_deg = {
     'UVES':-24.6270,       
     'HERMES':-29.2567,     
     'FEROS':-29.2584,     
+    'PEPSI': 32.7013,
 }
 
 instrument_lon_deg = {
@@ -135,7 +137,8 @@ instrument_lon_deg = {
     'FIES':-17.8890,       
     'UVES':-70.4045,       
     'HERMES':-70.7345,     
-    'FEROS':-70.7346,     
+    'FEROS':-70.7346,    
+    'PEPSI': -109.8891, 
 }
 
 instrument_altm = {
@@ -153,6 +156,7 @@ instrument_altm = {
     'UVES'    : 2635,   # Paranal VLT
     'HERMES'  : 2400,   # La Silla (Mercator)
     'FEROS'   : 2400,   # La Silla (MPG/ESO 2.2m)
+    'PEPSI'   : 3191,   # LBT 
 }
 
 

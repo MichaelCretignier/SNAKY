@@ -132,10 +132,13 @@ def check_none_negative_values(array):
             where = np.hstack([where,np.array([0,len(neg)-1])])
             where = where[where.argsort()]
             for j in range(len(where)-1):
-                if np.mean(array[neg[where[j]]:neg[where[j+1]]+1])<len(array)/2:
-                    array[neg[where[j]]:neg[where[j+1]]+1] = array[neg[where[j+1]]+1]
-                else:
-                    array[neg[where[j]]:neg[where[j+1]]+1] = array[neg[where[j]]-1]
+                try:
+                    if np.mean(array[neg[where[j]]:neg[where[j+1]]+1])<len(array)/2:
+                        array[neg[where[j]]:neg[where[j+1]]+1] = array[neg[where[j+1]]+1]
+                    else:
+                        array[neg[where[j]]:neg[where[j+1]]+1] = array[neg[where[j]]-1]
+                except IndexError:
+                    pass
     return array
 
 
