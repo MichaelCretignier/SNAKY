@@ -74,7 +74,7 @@ pip install -r requirements_3.10.15.txt
 
 *SNAKY contains materials stored in a directory that need to be downloaded on Zenodo `https://doi.org/10.5281/zenodo.20659152`*.
 
-You can run the following code that will curl/download the directory, unzip it, and move it in `../SNAKY/`
+You can run the following code that will download via `curl` the directory, unzip it, and move it in `../SNAKY/`
 
 ```bash
 cd .../GitHub/SNAKY/src_snaky/
