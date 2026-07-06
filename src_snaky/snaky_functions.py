@@ -15,7 +15,8 @@ import pandas as pd
 import scipy.stats as stats
 from scipy.stats import norm
 from astropy import units as u
-from astropy.coordinates import EarthLocation
+from astropy.coordinates import SkyCoord,EarthLocation
+import astropy.coordinates as astrocoord
 import astropy.time as Time
 
 from scipy import ndimage, signal
@@ -739,7 +740,7 @@ def ccf(wave, spec1, spec2, extended=1500, rv_range=45, oversampling=3, spec1_st
 
     rv_max = int(np.log10((rv_range/299.792e3)+1)/dwave)
     rv_shift = np.arange(-rv_max,rv_max+1,1)
-    for k in tqdm(rv_shift):
+    for k in rv_shift:
         new_spec2 = np.hstack([new_spec[:,-k:],new_spec[:,:-k]])
         result = spec1 @ new_spec2.T
         result /= sum_spec
@@ -1097,7 +1098,7 @@ def master_spectrum(wave_grid, flux, shift_ms=None, method = 'median'):
         master = np.zeros_like(wave_grid, dtype='float32')
         chunks = np.array_split(np.arange(len(wave_grid)), 5)
 
-        for idx in tqdm(chunks):
+        for idx in chunks:
             wave = wave_grid[idx]
             sts = np.empty((len(flux), len(wave)), dtype='float32')
             for m, rv in enumerate(shift_ms):

@@ -16,6 +16,7 @@ from tqdm import tqdm
 import warnings
 import matplotlib.colors as mplcolors
 import matplotlib.cm as cmx
+from colorama import Fore
 
 from . import snaky_functions as myf
 from . import snaky_variables as myv
@@ -67,7 +68,7 @@ class table(object):
             
             if (len(table)!=len(color)):
                 color = np.arange(len(table))
-                print('[WARNING] The color vector has not the same size (%.0f) than the table : '%(len(color)),np.shape(table))
+                print(Fore.YELLOW+'[WARNING] The color vector has not the same size (%.0f) than the table : '%(len(color)),np.shape(table)+Fore.RESET)
 
         index = color
         mask = np.isnan(index)
@@ -884,15 +885,15 @@ class tableXY(object):
         model_xy = tableXY(x,1-model)
         model_xy.find_min(vicinity=5)
         rms2 = np.std(residuals)
-        print(' [INFO] RMS model 1-component = %.2f'%(rms1*100))
-        print(' [INFO] RMS model 2-components = %.2f'%(rms2*100))
+        myv.vprint(' [INFO] RMS model 1-component = %.2f'%(rms1*100))
+        myv.vprint(' [INFO] RMS model 2-components = %.2f'%(rms2*100))
 
         if amp1<amp2:
             ratio = np.round(100*amp1/amp2,2)
         else:
             ratio = np.round(100*amp2/amp1,2)
 
-        print(' [INFO] Ratio of the two fitted components = %.1f'%(ratio))
+        myv.vprint(' [INFO] Ratio of the two fitted components = %.1f'%(ratio))
         condition = 0
         if (ratio>10)&(len(model_xy.x_min)>1)&(rms2/rms1<0.80):
             condition = 1
@@ -913,11 +914,11 @@ class tableXY(object):
         plt.legend(loc=4)
         if condition:
             plt.title('Two components detected!')
-            print(' [INFO] Two components detected')
+            myv.vprint(' [INFO] Two components detected')
         else:
             plt.subplot(2,1,1)
             plt.title('One component detected!')
-            print(' [INFO] Only one component detected')
+            myv.vprint(' [INFO] Only one component detected')
         plt.subplots_adjust(hspace=0.35)
         ret
     
@@ -960,7 +961,7 @@ class tableXY(object):
 
             used_region = ((10**log_grid)>=mask_shifted[1][:,np.newaxis])&((10**log_grid)<=mask_shifted[0][:,np.newaxis])
             used_region = (np.sum(used_region,axis=0)!=0).astype('bool')
-            print('\n [INFO] Percentage of the spectrum used : %.1f [%%] \n'%(100*sum(used_region)/len(grid)))
+            myv.vprint('\n [INFO] Percentage of the spectrum used : %.1f [%%] \n'%(100*sum(used_region)/len(grid)))
 
             if not os.path.exists(static):
                 mask_wave = np.log10(mask[:,0])
@@ -1039,12 +1040,12 @@ class tableXY(object):
                 
                 ccf_profile.fit_gaussian(guess=[-amp,center,width,maxi],Plot=Plot,norm=norm)
                 try:
-                    print('\n [INFO] Using GND profile for the fit')
+                    myv.vprint('\n [INFO] Using GND profile for the fit')
                     ccf_profile.fit_GND(guess=[-amp,center,width,maxi,2],color='g',beta_fixed=0,Plot=Plot,norm=norm)
                     self.ccf_params = ccf_profile.params
                     self.params_beta = ccf_profile.params['beta'].value
                 except:
-                    print(' [INFO] Using Gaussian profile (GND=2) for the fit')
+                    myv.vprint(' [INFO] Using Gaussian profile (GND=2) for the fit')
                     ccf_profile.fit_gaussian(guess=[-amp,center,width,maxi],Plot=Plot,norm=norm)
                     self.ccf_params = ccf_profile.params
                     self.params_beta = 2.0
@@ -1063,8 +1064,8 @@ class tableXY(object):
                         res.plot(color='gray',ls='-',offset=1.025)
                         plt.axvline(x=res.x_min[0],color='r',ls='-.',label='RV =%.1f | CT = %.1f'%(center2,contrast2*100))
                         self.warning_multipeak = 1
-                        print(' [WARNING] Multi peak detected!')
-                        print(' [INFO] CT1 = %.1f (RV=%.1f km/s) & CT2 = %.1f (RV=%.1f km/s)'%(contrast1*100,contrast2*100,center1,center2))
+                        print(Fore.YELLOW +' [WARNING] Multi peak detected!'+Fore.RESET)
+                        print(Fore.YELLOW +' [INFO] CT1 = %.1f (RV=%.1f km/s) & CT2 = %.1f (RV=%.1f km/s)'%(contrast1*100,contrast2*100,center1,center2)+Fore.RESET)
                         plt.legend(loc=4)
                 except:
                     pass

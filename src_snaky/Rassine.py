@@ -300,7 +300,10 @@ def main(argv=None):
     if len(mask_spectre)>0:
         print(' Nan values were found, replaced by left and right average...')
         for j in mask_spectre:
-            spectrei[j] = (spectrei[j-1]+spectrei[j+1])/2    
+            if j!=0 and j!=len(spectrei)-1:
+                spectrei[j] = (spectrei[j-1]+spectrei[j+1])/2
+            else:
+                spectrei[j] = 0    
 
     mask_grid = np.arange(len(grid))[(grid-grid)!=0]
     mask_spectre = np.arange(len(grid))[(spectrei-spectrei)!=0]        

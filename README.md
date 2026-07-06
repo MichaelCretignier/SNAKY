@@ -373,7 +373,7 @@ SNAKY can process spectra from the following products from the following spectro
 | [HARPN](http://archives.ia2.inaf.it/tng/) | >= 3.0.1 (new) | S1D |  HARPN_3.0.1 |
 | [ESPRESSO](https://archive.eso.org/scienceportal/home) | irrelevant | S1D |  ESPRESSO_3.3.6 |
 | [NEID](https://neid.ipac.caltech.edu) | irrelevant | E2DS |  NEID_1.0 |
-| [NEID-HE](https://neid.ipac.caltech.edu) (high efficiency) | irrelevant | ED2S |  NEID-HE_1.0 |
+| [NEID-HE](https://neid.ipac.caltech.edu) (high efficiency) | irrelevant | E2DS |  NEID-HE_1.0 |
 | [HARPS03](https://archive.eso.org/scienceportal/home) | 3.5 (old) | S1D |  HARPS03_3.5 |
 | [HARPS15](https://archive.eso.org/scienceportal/home) | 3.5 (old) | S1D |  HARPS15_3.5 |
 | [HARPS03](https://dace.unige.ch) | >= 3.3.6 (new) | S1D |  HARPS03_3.3.6 |

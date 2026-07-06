@@ -36,13 +36,15 @@ class SnakyError(Exception):
     pass
 
 class start():
-    def __init__(self, job_id=0):
+    def __init__(self, job_id=0, verbose=True):
         self.sy_output_dir = myv.WORKSPACE+'/'
         self.sy_job_id = job_id
         self.warning_printed = 0
         self.prd_ext = ''
         self.sy_user_object = {'Name': None,'Ra': None,'Dec': None,'Rv_sys': None,'Prot': None,'Rs': None,'Ms': None,'Teff': None,'Log_g': None,'FeH': None,'RHK': None, 'stellar_template': None}
         self.missing_file = False
+        if not verbose:
+            myv.VERBOSE = False
 
     def set_output_dir(self,outputdir):
         self.sy_output_dir = outputdir
@@ -53,7 +55,7 @@ class start():
         ins = self.sy_instrument
         source = self.sy_source_files
         if starname.split('_')[0]!='Sun':
-            print(' [INFO] Formatting SNAKY with basic minimal information...')
+            myv.vprint(' [INFO] Formatting SNAKY with basic minimal information...')
             dace_table = mym.import_dace_table(dir_root)
             files = np.array(dace_table['fileroot'])
             sinfo = mym.import_star_info(dir_root)
@@ -78,8 +80,8 @@ class start():
         if os.path.exists(filename):
             db = pd.read_csv(filename,index_col=0)
 
-            print('\n [INFO] Current SNAKY atmos DB:\n')
-            print(db)
+            myv.vprint('\n [INFO] Current SNAKY atmos DB:\n')
+            myv.vprint(db)
 
             db_values = db.loc[db['ins']=='ALLINS_MERGED']
             print(Fore.GREEN+'\n [QUERY] Atmospheric database queried:'+Fore.RESET)
@@ -111,7 +113,7 @@ class start():
         for kw in sy_user_object:
             if sy_user_object[kw] is not None:
                 self.sy_user_object[kw] = sy_user_object[kw]
-                print(' [INFO] Stellar parameters updated: %s = %s'%(kw,str(sy_user_object[kw])))
+                myv.vprint(' [INFO] Stellar parameters updated: %s = %s'%(kw,str(sy_user_object[kw])))
     
     def estimate_computation_time(self):
         N = len(self.sy_files)
@@ -131,17 +133,23 @@ class start():
         rassine_time_required = str(int(rassine_processing//60))+'m'+str(int(rassine_processing - 60*(rassine_processing//60)))+'s'
         snaky_time_required = str(int(snaky_processing//60))+'m'+str(int(snaky_processing - 60*(snaky_processing//60)))+'s'
 
-        print(' [INFO] For N=%.0f spectra:'%(N))
+        print(Fore.CYAN+' [INFO] For N=%.0f spectra:'%(N))
 
-        print(Fore.CYAN+"\n [INFO] RASSINE computation time: %s %s"%(rassine_time_required,['','(SKIPPED)'][int(self.sy_rassine_db)]))
+        print("\n [INFO] RASSINE computation time: %s %s"%(rassine_time_required,['','(SKIPPED)'][int(self.sy_rassine_db)]))
         print(" [INFO] SNAKY computation time: "+snaky_time_required)
         print("\n [INFO] Total computation time estimated: "+total_time_required+" \n"+Fore.RESET)
         
         self.sy_time_required_est = total_time_required
 
     def set_dataset(self, starname, ins, files, sub_dico='matching_diff', source=None):
+        
+        sizes = np.array([os.path.getsize(f) for f in files])
+        files = list(np.array(files)[sizes>0])
+        if np.sum(sizes==0):
+            print(Fore.YELLOW+" [WARNING] %.0f files are empty! \n"%(np.sum(sizes==0))+Fore.RESET)        
+        
         if len(files)==0:
-            print(Fore.YELLOW+' [WARNING] The input list of files is empty')
+            raise SnakyError('The input list of files is empty')
 
         starname,ins = mym.create_snaky_dir(self.sy_output_dir,starname,ins)
         self.sy_starname = starname
@@ -200,9 +208,11 @@ class start():
         self.set_starinfo()
 
         if (copy_rassine_files)&(self.sy_rassine_db):
-            print(' [INFO] Copying RASSINE files...')
+            myv.vprint(' [INFO] Copying RASSINE files...')
             for f in self.sy_files:
-                os.system('cp '+f+' '+dir_root+'WORKSPACE/')
+                filename = f.split('/')[-1]
+                if not os.path.exists(dir_root+'WORKSPACE/'+filename):
+                    os.system('cp '+f+' '+dir_root+'WORKSPACE/')
             
         if self.sy_yarara_db:
             file_test = self.sy_files[0]
@@ -318,8 +328,15 @@ class start():
                 for f in files:
                     mym.read_sophie(f,dir_root,force=True)
             elif (ins.split('_')[0][0:5]=='HARPS')|(ins.split('_')[0]=='HARPN')|(ins.split('_')[0]=='ESPRESSO'):
-                for f in files:
-                    mym.read_espresso(f,dir_root,force=True)
+                if source=='ESO':
+                    for f in files:
+                        mym.read_eso(f,dir_root,force=True)
+                elif source=='IA2':
+                    for f in files:
+                        mym.read_ia2(f,dir_root,force=True)
+                else:
+                    for f in files:
+                        mym.read_espresso(f,dir_root,force=True)
             elif ins[0:5]=='PEPSI':
                 new_summary = mym.pepsi_summary(files,self.sy_dir_root)
                 files = new_summary['fileroot'].values
@@ -334,21 +351,27 @@ class start():
             elif source=='GR8':
                 for f in files:
                     mym.read_gr8(f,dir_root,ins.split('_')[0],force=True)
+            elif source=='ESO':
+                for f in files:
+                    mym.read_eso(f,dir_root,force=True)
             else:
                 for f,w0,dw in zip(files,cval1,cdelta1): #no more used
                     mym.read_static(f,dir_root,w0,dw,force=True)
             self.sy_rassine_files = np.sort(glob.glob(dir_root+'WORKSPACE/RASSINE*.p'))
-            print(' [INFO] Venting DACE table in RASSINE files...')
+            myv.vprint(' [INFO] Venting DACE table in RASSINE files...')
             for rf in self.sy_rassine_files:
                 file_to_update = pd.read_pickle(rf)
                 arcfile = file_to_update['parameters']['arcfiles'][0]
                 entry = dace_table.loc[dace_table['fileroot']==arcfile]
                 file_to_update['parameters']['jdb'] = entry['rjd'].values[0]
-                file_to_update['parameters']['berv'] = entry['berv'].values[0]
+                if entry['berv'].values[0]==entry['berv'].values[0]:
+                    file_to_update['parameters']['berv'] = entry['berv'].values[0]
+                else:
+                    file_to_update['parameters']['berv'] = entry['berv_computed'].values[0]
                 file_to_update['parameters']['SNR_5500'] = entry['snr'].values[0]
                 pickle.dump(file_to_update,open(rf,'wb'))
         else:
-            print(' [INFO] No preprocessing needed, spectra already in RASSINE format.')
+            myv.vprint(' [INFO] No preprocessing needed, spectra already in RASSINE format.')
             self.sy_rassine_files = self.sy_files
 
     def load_data(self):
@@ -382,11 +405,11 @@ class start():
         elif np.min(anomalous)<10:
             kept = (anomalous<10)
         else:
-            kept = (anomalous<15)
+            kept = (anomalous<[15,35][int(self.sy_instrument.split('_')[0] in ['UVES'])])
 
-        print(' [INFO] Number of good spectra = %.0f'%(sum(kept)))
-        print(' [INFO] Number of anomalous spectra = %.0f'%(len(kept)-sum(kept)))
-        print(' [INFO] criterion = ',anomalous)
+        myv.vprint(' [INFO] Number of good spectra = %.0f'%(sum(kept)))
+        myv.vprint(' [INFO] Number of anomalous spectra = %.0f'%(len(kept)-sum(kept)))
+        myv.vprint(' [INFO] criterion = ',anomalous)
 
         summary['flag1'] = 0
         summary.loc[summary.index[~kept],'flag1'] = 1
@@ -425,7 +448,7 @@ class start():
             rv_sys_approx = rv_sys[np.argmin(anomalous)]
         
         rv_sys_std = np.nanstd(rv_sys)
-        print('\n [INFO] Final aproximated RV_sys = %.1f +/- %.1f kms'%(rv_sys_approx,rv_sys_std))
+        myv.vprint('\n [INFO] Final aproximated RV_sys = %.1f +/- %.1f kms'%(rv_sys_approx,rv_sys_std))
 
         mask = np.ones(len(rv_sys)).astype('bool')
         if len(rv_sys)>10:
@@ -445,7 +468,7 @@ class start():
             files = [np.array(summary['filename'])]
             pd.DataFrame(np.array([files[-1],rv_sys]).T,columns=['files','rv_sys']).to_csv(dir_root+'WARNING/RV_SYS_JITTER.csv')
             rv_sys_approx = mym.yarara_rough_rv_sys(spec,teff=teff,verbose=self.debug)
-        print('\n [INFO] RV_sys initial guess = %.1f +/- %.1f kms'%(rv_sys_approx,rv_sys_std))
+        myv.vprint('\n [INFO] RV_sys initial guess = %.1f +/- %.1f kms'%(rv_sys_approx,rv_sys_std))
         sinfo2,sb_flag1 = mym.yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag='')
 
         dace_summary = pd.read_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv',index_col=0)
@@ -520,8 +543,8 @@ class start():
             ct = ccf_output['contrast'].y
             med_ct = np.nanmedian(ct)
             kept2 = abs(ct-med_ct)<2
-            print(' [INFO] Number of good spectra (after CCF check) = %.0f'%(sum(kept2)))
-            print(' [INFO] Number of bad spectra (after CCF check) = %.0f'%(len(kept)-sum(kept)+len(kept2)-sum(kept2)))
+            myv.vprint(' [INFO] Number of good spectra (after CCF check) = %.0f'%(sum(kept2)))
+            myv.vprint(' [INFO] Number of bad spectra (after CCF check) = %.0f'%(len(kept)-sum(kept)+len(kept2)-sum(kept2)))
             if np.sum(kept2)==0:
                 kept2 = np.ones(len(ct)).astype('bool')
             summary['flag2'] = 0
@@ -615,7 +638,7 @@ class start():
         teff,feh,logg,M,R,BV,vmicro,vmacro = atmos
 
         suffixe = 'ATLAS_T%.0f_g%.1f'%(np.round(teff,-2),np.round(logg,1))
-        print(' [INFO] Atmospheric model set to : %s'%(suffixe))
+        myv.vprint(' [INFO] Atmospheric model set to : %s'%(suffixe))
 
         sinfo = myf.update_info_lvl2(sinfo,'Mstar','SNAKY',M)   
         sinfo = myf.update_info_lvl2(sinfo,'Rstar','SNAKY',R)
@@ -767,49 +790,50 @@ class start():
         summary = mym.import_summary(dir_root)
         sinfo = mym.import_star_info(dir_root)
         material = mym.import_material(dir_root)
+        wave_min = np.min(material['wave'][material['reference_spectrum']>0])
+        if wave_min<4000:
+            rhk_ref = self.sy_user_object['RHK']
 
-        rhk_ref = self.sy_user_object['RHK']
+            ccf_output = mym.import_ccf(dir_root,'G2')
+            rv = ccf_output['rv'].y
+            rv_sys_correction = np.nanmedian(rv)/1000
 
-        ccf_output = mym.import_ccf(dir_root,'G2')
-        rv = ccf_output['rv'].y
-        rv_sys_correction = np.nanmedian(rv)/1000
+            rv_sys = sinfo['Rv_sys']['SNAKY'] - rv_sys_correction
+            if self.sy_user_object['Teff'] is not None:
+                teff = self.sy_user_object['Teff']
+            else:
+                teff = sinfo['Teff']['SNAKY']
 
-        rv_sys = sinfo['Rv_sys']['SNAKY'] - rv_sys_correction
-        if self.sy_user_object['Teff'] is not None:
-            teff = self.sy_user_object['Teff']
-        else:
-            teff = sinfo['Teff']['SNAKY']
+            files = ccf_output['filename']
+            mask = myf.in1d(summary['filename'],files)
+            files = (self.sy_sts_wave,self.sy_sts_flux[mask],files)
 
-        files = ccf_output['filename']
-        mask = myf.in1d(summary['filename'],files)
-        files = (self.sy_sts_wave,self.sy_sts_flux[mask],files)
+            proxy = np.array(summary.loc[mask,'CaII'])        
+            dico, rhk, mhk = mym.yarara_activity_mhk(dir_root, files, rv_sys, rv, teff, material, proxy)
+            
+            for kw in ['RHK','RHK_std','MHK','MHK_std']:
+                if kw in summary.keys():
+                    del summary[kw]
+            summary = pd.merge(summary,dico[['filename','RHK','RHK_std','MHK','MHK_std']],on='filename',how='left')
+            summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
 
-        proxy = np.array(summary.loc[mask,'CaII'])        
-        dico, rhk, mhk = mym.yarara_activity_mhk(dir_root, files, rv_sys, rv, teff, material, proxy)
-        
-        for kw in ['RHK','RHK_std','MHK','MHK_std']:
-            if kw in summary.keys():
-                del summary[kw]
-        summary = pd.merge(summary,dico[['filename','RHK','RHK_std','MHK','MHK_std']],on='filename',how='left')
-        summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
+            sinfo = myf.update_info_lvl2(sinfo,'RHK','SNAKY',np.round(rhk,3))
+            sinfo = myf.update_info_lvl2(sinfo,'MHK','SNAKY',np.round(mhk,1))
 
-        sinfo = myf.update_info_lvl2(sinfo,'RHK','SNAKY',np.round(rhk,3))
-        sinfo = myf.update_info_lvl2(sinfo,'MHK','SNAKY',np.round(mhk,1))
+            prot = myf.conv_rhk_prot(sinfo['RHK']['SNAKY'], sinfo['BV']['SNAKY'])
+            prot_vsini = np.round(sinfo['Rstar']['SNAKY']*25/(sinfo['Vsini']['SNAKY']/2),1)
+            prot1 = np.round(prot[2],1)
+            prot2 = np.round(prot[0],1)
+            prot1 = np.max([prot1,1])
+            prot2 = np.max([prot2,1])
+            prot_vsini = np.min([prot_vsini,100])
+            sinfo = myf.update_info_lvl2(sinfo,'Prot','Mamaj+08', prot1)
+            sinfo = myf.update_info_lvl2(sinfo,'Prot','Noyes+84', prot2)
+            sinfo = myf.update_info_lvl2(sinfo,'Prot','VSINI', prot_vsini)
+            pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
-        prot = myf.conv_rhk_prot(sinfo['RHK']['SNAKY'], sinfo['BV']['SNAKY'])
-        prot_vsini = np.round(sinfo['Rstar']['SNAKY']*25/(sinfo['Vsini']['SNAKY']/2),1)
-        prot1 = np.round(prot[2],1)
-        prot2 = np.round(prot[0],1)
-        prot1 = np.max([prot1,1])
-        prot2 = np.max([prot2,1])
-        prot_vsini = np.min([prot_vsini,100])
-        sinfo = myf.update_info_lvl2(sinfo,'Prot','Mamaj+08', prot1)
-        sinfo = myf.update_info_lvl2(sinfo,'Prot','Noyes+84', prot2)
-        sinfo = myf.update_info_lvl2(sinfo,'Prot','VSINI', prot_vsini)
-        pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
-
-        mym.plot_mhk(dir_root,rhk_ref=rhk_ref)
-        mym.create_finch_db(dir_root,sub_dico=self.sy_sub_dico)
+            mym.plot_mhk(dir_root,rhk_ref=rhk_ref)
+            mym.create_finch_db(dir_root,sub_dico=self.sy_sub_dico)
 
     def compute_spectroscopy(self):
         dir_root = self.sy_dir_root
@@ -1157,7 +1181,10 @@ class start():
         
         if force_pre: #1
             self.init_workspace(ra=ra, dec=dec, copy_rassine_files=copy_rassine_files)
-            self.preprocess()
+            try:
+                self.preprocess()
+            except KeyError:
+                raise SnakyError('[ERROR] Preprocessing failed. Some ESO files miss the expected keywords.')
             self.write_progress(1, 'pre', savefile=filename_time)
         qc = mym.check_force_pre(dir_root,step_nb='(1)')
 
