@@ -1,4 +1,4 @@
-# SNAKY v1.4.0
+# SNAKY v1.5.0
 
 <p align="center">
   <img src="logo.png" alt="Project logo" width="400">

@@ -23,10 +23,14 @@ from typing import Optional
 multiprocess_split = 3
 multiprocess_index = 0
 if len(sys.argv)>1:
-    optlist,args =  getopt.getopt(sys.argv[1:],'p:')
+    optlist,args =  getopt.getopt(sys.argv[1:],'p:f:N:')
     for j in optlist:
         if j[0] == '-p':
-            multiprocess_index = j[1]     
+            multiprocess_index = j[1]
+        if j[0] == '-f':
+            field_of_view = j[1]
+        if j[0] == '-N':
+            N_spectra = int(j[1])
 
 if multiprocess_index>(multiprocess_split-1):
     multiprocess_index = multiprocess_split-1
@@ -35,13 +39,14 @@ if multiprocess_index>(multiprocess_split-1):
 
 output_dir = '/Users/cretignier/Documents/Atmos_Vsini/SPECTRA_DB/' #downloaded spectra output dir
 output_dir_snaky = '/Users/cretignier/Documents/Atmos_Vsini/SNAKY_DB_SPECTRA/' #snaky output working space
+field_of_view = 2 #arcmin
+N_spectra = 5 #number of spectra per instrument to download and process
 
 db = pd.read_csv('/Users/cretignier/Documents/Atmos_Vsini/db_merge.csv',index_col=0)
 db2 = db.drop_duplicates(subset=['starname'])[['starname','RA','DEC']]
 
 # list of [[starname1,ra1,dec1],[starname2,ra2,dec2]]
 #db2 = [['HD26965',63.818000,-7.652870],['HD4628',None,None],['HD197481',None,None]]
-
 
 db3 = np.array_split(db2,multiprocess_split)
 db3 = db3[multiprocess_index] #multiprocessing splitting
@@ -223,12 +228,14 @@ for s,ra,dec in np.array(db2):
     if not os.path.exists(output_dir+s):
         print(f' [INFO] {s} downloading...')
         query_eso(
-            s, ra=ra, dec=dec, 
-            output_dir=output_dir,
-            search_by='coordinates',
-            fov=2,
-            N_spectra=5,
-            download=True)
+            s, 
+            ra = ra, 
+            dec = dec, 
+            output_dir = output_dir,
+            search_by = 'coordinates',
+            fov = field_of_view,
+            N_spectra = N_spectra,
+            download = True)
     else:
         print(f' [INFO] {s} spectra already downloaded, skipping...')
 
@@ -237,11 +244,13 @@ for s,ra,dec in np.array(db2):
     if not os.path.exists(output_dir+s+'/HARPN'):
         print(f' [INFO] {s} downloading...')
         query_tng(
-            s, ra=ra, dec=dec, 
-            output_dir=output_dir,
-            fov=2,
-            N_spectra=5,
-            download=True)
+            s, 
+            ra = ra, 
+            dec = dec, 
+            output_dir = output_dir,
+            fov = field_of_view,
+            N_spectra = N_spectra,
+            download = True)
     else:
         print(f' [INFO] {s} spectra already downloaded, skipping...')
 
