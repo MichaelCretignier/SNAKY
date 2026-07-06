@@ -1165,7 +1165,7 @@ class start():
             force_activity = bool(1-mym.check_force_activity(dir_root,step_nb='(10)'))&force_activity
             force_mhk = bool(1-mym.check_force_mhk(dir_root,step_nb='(11)'))&force_mhk
             force_spectroscopy = bool(1-mym.check_force_spectroscopy(dir_root,step_nb='(12)'))&force_spectroscopy
-            force_magcycle = bool(1-mym.check_force_magcycle(dir_root,step_nb='(3)'))&force_magcycle
+            force_magcycle = bool(1-mym.check_force_magcycle(dir_root,step_nb='(13)'))&force_magcycle
             print(' [INFO] Automatic sequence done!\n')
             print(' [INFO] Reduction launched, wait...\n')
 
