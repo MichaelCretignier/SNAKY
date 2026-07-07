@@ -320,6 +320,11 @@ class start():
         source = self.sy_source_files
         dace_table = mym.import_dace_table(dir_root)
 
+        rv_shift = np.zeros(len(files))
+        if ins.split('_')[0]=='UVES':
+            df = pd.DataFrame(files,columns=['fileroot'])
+            rv_shift = pd.merge(df,dace_table[['fileroot','berv_computed']],how='left')['berv_computed'].values*1000
+        
         if self.sy_rassine_db==False:
             if ins[0:6]=='SOPHIE':
                 for f in files:
@@ -330,7 +335,7 @@ class start():
             elif (ins.split('_')[0][0:5]=='HARPS')|(ins.split('_')[0]=='HARPN')|(ins.split('_')[0]=='ESPRESSO'):
                 if source=='ESO':
                     for f in files:
-                        mym.read_eso(f,dir_root,force=True)
+                        mym.read_eso(f,dir_root,ins.split('_')[0],force=True)
                 elif source=='IA2':
                     for f in files:
                         mym.read_ia2(f,dir_root,force=True)
@@ -350,10 +355,10 @@ class start():
                     mym.read_neid(f,dir_root,force=True)
             elif source=='GR8':
                 for f in files:
-                    mym.read_gr8(f,dir_root,ins.split('_')[0],force=True)
+                    mym.read_gr8(f, dir_root, ins.split('_')[0],force=True)
             elif source=='ESO':
-                for f in files:
-                    mym.read_eso(f,dir_root,force=True)
+                for f,rv in zip(files,rv_shift):
+                    mym.read_eso(f, dir_root, ins.split('_')[0], rv_shift=rv, force=True)
             else:
                 for f,w0,dw in zip(files,cval1,cdelta1): #no more used
                     mym.read_static(f,dir_root,w0,dw,force=True)
@@ -391,7 +396,7 @@ class start():
 
         del sts_err
     
-        anomalous = np.sum((sts>1.02*10000)|(sts<0.01),axis=1)*100/len(wave_grid)
+        anomalous = np.sum((sts>1.02*10000)|((sts<0.01)&(sts!=0.0)),axis=1)*100/len(wave_grid)
         anomalous = np.round(anomalous,0).astype('int')
 
         del wave_grid
@@ -428,6 +433,11 @@ class start():
         summary = mym.import_summary(dir_root)
         mask_flag0 = (summary['flag1']==0)
         files = np.array(summary['filename'][mask_flag0])
+
+        if len(files)==0:
+            print(Fore.YELLOW+' [WARNING] Spectra good enough (Emergency stop)'+Fore.RESET)
+            print('\n')
+            raise SnakyError('No valid spectra detected (Emergency stop)')
 
         anomalous = np.array(summary['anomalous'])
         teff,feh,fluxD,warning_hole = mym.yarara_flux_density(dir_root,(self.sy_sts_wave,self.sy_sts_flux[mask_flag0], files))
@@ -523,6 +533,7 @@ class start():
         dir_root = self.sy_dir_root
         sub_dico = self.sy_sub_dico
         star = self.sy_starname
+        ins = self.sy_instrument.split('_')[0]
 
         if rv_mode is None: #either RV or EPRV
             rv_mode = self.sy_rv_mode
@@ -530,19 +541,23 @@ class start():
         sinfo = mym.import_star_info(dir_root)
         summary = mym.import_summary(dir_root)
 
-        kept = np.array(1-summary['flag1']) 
+        if ins!='UVES':
+            kept = np.array(1-summary['flag1']) 
+        else:
+            kept = np.ones(len(summary))
+        
         fwhm = sinfo['FWHM']['fixed']
         rv_sys = sinfo['Rv_sys']['SNAKY']
         beta_gnd = sinfo['CCF_beta']['SNAKY']
         if sum(kept)!=0:
-            mask = np.array(summary['flag1']==0)
+            mask = kept.astype('bool')
             sub = summary.loc[mask]
             files = np.array(sub['filename'])
             files = (self.sy_sts_wave,self.sy_sts_flux[mask], files)
             ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'G2', debug=self.debug, sub_dico=sub_dico, ccf_tag='', save=False, rv_mode=rv_mode)
             ct = ccf_output['contrast'].y
             med_ct = np.nanmedian(ct)
-            kept2 = abs(ct-med_ct)<2
+            kept2 = abs(ct-med_ct)<[2,10][int(ins=='UVES')]
             myv.vprint(' [INFO] Number of good spectra (after CCF check) = %.0f'%(sum(kept2)))
             myv.vprint(' [INFO] Number of bad spectra (after CCF check) = %.0f'%(len(kept)-sum(kept)+len(kept2)-sum(kept2)))
             if np.sum(kept2)==0:
@@ -564,7 +579,7 @@ class start():
 
         sinfo = mym.import_star_info(dir_root)
         summary = mym.import_summary(dir_root)
-        kept = np.array(1-summary['flag1'])*np.array(1-summary['flag2'])
+        kept = kept*np.array(1-summary['flag2'])
         if sum(kept)!=0:
             mask = np.array(kept==1)
             files = np.array(summary.loc[mask,'filename'])
@@ -678,22 +693,26 @@ class start():
         #    'berv':berv
         #    },open('/Users/cretignier/Desktop/Snaky/TEST/compute_resolution/export.p','wb'))
 
-        fwhm_ins, berv_output = mym.yarara_instrumental_resolution(dir_root, (self.sy_sts_wave,self.sy_sts_flux[mask],files[mask]), np.zeros(len(berv)), berv.copy())
-        summary = mym.import_summary(dir_root) # to reload updated table
-        if np.sum(berv!=berv_output)!=0:
-            summary.loc[mask,'berv_computed'] = berv_output
-        output = np.array([files[mask],fwhm_ins]).T
-        if ins[0:6]=='SOPHIE':
-            newins = np.array([[ins.replace('-HE',''),ins.replace('-HE','').replace('_','-HE_')][int(i>5)] for i in fwhm_ins])
-            output[:,-1] = newins
-            loc = [np.where(summary['filename']==f)[0][0] for f in output[:,0]]
-            summary.loc[loc,'ins'] = output[:,-1]
-        if ins[0:4]=='NEID':
-            newins = np.array([[ins.replace('-HE',''),ins.replace('-HE','').replace('_','-HE_')][int(i>4)] for i in fwhm_ins])
-            output[:,-1] = newins
-            loc = [np.where(summary['filename']==f)[0][0] for f in output[:,0]]
-            summary.loc[loc,'ins'] = output[:,-1]
-        ins_res = np.round(np.nanmedian(fwhm_ins),2)
+        try:
+            fwhm_ins, berv_output = mym.yarara_instrumental_resolution(dir_root, (self.sy_sts_wave,self.sy_sts_flux[mask],files[mask]), np.zeros(len(berv)), berv.copy())
+            summary = mym.import_summary(dir_root) # to reload updated table
+            if np.sum(berv!=berv_output)!=0:
+                summary.loc[mask,'berv_computed'] = berv_output
+            output = np.array([files[mask],fwhm_ins]).T
+            if ins[0:6]=='SOPHIE':
+                newins = np.array([[ins.replace('-HE',''),ins.replace('-HE','').replace('_','-HE_')][int(i>5)] for i in fwhm_ins])
+                output[:,-1] = newins
+                loc = [np.where(summary['filename']==f)[0][0] for f in output[:,0]]
+                summary.loc[loc,'ins'] = output[:,-1]
+            if ins[0:4]=='NEID':
+                newins = np.array([[ins.replace('-HE',''),ins.replace('-HE','').replace('_','-HE_')][int(i>4)] for i in fwhm_ins])
+                output[:,-1] = newins
+                loc = [np.where(summary['filename']==f)[0][0] for f in output[:,0]]
+                summary.loc[loc,'ins'] = output[:,-1]
+            ins_res = np.round(np.nanmedian(fwhm_ins),2)
+        except AttributeError:
+            ins_res = np.nan
+
         sinfo = myf.update_info_lvl2(sinfo,'FWHM','O2',ins_res)
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
         summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
@@ -702,14 +721,24 @@ class start():
         dir_root = self.sy_dir_root
         star = self.sy_starname
         sub_dico = self.sy_sub_dico
+        ins = self.sy_instrument
 
         sinfo = mym.import_star_info(dir_root)
         try:
-            vsini = mym.yarara_vcat(dir_root, sub_dico=sub_dico, debug=self.debug, std_bias_kms=0.1) 
-        except FileNotFoundError:
-            pass
-        mym.yarara_vsini(dir_root, Prot=Prot, Rs=Rs)
-        sinfo = myf.update_info_lvl2(sinfo,'Vsini','SNAKY',np.round(np.nanmean(vsini),2))
+            ins_res = sinfo['FWHM']['O2']
+        except:
+            ins_res = np.nan
+        
+        if (ins_res==ins_res)|(ins in myv.instrument_res_kms.keys()):
+            try:
+                vsini = mym.yarara_vcat(dir_root, sub_dico=sub_dico, debug=self.debug, std_bias_kms=0.1) 
+            except FileNotFoundError:
+                pass
+            mym.yarara_vsini(dir_root, Prot=Prot, Rs=Rs)
+            vsini = np.round(np.nanmean(vsini),2)
+        else:
+            vsini = np.nan
+        sinfo = myf.update_info_lvl2(sinfo,'Vsini','SNAKY',vsini)
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
     #@profile
@@ -791,7 +820,12 @@ class start():
         sinfo = mym.import_star_info(dir_root)
         material = mym.import_material(dir_root)
         wave_min = np.min(material['wave'][material['reference_spectrum']>0])
-        if wave_min<4000:
+        
+        mask_lines = abs(self.sy_sts_wave/100-3950)<30
+        valid_percent = np.sum(self.sy_sts_flux[:,mask_lines]>0,axis=1)*100/np.sum(mask_lines)
+        valid_spectra = (valid_percent>50)
+
+        if (wave_min<4000)&(np.sum(valid_spectra)!=0):
             rhk_ref = self.sy_user_object['RHK']
 
             ccf_output = mym.import_ccf(dir_root,'G2')
@@ -804,7 +838,9 @@ class start():
             else:
                 teff = sinfo['Teff']['SNAKY']
 
-            files = ccf_output['filename']
+            files = ccf_output['filename'][valid_spectra]
+            rv = rv[valid_spectra]
+
             mask = myf.in1d(summary['filename'],files)
             files = (self.sy_sts_wave,self.sy_sts_flux[mask],files)
 

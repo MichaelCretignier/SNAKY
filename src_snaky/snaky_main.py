@@ -173,6 +173,8 @@ def check_force_vsini(dir_root,step_nb=''):
     try:
         os.system('rm -f '+dir_root+'REDUCTION_INFO/force_vsini.txt')
         test = pd.read_pickle(glob.glob(dir_root+'STAR_INFO/Stellar_info*.p')[0])['Vsini']['SNAKY']
+        if test!=test:
+            pouet
         os.system('touch '+dir_root+'REDUCTION_INFO/force_vsini.txt')
         print(Fore.GREEN+' [INFO] Recipe VSINI done! %s'%(step_nb)+Fore.RESET) ; QC=1
     except:
@@ -639,8 +641,10 @@ def master_spectrum(files, rv_shift, rv_sys, plot=False, sub_dico='matching_diff
         sts = np.empty((len(files[1]), len(wave)), dtype='float32')
         for m, rv in enumerate(shift_ms):
             sts[m] = myf.interpolate_rv_shift(wave,files[1][:,idx][m] / 10000., rv=rv, fill_value=0, kind='linear')
+        sts[sts==0] = np.nan
         master[idx] = np.nanmedian(sts, axis=0)
 
+    master[master!=master] = 0
     master = myc.tableXY(wave_grid, master, np.zeros_like(wave_grid))
 
     if plot:
@@ -762,15 +766,27 @@ def read_espresso(file,dir_root,force=False,debug=False):
         else:
             print('[WARNING] RASSINE continuum size wrong, potential multiprocessing issue')
     
-def read_eso(file,dir_root,force=False,debug=False):
+def read_eso(file, dir_root, ins, rv_shift=0, force=False, debug=False):
     fname = file.split('/')[-1]
     outname = dir_root+'WORKSPACE/RASSINE_Stacked_spectrum_B0.00_'+fname.replace('.fits','.p')
     if (not os.path.exists(outname))|(force):
         t = fits.open(file)
-        wave = t[1].data['wave'][0]
-        flux = t[1].data['flux'][0]
-        flux_std = t[1].data['err'][0]
-        wave_grid = np.arange(np.round(np.min(wave),2),np.round(np.max(wave),2),0.01)
+        data = t[1].data
+        wave = data['wave'][0]
+        if ins[0:4]=='ESPR': 
+            wave = myf.conv_void_air(wave) # new drs in the void
+
+        if rv_shift!=0:
+            wave = myf.doppler_r(wave,rv_shift)[0]
+        
+        try:
+            flux = data['flux'][0]
+        except:
+            flux = data['flux_reduced'][0]
+
+        flux_std = flux*0 #data['err'][0]
+        wave_grid = np.round(np.arange(3800,6900.001,0.01),2)
+        #wave_grid = np.arange(np.round(np.min(wave),2),np.round(np.max(wave),2),0.01)
         spec = myc.tableXY(wave,flux,flux_std)
         spec.interpolate(new_grid=wave_grid,method='linear')
         spec = rassine_normalise(spec)
@@ -792,9 +808,13 @@ def read_ia2(file,dir_root,force=False,debug=False):
     outname = dir_root+'WORKSPACE/RASSINE_Stacked_spectrum_B0.00_'+fname.replace('.fits','.p')
     if (not os.path.exists(outname))|(force):
         t = fits.open(file)
-        wave = t[1].data['wavelength']
-        flux = t[1].data['flux_cal']
-        flux_std = t[1].data['error_cal']
+        data = t[1].data
+        if fname[0:2]=='r.': #new DRS
+            wave = myf.conv_void_air(data['wavelength'])
+        else:
+            wave = data['wavelength']
+        flux = data['flux_cal']
+        flux_std = data['error_cal']
         wave_grid = np.arange(np.round(np.min(wave),2),np.round(np.max(wave),2),0.01)
         spec = myc.tableXY(wave,flux,flux_std)
         spec.interpolate(new_grid=wave_grid,method='linear')
@@ -1268,7 +1288,7 @@ def yarara_flux_density(dir_root,files,sub_dico='matching_diff',smooth=7):
         all_flux_density.append(metric)
 
     all_flux_density = np.array(all_flux_density)
-    all_flux_density = np.median(all_flux_density,axis=0)
+    all_flux_density = np.nanmedian(all_flux_density,axis=0)
 
     myv.vprint('\n [INFO] Flux density 5, 10, 15, 20, 25 : ',np.round(all_flux_density,3))
 

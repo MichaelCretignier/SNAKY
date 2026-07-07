@@ -94,7 +94,7 @@ instrument_res_kms = {
     'FEROS': 6.10,        # R ≈ 48 000
     #'FIES': 5.25,        # R ≈ 57 000
     'SOPHIE': 4.18,       # R ≈ 72 000 (HR)
-    #'UVES': 3.50,        # R ≈ 85 000
+    #'UVES': 3.50,         # R ≈ 85 000 (depends of the slit)
     'HARPS15': 3.47,      # R ≈ 86 000
     'HARPS03': 3.36,      # R ≈ 89 000
     'HARPS': 3.40,        # R ≈ 89 000
