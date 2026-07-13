@@ -358,7 +358,7 @@ python snaky_query.py -s HD217014,HD4628
 
 The list of parameters are:
 
-`-s` List of stars (either comma split or a .csv file with starname keyword) \
+`-s` List of stars (either `,` comma split or a `.csv` file with starname keyword) \
 `-o` Output directory \
 `-n` Number of spectra downloaded per instrument \
 `-b` The beginning SNAKY stage (b=1) \
