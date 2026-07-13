@@ -363,7 +363,7 @@ The list of parameters are:
 `-n` the number of spectra downloaded per instrument (n=5) \
 `-b` the beginning SNAKY stage (b=1) \
 `-e` the ending SNAKY stage (b=14) \
-`-a` the `automatic_db` parameter (a=1) \
+`-a` the `automatic_db` parameter (a=1)
 
 ## ⑧ Large-Scale Processing (SLURM / sbatch parallelization)
 
@@ -389,13 +389,13 @@ SNAKY can process spectra from the following products from the following spectro
 | [SOPHIE](http://atlas.obs-hp.fr/sophie/) | irrelevant | S1D | SOPHIE_0.5 |
 | [SOPHIE-HE](http://atlas.obs-hp.fr/sophie/) (high efficiency) | irrelevant | S1D | SOPHIE-HE_0.5 |
 | [HARPN](http://archives.ia2.inaf.it/tng/) or [HARPN](#flag_download)| >= 3.0.1 (new) | S1D |  HARPN_3.0.1 |
-| [ESPRESSO](https://archive.eso.org/scienceportal/home) | irrelevant | S1D |  ESPRESSO_3.3.6 |
+| [ESPRESSO](https://archive.eso.org/scienceportal/home) or [ESPRESSO](#flag_download)| irrelevant | S1D |  ESPRESSO_3.3.6 |
 | [NEID](https://neid.ipac.caltech.edu) | irrelevant | E2DS |  NEID_1.0 |
 | [NEID-HE](https://neid.ipac.caltech.edu) (high efficiency) | irrelevant | E2DS |  NEID-HE_1.0 |
-| [HARPS03](https://archive.eso.org/scienceportal/home) | 3.5 (old) | S1D |  HARPS03_3.5 |
-| [HARPS15](https://archive.eso.org/scienceportal/home) | 3.5 (old) | S1D |  HARPS15_3.5 |
+| [HARPS03](https://archive.eso.org/scienceportal/home) or [HARPS](#flag_download)| 3.5 (old) | S1D |  HARPS03_3.5 |
+| [HARPS15](https://archive.eso.org/scienceportal/home) or [HARPS](#flag_download)| 3.5 (old) | S1D |  HARPS15_3.5 |
 | [HARPS03](https://dace.unige.ch) | >= 3.3.6 (new) | S1D |  HARPS03_3.3.6 |
-| [HARPS15](https://dace.unige.ch) or (#flag_download) | >= 3.3.6 (new) | S1D |  HARPS15_3.3.6 |
+| [HARPS15](https://dace.unige.ch) | >= 3.3.6 (new) | S1D |  HARPS15_3.3.6 |
 | [FEROS](#flag_download) | irrelevant | S1D |  FEROS_1.0 |
 | [FIES](#flag_download) | irrelevenat | S1D |  FIES_1.0 |
 | [UVES](#flag_download) | irrelevant | S1D |  UVES_1.0 |
