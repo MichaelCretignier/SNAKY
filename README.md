@@ -358,14 +358,14 @@ python snaky_query.py -s HD217014,HD4628
 
 The list of parameters are:
 
-`-s`  List of target stars. Accepts either a comma-separated list (e.g. `HD10700,HD22049`) or a `.csv` file containing a `starname` column. \
-`-o`  Output directory (e.g. `.../SNAKY/Snaky_data/`). \
-`-n`  Maximum number of spectra to download per instrument (e.g. `-n 5`). \
-`-b`  Starting SNAKY reduction stage (e.g. `-b 1`). \
-`-e`  Ending SNAKY reduction stage (e.g. `-e 14`). \
-`-a`  Value of the `automatic_db` parameter (`0` or `1`; e.g. `-a 1`). \
-`-P`  Number of parallelization (e.g. `-P 1`). \
-`-p`  Index of the current parallel process, between `1` and `P` (e.g. `-p 1`).
+`-s`  List of target stars. Either a comma-separated list (e.g. `HD10700,HD22049`) or a `.csv` file with `starname` column. \
+`-o`  Output directory (e.g. `.../SNAKY/Snaky_data/`) \
+`-n`  Maximum number of spectra to download per instrument (e.g. `-n 5`) \
+`-b`  Starting SNAKY reduction stage (e.g. `-b 1`) \
+`-e`  Ending SNAKY reduction stage (e.g. `-e 14`) \
+`-a`  Value of the `automatic_db` parameter (`0` or `1`; e.g. `-a 1`) \
+`-P`  Number of parallelization (e.g. `-P 1`) \
+`-p`  Index of the current parallel process, between `1` and `P` (e.g. `-p 1`)
 
 
 ## ⑧ Large-Scale Processing (SLURM / sbatch parallelization)
