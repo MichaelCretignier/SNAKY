@@ -346,7 +346,24 @@ job1.reduce(begin=9, end=14, atmos_db=True)
 job2.reduce(begin=9, end=14, atmos_db=True) 
 ```
 
-## ⑦ Large-Scale Processing (SLURM / sbatch parallelization)
+## ⑦ Public archival ESO and TNS query and SNAKY processing
+
+*To even simplify further the processing, SNAKY contains a code `snaky_query.py` that can directly download the spectra on your machine. The shortest call of the function is:*
+
+```bash
+python snaky_query.py -s HD217014,HD4628
+```
+
+The list of parameters are:
+
+`-s` List of stars (either comma split or a .csv file with starname keyword)
+`-o` Output dir
+`-N` Number of spectra downloaded per instrument
+`-b` The beginning SNAKY stage (b=1)
+`-e` The ending SNAKY stage (b=14)
+`-a` automatic_db parameter (a=1)
+
+## ⑧ Large-Scale Processing (SLURM / sbatch parallelization)
 
 *SNAKY is designed to process easily and rapidly thousands of datasets (as a recall a dataset corresponds to a star + an instrument combination). For large runs, the recommended approach is to use `sbatch`.* \
 *This is possible by using the `run_snaky_med.s` SLURM script, that calls the `snaky_trigger.py` Python script.*
@@ -355,8 +372,7 @@ job2.reduce(begin=9, end=14, atmos_db=True)
 sbatch run_snaky_med.s HD128621 HARPS15_3.3.6 1 14
 ```
 
-
-## ⑧ Your favourite instrument missing?
+## ⑨ Your favourite instrument missing?
 
 <a id="flag4"></a>
 
@@ -394,7 +410,7 @@ and modify the `extract_header()` function too.
 If only e2ds spectra exist and not s1d, follow the `read_neid()` example.
 NB: s1d spectra should always be preferred over e2ds/s2d spectra
 
-## ⑨ BENCHMARK (Computation time)
+## BENCHMARK (Computation time)
 
 <a id="flag3"></a>
 

@@ -1110,3 +1110,27 @@ def master_spectrum(wave_grid, flux, shift_ms=None, method = 'median'):
         for m, rv in enumerate(shift_ms):
             master += interpolate_rv_shift(wave,flux[m], rv=rv, fill_value=0, kind='linear')/N
     return master
+
+
+def gray_rotation(vl=1,epsilon=0.6,color='k', Plot=False, vgrid=None):
+    """Rotational broadening kernel for linear CLV law"""
+    if vgrid is None:
+        vgrid = np.linspace(-1,1,201)*vl
+    c1 = (2*(1-epsilon))/(np.pi*vl*(1-epsilon/3))
+    c2 = (0.5*np.pi*(epsilon))/(np.pi*vl*(1-epsilon/3))
+
+    profile1 = c1*(1-(vgrid/vl)**2)**(0.5)
+    profile2 = c2*(1-(vgrid/vl)**2)
+
+    profile1[abs(vgrid)>vl] = 0
+    profile2[abs(vgrid)>vl] = 0
+
+    norm = np.sum(profile1+profile2)
+
+    if Plot:
+        plt.figure('kernel_rot')
+        plt.plot(vgrid,profile1,color=color,ls='--')
+        plt.plot(vgrid,profile2,color=color,ls=':')
+        plt.plot(vgrid,profile1+profile2,color=color,ls='-')
+
+    return (profile1+profile2)/norm

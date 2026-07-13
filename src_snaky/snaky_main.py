@@ -336,6 +336,7 @@ def plot_mhk(dir_root, hide_outliers=True, daily_binned=True, debug=False, rhk_r
         tab = pd.read_csv(s,index_col=0)
         if ('jdb' in tab.keys())&('MHK' in tab.keys()):
             proxy = myc.tableXY(np.array(tab['jdb']),np.array(tab['MHK']),np.array(tab['MHK_std']))
+            proxy.supress_nan()
             if daily_binned:
                 proxy.night_stack(replace=True)
             if hide_outliers:
@@ -776,6 +777,9 @@ def read_eso(file, dir_root, ins, rv_shift=0, force=False, debug=False):
         if ins[0:4]=='ESPR': 
             wave = myf.conv_void_air(wave) # new drs in the void
 
+        if (ins[0:4]=='UVES')&(np.max(wave)<1000):
+            wave*=10 #nm instead of angstrom
+
         if rv_shift!=0:
             wave = myf.doppler_r(wave,rv_shift)[0]
         
@@ -784,11 +788,17 @@ def read_eso(file, dir_root, ins, rv_shift=0, force=False, debug=False):
         except:
             flux = data['flux_reduced'][0]
 
+        flux[0:2] = 0 ; flux[-2:] = 0
+        borders = myf.clustering(wave,10,1)[-1] #in case of hole, set 0 around the hole to avoid interpolation
+        for b in borders[:-1,1]:
+            flux[b-5:b+6] = 0
+
         flux_std = flux*0 #data['err'][0]
         wave_grid = np.round(np.arange(3800,6900.001,0.01),2)
         #wave_grid = np.arange(np.round(np.min(wave),2),np.round(np.max(wave),2),0.01)
         spec = myc.tableXY(wave,flux,flux_std)
         spec.interpolate(new_grid=wave_grid,method='linear')
+
         spec = rassine_normalise(spec)
         if debug:
             plt.plot(spec.x,spec.y/spec.rassine_continuum.y)
@@ -1285,6 +1295,8 @@ def yarara_flux_density(dir_root,files,sub_dico='matching_diff',smooth=7):
         metric = hb[myf.find_nearest(ha,np.array([0.05,0.10,0.15,0.20,0.25]))[0]]
         plt.plot(hb,ha,color='C0',alpha=0.7)
         plt.scatter(metric,np.array([0.05,0.10,0.15,0.20,0.25]),marker='.',color='k',alpha=0.4)
+        if used<50:
+            metric = metric*np.nan
         all_flux_density.append(metric)
 
     all_flux_density = np.array(all_flux_density)
@@ -1296,9 +1308,13 @@ def yarara_flux_density(dir_root,files,sub_dico='matching_diff',smooth=7):
     xgb_obj = pickle.load(open(xgb_file,'rb'))
     model = xgb_obj['model']
 
-    output = model.predict(all_flux_density[:,np.newaxis].T)
-    Teff_rough_est = int(np.round(output[0,0],0)) # not better than +/- 300K
-    FeH_rough_est = np.round(output[0,1],3) # not better than +/- 0.15 dex
+    if np.sum(all_flux_density==all_flux_density)==len(all_flux_density):
+        output = model.predict(all_flux_density[:,np.newaxis].T)
+        Teff_rough_est = int(np.round(output[0,0],0)) # not better than +/- 300K
+        FeH_rough_est = np.round(output[0,1],3) # not better than +/- 0.15 dex
+    else:
+        Teff_rough_est = 5778
+        FeH_rough_est = 0.0
 
     plt.scatter(all_flux_density,np.array([0.05,0.10,0.15,0.20,0.25]),zorder=10,color='k',alpha=1.0,label='Teff=%.0f +/- 300 K \n FeH = %.2f +/- 0.15 dex'%(Teff_rough_est,FeH_rough_est))
     plt.legend(loc=2)
@@ -1337,35 +1353,57 @@ def yarara_rough_rv_sys(spec,teff=6000, verbose=False):
 
     wave = spec.x
     flux = spec.y
-    if teff>6500:
+
+    if np.sum(flux!=0)!=0:
+        wave_min = np.nanmin(wave[flux!=0])
+        wave_max = np.nanmax(wave[flux!=0])
+    else:
+        wave_min = 10000
+        wave_max = 0
+
+    if (teff>6500):
         if verbose:
             print(' [INFO] Selected line set Teff>6500')        
-        lines = [myv.Heps[0],myv.Hd[0],myv.Hb[0],myv.Hc[0],myv.Ha[0]]
+        lines = np.array([myv.Heps[0],myv.Hd[0],myv.Hc[0],myv.Hb[0],myv.Ha[0]])
         box_pts = 50
     else:
-        if verbose:
-            print(' [INFO] Selected line set Teff<6500')
-        lines = [myv.NaDl[0],myv.NaDr[0],myv.Mg1b[0],myv.Mg1c[0],myv.Ha[0]]
-        box_pts = 7
-    
-    right,left = myf.doppler_r(np.array(lines),250*1000) # 200 km/s search
+        if (wave_max>5100):
+            if verbose:
+                print(' [INFO] Selected line set Teff<6500')
+            lines = np.array([myv.NaDl[0],myv.NaDr[0],myv.Mg1b[0],myv.Mg1c[0],myv.Ha[0]])
+            box_pts = 7
+        else:
+            if verbose:
+                print(' [INFO] Selected line set CaII H&K')
+            lines = np.array([myv.Ca2K[0],myv.Ca2H[0]])
+            box_pts = 50
 
-    RV = []
-    for r,l,c in zip(right,left,lines):
-        mask_wave = (wave>l)&(wave<r)
-        if np.sum(mask_wave):
-            flux2 = flux[mask_wave]
-            rvs = []
-            s = myc.tableXY(wave[mask_wave],flux2,0*flux2)
-            s.smooth(box_pts=box_pts,shape='rectangular')
-            s.find_min()
-            mini = s.x_min[np.argmin(s.y_min)]
-            rv = (mini-c)/c*myv.c_lum/1000
-            rvs.append(rv)
-            RV.append(rvs)
-    RV = np.array(RV)
-    RV = np.nanmedian(RV,axis=1)
-    RV_sys = np.round(np.median(RV),2)
+    lines = lines[lines<wave_max]
+    lines = lines[lines>wave_min]
+
+    if len(lines)==0:
+        RV = np.nan
+        RV_sys = np.nan
+        print(Fore.YELLOW+' [WARNING] No lines available to compute the RV sys'+Fore.RESET)
+    else:
+        right,left = myf.doppler_r(np.array(lines),250*1000) # 200 km/s search
+
+        RV = []
+        for r,l,c in zip(right,left,lines):
+            mask_wave = (wave>l)&(wave<r)
+            if np.sum(mask_wave):
+                flux2 = flux[mask_wave]
+                rvs = []
+                s = myc.tableXY(wave[mask_wave],flux2,0*flux2)
+                s.smooth(box_pts=box_pts,shape='rectangular')
+                s.find_min()
+                mini = s.x_min[np.argmin(s.y_min)]
+                rv = (mini-c)/c*myv.c_lum/1000
+                rvs.append(rv)
+                RV.append(rvs)
+        RV = np.array(RV)
+        RV = np.nanmedian(RV,axis=1)
+        RV_sys = np.round(np.median(RV),2)
 
     if verbose:
         print(' [INFO] Measured values :',np.round(RV,2))
@@ -1505,13 +1543,19 @@ def yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag=0):
     save[save[:,4]<0.70,3] = -998
         
     validated = (save[:,3]>-900)
-    if sum(validated)==0:
+    if (np.sum(validated)==0)&(np.sum(save[:,3]!=-999)!=0):
         index = np.arange(len(save))[save[:,3]!=-999]
         selected = index[np.argsort(save[index,4])[-1]]
         validated[selected] = True
         rvsys_backup[~validated] = -999
         save[:,3] = rvsys_backup
+    
+    if np.sum(save[:,3]!=-999)==0:
+        validated = np.ones(len(validated)).astype('bool')
+        save[save[:,4]>0.75,3] = save[save[:,4]>0.75,5]
+    
     kept = save[validated]
+
     summary = pd.DataFrame(save,columns=['RVRANGE','FWHM','CT','RV','RCORR','RV_APPROX','SB1'])
     summary['!'] = ''
     if np.max(kept[:,2])>0.01: 
@@ -1676,7 +1720,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
         
         hdu = fits.PrimaryHDU(np.array([log_grid_mask, log_mask]).T)
         hdul = fits.HDUList([hdu])
-        hdul.writeto(dir_root+'CCF_MASK/CCF_'+mask_name.split('.')[0]+'.fits')
+        hdul.writeto(dir_root+'CCF_MASK/CCF_'+mask_name.split('.')[0]+'.fits',overwrite=True)
         myv.vprint('\n [INFO] CCF mask saved under : %s'%(dir_root+'CCF_MASK/CCF_'+mask_name.split('.')[0]+'.fits'))
 
         del hdu
@@ -1740,6 +1784,18 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
     vrad, ccf_power, ccf_power_std = myf.ccf(log_grid, flux, log_template, 
                                                 rv_range = rv_range, oversampling = ccf_oversampling, spec1_std = flux_err) #to compute on all the ccf simultaneously
 
+    if fwhm>100:
+        for n,c in enumerate(ccf_power.T):
+            ccf_power[:,n] = myf.smooth(c,box_pts=30)
+
+    mask_vmax = abs(vrad)>(200*1000)
+    if np.sum(mask_vmax):
+        for n,c in enumerate(ccf_power.T):
+            poly_coeff = np.polyfit(vrad[mask_vmax],c[mask_vmax],3)
+            model = np.polyval(poly_coeff,vrad)
+            ccf_power[:,n] = 1 + c - model
+            #plt.plot(vrad,model,color='orange')
+
     del log_grid
     del log_mask
     del log_template
@@ -1772,7 +1828,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
 
     master_ccf = ccf_ref/np.max(ccf_ref)
     master_ccf = myc.tableXY(vrad/1000, master_ccf, 0.01*np.ones(len(master_ccf)))
-
+    master_ccf.clip(min=[-rv_borders,None],max=[rv_borders,None])
     try:
         master_ccf.fit_GND(beta_fixed=0,Plot=False)
         beta0 = master_ccf.params['beta'].value
@@ -1781,7 +1837,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
 
     myv.vprint(' [INFO] Beta value of GND = %.2f'%(beta0))
     if (beta0>2.5)&(analytical_model=='gaussian'):
-        myv.vprint(' \n [WARNING] Significant Kurtosis detected.')
+        myv.vprint(Fore.YELLOW+' \n [WARNING] Significant Kurtosis detected.'+Fore.RESET)
     
     dccf2 = (ccf_power-ccf_ref[:,np.newaxis])[top_ccf]/np.mean(ccf_power[continuum_ccf])*100
     dccf2 -= np.median(dccf2,axis=0)
@@ -1870,9 +1926,12 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
         if (np.min(abs(ccf.x_max-0.5*(first_max+second_max)))<5)&(fwhm<15): 
             center=ccf.x_max[np.argmin(abs(ccf.x_max-0.5*(first_max+second_max)))]
         else:
-            center=ccf.x[ccf.y.argmin()]
+            if fwhm<100:
+                center=ccf.x[ccf.y.argmin()]
+            else:
+                center = 0.0
         ccf.x -= center
-        
+
         if not del_outside_max:
             mask = (ccf.x>-rv_borders)&(ccf.x<rv_borders)
             ccf.supress_mask(mask)
@@ -1907,7 +1966,7 @@ def yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, mask, spectra=None, ccf_
         if check_non_transform:
             V1,V2 = ccf_backup.params['cen'].value,ccf.params['cen'].value
             if abs(V1-V2)>1:
-                print(' \n[WARNING] Discrepancy detected between CCFs (%.4f/%.4f), value reset to non-transformed one'%(V1,V2))
+                print(' \n [WARNING] Discrepancy detected between CCFs (%.4f/%.4f), value reset to non-transformed one'%(V1,V2))
                 ccf.params = ccf_backup.params  
 
         rv_ccf = ccf.params['cen'].value+center
@@ -2447,12 +2506,13 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
     return teff,feh,logg,M,R,BV,vmicro,vmacro
 
 
-def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False, std_bias_kms = 0.1):
+def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False, std_bias_kms = 0.1, ref_value=None):
 
     if myv.VERBOSE:
         myf.print_box('\n---- RECIPE : VSINI EXTRACTION ----\n')
 
     sinfo = import_star_info(dir_root)
+
 
     instrument = dir_root.split('/')[-2]
     ins = instrument.split('_')[0]
@@ -2667,8 +2727,10 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False, std_
     plt.legend()     
     samples = np.hstack(samples)
     plt.hist(samples,bins=100,density=True,histtype='step',color='k',lw=2)
-    plt.title(r'v $\sin$ i = %.2f +/- %.2f km/s'%(np.mean(samples),np.std(samples)))
+    plt.title('v macro = %.2f km/s \n v sin i = %.2f +/- %.2f km/s'%(np.mean(vmacro['Garfield']),np.mean(samples),np.std(samples)))
     myv.vprint('\n [INFO] v sin i = %.2f +/- %.2f km/s'%(np.mean(samples),np.std(samples)))
+    if ref_value is not None:
+        plt.axvline(x=ref_value, color='k', ls='-.', lw=1, alpha=0.7)
     plt.savefig(dir_root+'IMAGES/Vsini_CCF_hist'+myv.PRD_EXT+'.png')
 
     plt.figure('vsin3')
@@ -3117,7 +3179,7 @@ def yarara_compute_snr(dir_root,sub_dico):
         snrs.append(int(np.round(1/sigma,0)))
     return np.array(snrs)
 
-def yarara_correct_continuum_absorption(dir_root, rv_sys, feh, model):
+def yarara_correct_continuum_absorption(dir_root, rv_sys, feh, model, vsini=0.0):
     
     if myv.VERBOSE:
         myf.print_box('\n---- RECIPE : CORRECT ABSORPTION CONTINUUM ----\n')
@@ -3154,24 +3216,29 @@ def yarara_correct_continuum_absorption(dir_root, rv_sys, feh, model):
     template.y[template.y>1] = 1
     template.y[template.y<0] = 0
 
-    #compute resolution
-    s1 = master.copy()
-    s2 = template.copy()
-    s1.clip(min=[6000,None],max=[6400,None])
-    s2.clip(min=[6000,None],max=[6400,None])
-    res = []
-    resolution_grid = np.arange(60000,140000,1000)
-    for reso in resolution_grid:
-        chi2 = np.sum(abs(s1.y - myf.instrBroadGaussFast(s2.x,s2.y,reso,maxsig=5.0)))
-        res.append(chi2)
-    res = np.array(res)
-    resolution = resolution_grid[np.argmin(res)]
-    myv.vprint('\n [INFO] Resolution found R=%.0f \n'%(resolution))
+    if vsini<20:
+        #compute resolution
+        s1 = master.copy()
+        s2 = template.copy()
+        s1.clip(min=[6000,None],max=[6400,None])
+        s2.clip(min=[6000,None],max=[6400,None])
+        res = []
+        resolution_grid = np.arange(60000,140000,1000)
+        for reso in resolution_grid:
+            chi2 = np.sum(abs(s1.y - myf.instrBroadGaussFast(s2.x,s2.y,reso,maxsig=5.0)))
+            res.append(chi2)
+        res = np.array(res)
+        resolution = resolution_grid[np.argmin(res)]
+        myv.vprint('\n [INFO] Resolution found R=%.0f \n'%(resolution))
 
-    del s1
-    del s2
+        del s1
+        del s2
 
-    template_flux = myf.instrBroadGaussFast(template.x,template.y,resolution,maxsig=5.0)
+        template_flux = myf.instrBroadGaussFast(template.x,template.y,resolution,maxsig=5.0)
+    else:
+        template.rotation_broadening(veq=vsini,replace=True)
+        template_flux = template.y.copy()
+
     smooth = pd.DataFrame(template.y).rolling(100,min_periods=1,center=True).quantile(0.9)
     smooth= np.array(smooth).T[0]
     template.y[template.y<np.array(smooth)]=0
@@ -3406,7 +3473,7 @@ def rhk_mhk(rhk):
     mhk = mhk_c1 + mhk_c2 * 10**rhk
     return mhk
 
-def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy, sub_dico='matching_diff'):
+def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy, vsini=2.0, sub_dico='matching_diff'):
     
     if myv.VERBOSE:
         myf.print_box('\n---- RECIPE : NEW MHK EXTRACTION ----\n')
@@ -3508,8 +3575,9 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
         for j in range(3):
             calib.fit_line(recenter=False)
             mask = myf.rm_outliers(calib.y-calib.x*calib.lin_slope_w,m=2,kind='mad')[0]
-            calib.masked(mask)
-            index_vec = index_vec[mask]
+            if int(np.sum(mask)*100/len(mask))>60:
+                calib.masked(mask)
+                index_vec = index_vec[mask]
 
         index_vec = myf.in1d(np.arange(len(ref)),index_vec)
         mat.table-=calib.lin_intercept_w

@@ -41,7 +41,7 @@ class start():
         self.sy_job_id = job_id
         self.warning_printed = 0
         self.prd_ext = ''
-        self.sy_user_object = {'Name': None,'Ra': None,'Dec': None,'Rv_sys': None,'Prot': None,'Rs': None,'Ms': None,'Teff': None,'Log_g': None,'FeH': None,'RHK': None, 'stellar_template': None}
+        self.sy_user_object = {'Name':None, 'Ra':None, 'Dec':None, 'Rv_sys':None, 'Prot':None, 'Rs':None, 'Ms':None, 'Teff':None, 'Log_g':None, 'FeH':None, 'RHK':None, 'Vsini':None, 'stellar_template':None, 'reference':None}
         self.missing_file = False
         if not verbose:
             myv.VERBOSE = False
@@ -94,7 +94,7 @@ class start():
         else:
             print(Fore.YELLOW+' [ERROR] The atmospheric databases is not yet existing.'+Fore.RESET)
 
-    def set_star(self, ra=None, dec=None, rv_sys=None, prot=None, rs=None, ms=None, teff=None, logg=None, feh=None, rhk=None, stellar_template=None):
+    def set_star(self, ra=None, dec=None, rv_sys=None, prot=None, rs=None, ms=None, teff=None, logg=None, feh=None, rhk=None, vsini=None, age=None, reference='user', stellar_template=None):
         sy_user_object = {
             'Name'  : self.sy_starname,
             'Ra'    : ra,
@@ -107,14 +107,18 @@ class start():
             'Log_g'  : logg,
             'FeH'   : feh,
             'RHK'   : rhk,
+            'Vsini' : vsini,
+            'Age'   : age,
             'stellar_template' : None,
+            'reference': reference
         }
         
         for kw in sy_user_object:
             if sy_user_object[kw] is not None:
-                self.sy_user_object[kw] = sy_user_object[kw]
-                myv.vprint(' [INFO] Stellar parameters updated: %s = %s'%(kw,str(sy_user_object[kw])))
-    
+                if sy_user_object[kw]==sy_user_object[kw]:
+                    self.sy_user_object[kw] = sy_user_object[kw]
+                    myv.vprint(' [INFO] Stellar parameters updated: %s = %s'%(kw,str(sy_user_object[kw])))
+        
     def estimate_computation_time(self):
         N = len(self.sy_files)
 
@@ -395,9 +399,14 @@ class start():
         wave_grid, sts, sts_err = mym.import_sts((self.sy_sts_wave,self.sy_sts_flux,files), sub_dico=sub_dico, scale=False)
 
         del sts_err
-    
+
         anomalous = np.sum((sts>1.02*10000)|((sts<0.01)&(sts!=0.0)),axis=1)*100/len(wave_grid)
         anomalous = np.round(anomalous,0).astype('int')
+
+        empty = np.sum(sts==0.0,axis=1)*100/len(wave_grid)
+        empty = np.round(empty,0).astype('int')
+
+        anomalous[empty>75] = 100
 
         del wave_grid
         del sts
@@ -435,7 +444,7 @@ class start():
         files = np.array(summary['filename'][mask_flag0])
 
         if len(files)==0:
-            print(Fore.YELLOW+' [WARNING] Spectra good enough (Emergency stop)'+Fore.RESET)
+            print(Fore.YELLOW+' [WARNING] No spectra good enough (Emergency stop)'+Fore.RESET)
             print('\n')
             raise SnakyError('No valid spectra detected (Emergency stop)')
 
@@ -469,6 +478,7 @@ class start():
         anomalous = anomalous[mask]
 
         #spec  = mym.import_spectrum(files[mask][np.argmin(anomalous)],sub_dico=sub_dico)
+        #print(np.argmin(anomalous))
         spec = myc.tableXY(self.sy_sts_wave/100.,self.sy_sts_flux[mask][np.argmin(anomalous)]/10000.,0*self.sy_sts_wave)
 
         sb_flag2 = False
@@ -478,7 +488,12 @@ class start():
             files = [np.array(summary['filename'])]
             pd.DataFrame(np.array([files[-1],rv_sys]).T,columns=['files','rv_sys']).to_csv(dir_root+'WARNING/RV_SYS_JITTER.csv')
             rv_sys_approx = mym.yarara_rough_rv_sys(spec,teff=teff,verbose=self.debug)
-        myv.vprint('\n [INFO] RV_sys initial guess = %.1f +/- %.1f kms'%(rv_sys_approx,rv_sys_std))
+        
+        if rv_sys_approx!=rv_sys_approx:
+            rv_sys_approx=0
+
+        myv.vprint('\n [INFO] RV_sys initi' \
+        'al guess = %.1f +/- %.1f kms'%(rv_sys_approx,rv_sys_std))
         sinfo2,sb_flag1 = mym.yarara_check_rv_sys_wrapper(dir_root, spec, rv_sys_approx, ccf_tag='')
 
         dace_summary = pd.read_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv',index_col=0)
@@ -490,7 +505,7 @@ class start():
             rv_sys=0
         if fwhm>300:
             fwhm=300 
-        if teff>8500:
+        if (teff>8500)&(fwhm<200):
             fwhm=200
 
         sinfo = mym.import_star_info(dir_root)
@@ -544,7 +559,7 @@ class start():
         if ins!='UVES':
             kept = np.array(1-summary['flag1']) 
         else:
-            kept = np.ones(len(summary))
+            kept = (summary['anomalous']<70).astype('int')
         
         fwhm = sinfo['FWHM']['fixed']
         rv_sys = sinfo['Rv_sys']['SNAKY']
@@ -636,7 +651,7 @@ class start():
         try:
             ccf_output = mym.import_ccf(dir_root,'G2')
             rv = ccf_output['rv'].y
-            rv_sys_correction = np.nanmedian(rv)/1000
+            rv_sys_correction = 0*np.nanmedian(rv)/1000 ## ???? do I need this if I shift the master already?
             del ccf_output
         except:
             rv_sys_correction = 0
@@ -722,6 +737,7 @@ class start():
         star = self.sy_starname
         sub_dico = self.sy_sub_dico
         ins = self.sy_instrument
+        ref_value = self.sy_user_object['Vsini']
 
         sinfo = mym.import_star_info(dir_root)
         try:
@@ -731,7 +747,7 @@ class start():
         
         if (ins_res==ins_res)|(ins in myv.instrument_res_kms.keys()):
             try:
-                vsini = mym.yarara_vcat(dir_root, sub_dico=sub_dico, debug=self.debug, std_bias_kms=0.1) 
+                vsini = mym.yarara_vcat(dir_root, sub_dico=sub_dico, debug=self.debug, std_bias_kms=0.1, ref_value=ref_value) 
             except FileNotFoundError:
                 pass
             mym.yarara_vsini(dir_root, Prot=Prot, Rs=Rs)
@@ -762,7 +778,15 @@ class start():
         else:
             rv_sys = sinfo['Rv_sys']['SNAKY']
 
-        template_flux, correction = mym.yarara_correct_continuum_absorption(dir_root, rv_sys, feh, model)
+        if self.sy_user_object['Vsini'] is not None:
+            vsini = self.sy_user_object['Vsini']
+        else:
+            try:
+                vsini = sinfo['Vsini']['SNAKY']
+            except:
+                vsini = 0.0
+
+        template_flux, correction = mym.yarara_correct_continuum_absorption(dir_root, rv_sys, feh, model, vsini)
         material['stellar_template'] = template_flux
         material['correction_factor'] = correction
         pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
@@ -832,11 +856,13 @@ class start():
             rv = ccf_output['rv'].y
             rv_sys_correction = np.nanmedian(rv)/1000
 
-            rv_sys = sinfo['Rv_sys']['SNAKY'] - rv_sys_correction
+            rv_sys = sinfo['Rv_sys']['SNAKY'] - rv_sys_correction*0 # ???? rv should already 
             if self.sy_user_object['Teff'] is not None:
                 teff = self.sy_user_object['Teff']
             else:
                 teff = sinfo['Teff']['SNAKY']
+
+            valid_spectra = valid_spectra[np.in1d(summary['filename'],ccf_output['filename'])]
 
             files = ccf_output['filename'][valid_spectra]
             rv = rv[valid_spectra]
@@ -919,7 +945,14 @@ class start():
         dir_root = self.sy_dir_root
         star = self.sy_starname
         ins = self.sy_instrument
-
+        stellar_atmos_user = self.sy_user_object
+        
+        reference = {'ins':stellar_atmos_user['reference']}
+        for kw1,kw2 in zip(['ms','rs','teff','logg','feh','rhk','vsini'],['Ms','Rs','Teff','Log_g','FeH','RHK','Vsini']):
+            if kw2 in stellar_atmos_user.keys():
+                if stellar_atmos_user[kw2] is not None:
+                    reference[kw1] = stellar_atmos_user[kw2]
+        
         parent_dir = '/'.join(dir_root.split('/')[:-2])
 
         count = -1
@@ -927,7 +960,10 @@ class start():
 
         extract = []
 
-        plt.figure(figsize=(18,6))
+        variables = ['ms','rs','teff','logg','feh','vsini','mhk','rhk']
+        save = {kw:[] for kw in variables}
+
+        plt.figure(figsize=(18,7))
         plt.subplots_adjust(left=0.06,right=0.96,hspace=0.60,top=0.95,bottom=0.15,wspace=0.30)
         for f in files:
             ins = f.split('/WORKSPACE')[0].split('/')[-1]
@@ -936,8 +972,7 @@ class start():
             table = pd.read_csv(f)
             extract.append([ins]+list(np.array(table.mean())))
             borders = {'ms':[0,3,3],'rs':[0,3,3],'teff':[3000,8000,0],'logg':[3.5,5.0,3],'feh':[-1.5,0.5,3],'vsini':[0,10,3],'mhk':[-50,200,2],'rhk':[-6,-4,3],'prot':[0,100,1],'sini':[0,1,3]} #min max and digits
-            variables = ['ms','rs','teff','logg','feh','vsini','mhk','rhk']
-            save = {kw:[] for kw in variables}
+            
             for j,kw in enumerate(variables):
                 if kw in table.keys():
                     plt.subplot(2,4,j+1)
@@ -955,6 +990,8 @@ class start():
                 plt.title('%s = %.2f +/- %.2f'%(kw,np.median(save[kw]),myf.mad(np.ravel(save[kw]))))
             plt.xticks(rotation=90,ha='center')
 
+            if kw in reference.keys():
+                plt.axhline(y=reference[kw], ls='-.', color='k', alpha=0.7, lw=1)
             plt.savefig(parent_dir+'/ALLINS_MERGED/Atmos_all_instrument.png')
 
         extract = pd.DataFrame(extract,columns=['ins']+list(table.columns))
@@ -964,6 +1001,12 @@ class start():
         for kw in list(table.columns):
             if kw in borders.keys():
                 extract[kw] = np.round(np.array(extract[kw]),borders[kw][-1]) 
+
+        for k in extract.keys():
+            if k not in reference.keys():
+                reference[k] = np.nan
+
+        extract = pd.concat([extract, pd.DataFrame([reference])], ignore_index=True)
         extract.to_csv(parent_dir+'/ALLINS_MERGED/Atmos_all_instruments.csv')
 
     def cleaning(self):
@@ -1222,7 +1265,7 @@ class start():
             except KeyError:
                 raise SnakyError('[ERROR] Preprocessing failed. Some ESO files miss the expected keywords.')
             self.write_progress(1, 'pre', savefile=filename_time)
-        qc = mym.check_force_pre(dir_root,step_nb='(1)')
+        qc1 = mym.check_force_pre(dir_root,step_nb='(1)')
 
         if force_summary: #2
             self.set_summary()
@@ -1239,12 +1282,12 @@ class start():
         if force_summary: #2
             self.check_spectra()
             self.write_progress(2, 'summary', savefile=filename_time)
-        qc = mym.check_force_summary(dir_root,step_nb='(2)')
+        qc2 = mym.check_force_summary(dir_root,step_nb='(2)')
 
         if force_rvsys: #3
             self.compute_rv_sys()
             self.write_progress(3, 'rv_sys', savefile=filename_time)
-        qc = mym.check_force_rvsys(dir_root,step_nb='(3)')
+        qc3 = mym.check_force_rvsys(dir_root,step_nb='(3)')
 
         try:
             teff = mym.import_star_info(dir_root)['Teff']['FluxD']
@@ -1264,17 +1307,17 @@ class start():
         if force_ccf: #4
             self.compute_ccf()
             self.write_progress(4, 'ccf', savefile=filename_time)
-        qc = mym.check_force_ccf(dir_root,step_nb='(4)')
+        qc4 = mym.check_force_ccf(dir_root,step_nb='(4)')
 
         if force_master: #5
             self.compute_master()
             self.write_progress(5, 'master', savefile=filename_time)
-        qc = mym.check_force_master(dir_root,step_nb='(5)')
+        qc5 = mym.check_force_master(dir_root,step_nb='(5)')
 
         if force_atmos: #6
             self.compute_atmos()
             self.write_progress(6, 'atmos', savefile=filename_time)
-        qc = mym.check_force_atmos(dir_root,step_nb='(6)')
+        qc6 = mym.check_force_atmos(dir_root,step_nb='(6)')
 
         if self.sy_sub_dico != 'matching_diff':
             force_resolution = False
@@ -1282,38 +1325,40 @@ class start():
         if force_resolution: #7
             self.compute_resolution()
             self.write_progress(7, 'resolution', savefile=filename_time)
-        qc = mym.check_force_resolution(dir_root,step_nb='(7)')
+        qc7 = mym.check_force_resolution(dir_root,step_nb='(7)')
 
         if force_vsini: #8
-            self.compute_vsini(Prot=Prot, Rs=Rs)
-            self.write_progress(8, 'vsini', savefile=filename_time)
-        qc = mym.check_force_vsini(dir_root,step_nb='(8)')
+            if qc4==1:
+                self.compute_vsini(Prot=Prot, Rs=Rs)
+                self.write_progress(8, 'vsini', savefile=filename_time)
+        qc8 = mym.check_force_vsini(dir_root,step_nb='(8)')
 
         if force_abs_continuum: #9
-            self.compute_abs_continuum()
-            self.write_progress(9, 'abs_continuum', savefile=filename_time)
-        qc = mym.check_force_abs_continuum(dir_root,step_nb='(9)')
+            if qc5==1:
+                self.compute_abs_continuum()
+                self.write_progress(9, 'abs_continuum', savefile=filename_time)
+        qc9 = mym.check_force_abs_continuum(dir_root,step_nb='(9)')
 
         if force_activity: #10
             self.compute_activity()
             self.write_progress(10, 'activity',savefile=filename_time)
-        qc = mym.check_force_activity(dir_root,step_nb='(10)')
+        qc10 = mym.check_force_activity(dir_root,step_nb='(10)')
 
         if force_mhk: #11
             self.compute_mhk()
             self.write_progress(11, 'mhk', savefile=filename_time)
-        qc = mym.check_force_mhk(dir_root,step_nb='(11)')
+        qc11 = mym.check_force_mhk(dir_root,step_nb='(11)')
 
         if force_spectroscopy: #12
             self.compute_spectroscopy()
             self.write_progress(12, 'spectroscopy', savefile=filename_time)
-        qc = mym.check_force_spectroscopy(dir_root,step_nb='(12)')
+        qc12 = mym.check_force_spectroscopy(dir_root,step_nb='(12)')
 
         try: #Until a proper test condition is implemented
             if force_magcycle: #13
                 self.compute_mag_cycle()
                 self.write_progress(13, 'mag_cycle', savefile=filename_time)
-            qc = mym.check_force_magcycle(dir_root,step_nb='(13)')
+            qc13 = mym.check_force_magcycle(dir_root,step_nb='(13)')
         except:
             pass
 

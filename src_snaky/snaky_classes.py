@@ -726,13 +726,54 @@ class tableXY(object):
             if self.convergence:
                 plt.plot(newx,gmodel.eval(result1.params, x=newx),color=color)
 
+    def rotation_broadening(self,veq=10,epsilon=0.60,Plot=False,replace=False):
+        """Assume a normalised continuum spectrum"""
+        mean_wave = np.nanmean(self.x)
+        wave_rv = (self.x-mean_wave)/mean_wave*myv.c_lum/1000
+        dv = np.mean(np.diff(wave_rv))
+        grid = np.arange(np.min(wave_rv),np.max(wave_rv),dv)
+
+        new = tableXY(wave_rv,self.y,self.yerr)
+        new.interpolate(new_grid=grid,method='linear',replace=True)
+        
+        vgrid = np.arange(0,2*abs(veq),dv)
+        vgrid = np.hstack([-vgrid[1:][::-1],vgrid])
+
+        kernel_rot = myf.gray_rotation(epsilon=epsilon,color='b',vl=abs(veq),Plot=False,vgrid=vgrid)
+        self.rotation_kernel = kernel_rot
+        #if len(kernel_rot)==1:
+        #    kernel_rot = np.array([0.0, 1.0, 0.0])
+        vector = 1-new.y
+
+        if veq>=0:
+            new_flux = 1-np.convolve(vector,kernel_rot,mode='same')
+
+        new.y = new_flux
+        new.x = new.x/myv.c_lum*1000*mean_wave+mean_wave
+        new.interpolate(new_grid=self.x,method='linear',replace=True)
+
+        if Plot:
+            self.plot(ls='-',color='k')
+            new.plot(ls='-',color=None,label=r'$v\sin i$=%.2f km/s'%(veq))
+        
+        if replace:
+            self.y = new.y
+        else:
+            self.degraded = new
 
     def fit_rassine(self, par_R, par_Rmax, par_stretching, tag=''):
         if tag!='':
             tag = '_'+tag
         df = pd.DataFrame({'wave':self.x,'flux':self.y,'flux_err':self.yerr})
         df.to_csv(myv.SRC_DIR+'/temp/spectrum_to_normalise%s.csv'%(tag))
-        
+
+        plt.pause(1) #to let the time for the csv file to be created
+        for j in range(10):
+            if not os.path.exists(myv.SRC_DIR+'/temp/spectrum_to_normalise%s.csv'%(tag)):
+                plt.pause(1)
+            else:
+                break
+
         rassine_main([
             '-s', myv.SRC_DIR + f'/temp/spectrum_to_normalise{tag}.csv',
             '-r', str(par_R),
@@ -1010,6 +1051,13 @@ class tableXY(object):
 
             ccf_profile = self.ccf_profile
             
+            mask_vmax = abs(ccf_profile.x)>(200*1000)
+            if np.sum(mask_vmax):
+                poly_coeff = np.polyfit(ccf_profile.x[mask_vmax],ccf_profile.y[mask_vmax],2)
+                model = np.polyval(poly_coeff,ccf_profile.x)
+                ccf_profile.y = 1 + ccf_profile.y - model
+                #plt.plot(ccf_profile.x,model,color='orange')
+
             if Plot:
                 plt.figure(figsize=(18,6))
                 plt.axes([0.05,0.1,0.58,0.75])
