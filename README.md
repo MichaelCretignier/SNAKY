@@ -378,7 +378,7 @@ sbatch run_snaky_med.s HD128621 HARPS15_3.3.6 1 14
 
 <a id="flag4"></a>
 
-SNAKY can process spectra from the following products from the following spectrographs:
+SNAKY can process spectra from the following products from the following spectrographs (high efficiency spectrograph mode should be specified with SPECTRO-HE):
 
 | SPECTRO | DRS        | PRODUCT        |  SNAKY_CODE        | 
 |---------------|---------------|---------------|---------------|
@@ -387,11 +387,11 @@ SNAKY can process spectra from the following products from the following spectro
 | CORALIE14 | irrelevant | S1D | CORALIE14_3.8 |
 | PEPSI | irrelevant | S1D | PEPSI_1.0 |
 | [SOPHIE](http://atlas.obs-hp.fr/sophie/) | irrelevant | S1D | SOPHIE_0.5 |
-| [SOPHIE-HE](http://atlas.obs-hp.fr/sophie/) (high efficiency) | irrelevant | S1D | SOPHIE-HE_0.5 |
+| [SOPHIE-HE](http://atlas.obs-hp.fr/sophie/)  | irrelevant | S1D | SOPHIE-HE_0.5 |
 | [HARPN](http://archives.ia2.inaf.it/tng/) or [HARPN](#flag_download)| >= 3.0.1 (new) | S1D |  HARPN_3.0.1 |
 | [ESPRESSO](https://archive.eso.org/scienceportal/home) or [ESPRESSO](#flag_download)| irrelevant | S1D |  ESPRESSO_3.3.6 |
 | [NEID](https://neid.ipac.caltech.edu) | irrelevant | E2DS |  NEID_1.0 |
-| [NEID-HE](https://neid.ipac.caltech.edu) (high efficiency) | irrelevant | E2DS |  NEID-HE_1.0 |
+| [NEID-HE](https://neid.ipac.caltech.edu) | irrelevant | E2DS |  NEID-HE_1.0 |
 | [HARPS03](https://archive.eso.org/scienceportal/home) or [HARPS](#flag_download)| 3.5 (old) | S1D |  HARPS03_3.5 |
 | [HARPS15](https://archive.eso.org/scienceportal/home) or [HARPS](#flag_download)| 3.5 (old) | S1D |  HARPS15_3.5 |
 | [HARPS03](https://dace.unige.ch) | >= 3.3.6 (new) | S1D |  HARPS03_3.3.6 |
