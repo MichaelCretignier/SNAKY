@@ -346,7 +346,7 @@ job1.reduce(begin=9, end=14, atmos_db=True)
 job2.reduce(begin=9, end=14, atmos_db=True) 
 ```
 
-## ⑦ Public archival ESO and TNS query and SNAKY processing
+## ⑦ Public ESO and TNG archives query and SNAKY processing
 
 <a id="flag_download"></a>
 
