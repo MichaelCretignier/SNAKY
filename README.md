@@ -358,7 +358,7 @@ python snaky_query.py -s HD217014,HD4628
 
 The list of parameters are:
 
-`-s`  List of target stars. Either a comma-separated list (e.g. `HD10700,HD22049`) or a `.csv` file with `starname` column. \
+`-s`  List of target stars. A comma-separated list (e.g. `HD10700,HD22049`) or a `.csv` file with `starname` column. \
 `-o`  Output directory (e.g. `.../SNAKY/Snaky_data/`) \
 `-n`  Maximum number of spectra to download per instrument (e.g. `-n 5`) \
 `-b`  Starting SNAKY reduction stage (e.g. `-b 1`) \
