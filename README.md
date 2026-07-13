@@ -348,6 +348,8 @@ job2.reduce(begin=9, end=14, atmos_db=True)
 
 ## ⑦ Public archival ESO and TNS query and SNAKY processing
 
+<a id="flag_download"></a>
+
 *To even simplify further the processing, SNAKY contains a code `snaky_query.py` that can directly download the spectra on your machine. The shortest call of the function is:*
 
 ```bash
@@ -386,14 +388,17 @@ SNAKY can process spectra from the following products from the following spectro
 | PEPSI | irrelevant | S1D | PEPSI_1.0 |
 | [SOPHIE](http://atlas.obs-hp.fr/sophie/) | irrelevant | S1D | SOPHIE_0.5 |
 | [SOPHIE-HE](http://atlas.obs-hp.fr/sophie/) (high efficiency) | irrelevant | S1D | SOPHIE-HE_0.5 |
-| [HARPN](http://archives.ia2.inaf.it/tng/) | >= 3.0.1 (new) | S1D |  HARPN_3.0.1 |
+| [HARPN](http://archives.ia2.inaf.it/tng/) or [HARPN](#flag_download)| >= 3.0.1 (new) | S1D |  HARPN_3.0.1 |
 | [ESPRESSO](https://archive.eso.org/scienceportal/home) | irrelevant | S1D |  ESPRESSO_3.3.6 |
 | [NEID](https://neid.ipac.caltech.edu) | irrelevant | E2DS |  NEID_1.0 |
 | [NEID-HE](https://neid.ipac.caltech.edu) (high efficiency) | irrelevant | E2DS |  NEID-HE_1.0 |
 | [HARPS03](https://archive.eso.org/scienceportal/home) | 3.5 (old) | S1D |  HARPS03_3.5 |
 | [HARPS15](https://archive.eso.org/scienceportal/home) | 3.5 (old) | S1D |  HARPS15_3.5 |
 | [HARPS03](https://dace.unige.ch) | >= 3.3.6 (new) | S1D |  HARPS03_3.3.6 |
-| [HARPS15](https://dace.unige.ch) | >= 3.3.6 (new) | S1D |  HARPS15_3.3.6 |
+| [HARPS15](https://dace.unige.ch) or (#flag_download) | >= 3.3.6 (new) | S1D |  HARPS15_3.3.6 |
+| [FEROS](#flag_download) | irrelevant | S1D |  FEROS_1.0 |
+| [FIES](#flag_download) | irrelevenat | S1D |  FIES_1.0 |
+| [UVES](#flag_download) | irrelevant | S1D |  UVES_1.0 |
 
 HARPS spectra before and after the fiber upgrade (2015-05-23) have to be processed independently as respectively HARPS03 and HARPS15 spectra and the DRS version has to be correctly specified.
 
