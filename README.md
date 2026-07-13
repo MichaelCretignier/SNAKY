@@ -358,12 +358,12 @@ python snaky_query.py -s HD217014,HD4628
 
 The list of parameters are:
 
-`-s` List of stars (either `,` comma split or a `.csv` file with starname keyword) \
-`-o` Output directory \
-`-n` Number of spectra downloaded per instrument \
-`-b` The beginning SNAKY stage (b=1) \
-`-e` The ending SNAKY stage (b=14) \
-`-a` automatic_db parameter (a=1) \
+`-s` the list of stars (either `,` comma split or a `.csv` file with starname keyword) \
+`-o` the output directory (`.../SNAKY/Snaky_data/`) \
+`-n` the number of spectra downloaded per instrument (n=5) \
+`-b` the beginning SNAKY stage (b=1) \
+`-e` the ending SNAKY stage (b=14) \
+`-a` the `automatic_db` parameter (a=1) \
 
 ## ⑧ Large-Scale Processing (SLURM / sbatch parallelization)
 
