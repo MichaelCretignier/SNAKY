@@ -3,7 +3,7 @@ import numpy as np
 from astropy.coordinates import SkyCoord, Angle
 
 keywords_allowed = {
-    'starname':['primary','hd','hip'],
+    'starname':['hd','hip','primary'],
     'RA':['ra'],
     'DEC':['dec'],
     'ms':['mass','msol','mstar'],

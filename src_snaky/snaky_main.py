@@ -2252,7 +2252,8 @@ def import_ccf_profile(dir_root,mask_name):
 
 def import_ccf(dir_root,mask_name):
 
-    ccf_infos = pd.read_pickle(dir_root+'WORKSPACE/Analyse_ccf.p')['CCF_%s'%(mask_name)]['table']
+    ccf = pd.read_pickle(dir_root+'WORKSPACE/Analyse_ccf.p')['CCF_%s'%(mask_name)]
+    ccf_infos = ccf['table']
     rvs = ccf_infos['rv']
     rvs_std = ccf_infos['rv_std']
 
@@ -2296,6 +2297,9 @@ def yarara_iron_lines(dir_root, master, fwhm, rv_sys=0.0):
     grid = np.arange(0,sigma_3wid*1000,100) 
     grid = np.hstack([-grid[1:][::-1],grid])
     
+    grid_out = np.arange(0,rv_range*1000,100) 
+    grid_out = np.hstack([-grid_out[1:][::-1],grid_out])
+
     Contrast = {}
     EW = {}
     if (np.min(master.x)<6800)&(np.max(master.x)>5150):
@@ -2319,6 +2323,8 @@ def yarara_iron_lines(dir_root, master, fwhm, rv_sys=0.0):
 
         master.ccf_profile.smooth(box_pts=10,replace=False,shape='rectangular')
         master.ccf_profile.y /= np.max(master.ccf_profile.smoothed.y)
+        master.ccf_profile.interpolate(new_grid=grid_out,replace=False)
+        quality_control = master.ccf_profile.y_interp
         master.ccf_profile.interpolate(new_grid=grid,replace=False)
 
         contrast1 = 1-np.mean(master.ccf_profile.y_interp)
@@ -2345,15 +2351,21 @@ def yarara_iron_lines(dir_root, master, fwhm, rv_sys=0.0):
         plt.xlim(-rv_range,rv_range)
         count=1
 
+        QC = [0,0]
+
         for species in ['FeIS','FeIIS','TiI','VI','MnI','NdII','TiII','CrI','NiI','CoI','CaI','SiI','ScII','CaH','LiI']:
             count+=1
             mask2 = np.genfromtxt(MATERIAL_DIR+'/MASK_CCF/%s.txt'%(species))
             mask22 = np.array([0.5*(mask2[:,0]+mask2[:,1]),mask2[:,2]]).T
             non_zero = np.sum([master.y[myf.find_nearest(master.x,w1)[0][0]] for w1 in myf.doppler_r(mask22[:,0],rv_sys*1000)[1]])
             master.ccf(mask22, weighted=False, rv_range=rv_range,rv_sys=rv_sys*1000,fit_gaussian=False, save_if_missing=False)
+
+            master.ccf_profile.smooth(box_pts=10,replace=False,shape='rectangular')
+            max_value = np.max(master.ccf_profile.smoothed.y)
+            master.ccf_profile.interpolate(new_grid=grid_out,replace=False)
+            quality_control = master.ccf_profile.y_interp/max_value
             if non_zero!=0:
-                master.ccf_profile.smooth(box_pts=10,replace=False,shape='rectangular')
-                master.ccf_profile.y /= np.max(master.ccf_profile.smoothed.y)
+                master.ccf_profile.y /= max_value
                 master.ccf_profile.interpolate(new_grid=grid,replace=False)
             else:
                 print(Fore.YELLOW+'\n [WARNING] No lines detected for %s!'%(species)+Fore.RESET)
@@ -2363,6 +2375,11 @@ def yarara_iron_lines(dir_root, master, fwhm, rv_sys=0.0):
             contrast2 = 1-np.mean(master.ccf_profile.y_interp)
             contrast2 = np.sum(1-master.ccf_profile.y_interp)*np.diff(grid)[0]/1000
             ew2 = contrast2/3e5*np.mean(mask2[:,0])*1000
+            qc = (np.sum(1-quality_control)*np.diff(grid)[0]/1000)/3e5*np.mean(mask2[:,0])*1000
+            QC[0] += ew2
+            QC[1] += (qc-ew2)
+            #print(QC)
+
             plt.fill_between(grid,master.ccf_profile.y_interp,1,color='g',alpha=0.2,label='%.2f'%(contrast2))
             plt.legend(loc=3)
             plt.savefig(dir_root+'IMAGES/Atmos_%s'%(species)+myv.PRD_EXT+'.png')
@@ -2381,11 +2398,23 @@ def yarara_iron_lines(dir_root, master, fwhm, rv_sys=0.0):
             plt.title(species)
             plt.ylim(0.0,1.1)
             plt.xlim(-rv_range,rv_range)
+        
+        SNR = QC[0]/QC[1]
+        FLAG = 0
+        print('\n [INFO] SNR signal power = %.2f (Tot = %.0f)'%(SNR,QC[0]))
+        if (SNR<0.8):
+            print(Fore.YELLOW+' [WARNING] Power SNR < 1 (no lines)'+Fore.RESET)
+            FLAG = 1
+
+        if (SNR<1.5)&(QC[0]>5000):
+            print(Fore.YELLOW+' [WARNING] The power is not distributed on the line profiles.'+Fore.RESET)
+            FLAG = 2
+        
         plt.subplots_adjust(hspace=0.35,wspace=0.35,top=0.95,left=0.07,right=0.96,bottom=0.13)
         plt.savefig(dir_root+'IMAGES/Atmos_all'+myv.PRD_EXT+'.png')
-    return Contrast, EW
+    return Contrast, EW, FLAG
 
-def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=False):
+def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=False, flag=False):
     
     if myv.VERBOSE:
         myf.print_box('\n---- RECIPE : XGB ATMOSPHERIC PARAMETERS ----\n')
@@ -2400,6 +2429,9 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
         xgb_file = MATERIAL_DIR+'/xgb_model_yarara_atmos'+myv.SKLEARN_VERSION+'.p'
     ew = np.array([star_info['Contrast'][kw] for kw in lines])
     rv_sys = star_info['Rv_sys']['SNAKY']
+
+    if flag:
+        ew *= np.nan
 
     myv.vprint(' [INFO] EW:',np.round(np.hstack(ew.T),2))
 
@@ -2499,9 +2531,8 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
         fwhm = xlim/3
         plt.axes([0,0,1,0.1])
         plt.axis('off')
-        plt.text(0.5,0.5,'FWHM = %.2f km/s | RV_sys = %.1f km/s\n'%(fwhm,rv_sys)+r'$T_{eff}$'+' = %.0f +/- 70 K  |  logg = %.2f +/- 0.07 dex  |  [Fe/H] = %.2f +/- 0.07 dex\n Ms = %.2f +/- %.2f |  Rs = %.2f +/- %.2f'%(teff,logg,feh, M, dM, R, dR),ha='center',va='center',fontsize=15)
+        plt.text(0.5,0.5,'FWHM = %.2f km/s | RV_sys = %.1f km/s\n'%(fwhm,rv_sys)+r'$T_{eff}$'+' = %.0f +/- %.0f K  |  logg = %.2f +/- %.2f dex  |  [Fe/H] = %.2f +/- %.2f dex\n Ms = %.2f +/- %.2f |  Rs = %.2f +/- %.2f'%(teff, dteff, logg, dlogg, feh, dfeh, M, dM, R, dR),ha='center',va='center',fontsize=15)
         plt.savefig(dir_root+'IMAGES/Atmos_all'+myv.PRD_EXT+'.png')
-
 
     return teff,feh,logg,M,R,BV,vmicro,vmacro
 
@@ -2512,7 +2543,7 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False, std_
         myf.print_box('\n---- RECIPE : VSINI EXTRACTION ----\n')
 
     sinfo = import_star_info(dir_root)
-
+    ccf_values = import_ccf(dir_root,'G2')
 
     instrument = dir_root.split('/')[-2]
     ins = instrument.split('_')[0]
@@ -2558,6 +2589,9 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False, std_
         ref_resolution = ins_res
     diff = ref_resolution - ins_res
 
+    if (ref_resolution!=ref_resolution)&(np.nanmedian(ccf_values['fwhm'].y)>30):
+        ref_resolution = 5
+
     myv.vprint(' [INFO] Reference instrument resolution = %.2f km/s'%(ref_resolution))
     myv.vprint(' [INFO] Telluric measured one = %.2f km/s (Delta = %.2f)'%(ins_res,diff))
     
@@ -2596,7 +2630,6 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False, std_
     samples = []
     num = -1
 
-    ccf_values = import_ccf(dir_root,'G2')
     if np.nanmedian(ccf_values['fwhm'].y)>30:
         masks = ['G2','G2']
     else:
@@ -2671,6 +2704,7 @@ def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False, std_
 
         V = []
         G = calib_curve['GARFIELD']#[kw]
+
         for f in fwhmG_HARPN:
             G.interpolate(new_grid=f,method='linear',replace=False)
             V.append(G.y_interp)
@@ -3486,6 +3520,13 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
 
     liste_proxy = [myv.Ca2K,myv.Ca2H]
 
+    if vsini<5:
+        vsini=0.0
+    else:
+        vsini = np.sqrt(vsini**2-2**2)
+
+    vsini=0.0
+
     save = {}
     for n,l in enumerate(liste_proxy):
         unit_filling = {'CaIIK':0.14,'CaIIH':0.14*0.90}[l[-1]]
@@ -3525,7 +3566,23 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
 
         loc = myf.find_nearest(photosphere[l[-1]]['teff'],teff)[0][0]
         db = myc.tableXY(photosphere[l[-1]]['wave'],photosphere[l[-1]]['model'][loc])
-        db.rv_shift(rv_sys,fill_value=np.nan,x_grid=line_wave,replace=False)
+        db.rotation_broadening(veq=vsini,replace=True)
+
+        if False:
+            models = []
+            rv_grid = np.linspace(-4,4,20)
+            for r in rv_grid:
+                db.rv_shift(rv_sys+r,fill_value=np.nan,x_grid=line_wave,replace=False)
+                models.append(db.shifted.copy().y)
+            ratio = np.array(models)/np.median(line,axis=0)
+            residuals = myf.mad(ratio,axis=1)
+            rv_model = rv_sys + rv_grid[np.argmin(residuals)]*0.5
+            print(' [INFO] Model RV shifted by %.2f km/s'%(rv_grid[np.argmin(residuals)]))
+        else:
+            rv_model = rv_sys
+
+        db.rv_shift(rv_model,fill_value=np.nan,x_grid=line_wave,replace=False)
+
         quiet = db.shifted.copy()
         quiet.interpolated = quiet.copy()
         quiet.y_interp = quiet.y
@@ -3535,7 +3592,10 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
 
         db_E1 = chromosphere[l[-1]]
         loc = myf.find_nearest(db_E1['teff'],teff)[0][0]
-        E1 = myc.tableXY(db_E1['vel'],db_E1['model'][loc])
+        E1 = myc.tableXY(db_E1['vel'].copy(),db_E1['model'][loc].copy())
+        E1.x = E1.x/3e5*center+center
+        E1.rotation_broadening(veq=vsini,replace=True)
+        E1.x = 3e5*(E1.x-center)/center
         E1.interpolate(new_grid=wave_vel,replace=True,method='linear')
         E1.y[np.abs(E1.x)>35] = 0
         E1.null()
@@ -3572,17 +3632,18 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
 
         calib.yerr = calib.yerr*0+ref_std[mask_activity]
         calib.supress_nan()
-        for j in range(3):
-            calib.fit_line(recenter=False)
-            mask = myf.rm_outliers(calib.y-calib.x*calib.lin_slope_w,m=2,kind='mad')[0]
-            if int(np.sum(mask)*100/len(mask))>60:
-                calib.masked(mask)
-                index_vec = index_vec[mask]
+        if len(calib.y)>3:
+            for j in range(3):
+                calib.fit_line(recenter=False)
+                mask = myf.rm_outliers(calib.y-calib.x*calib.lin_slope_w,m=2,kind='mad')[0]
+                if int(np.sum(mask)*100/len(mask))>60:
+                    calib.masked(mask)
+                    index_vec = index_vec[mask]
 
-        index_vec = myf.in1d(np.arange(len(ref)),index_vec)
-        mat.table-=calib.lin_intercept_w
-        mat.table/=calib.lin_slope_w
-        line_std/=calib.lin_slope_w
+            index_vec = myf.in1d(np.arange(len(ref)),index_vec)
+            mat.table-=calib.lin_intercept_w
+            mat.table/=calib.lin_slope_w
+            line_std/=calib.lin_slope_w
 
         mat.plot(x=wave_vel,cmap='seismic',color=proxy,new=False,alpha=0.07,fontsize=14)
         v1 = 3e5*(2.25)/center
@@ -3615,7 +3676,7 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
             db.y[np.isnan(db.y)] = quiet.y_interp[np.isnan(db.y)]
             db.y[np.isnan(db.y)] = np.median(mat.table,axis=0)[np.isnan(db.y)]
         
-        plt.plot(3e5*(db.x-center)/center,db.y,color='C2',ls='-',lw=2,label=r'$I_{Q}$($\lambda$,%.0fK)'%(teff))
+        plt.plot(3e5*(db.x-center)/center,db.y,color='C2',ls='-',lw=2,label=r'$I_{Q}$($\lambda$,%.0fK,%.0fkms)'%(teff,vsini))
         plt.legend(loc=1)
         plt.ylabel(r'$I(\lambda)$ []',fontsize=14)
         axlim = plt.gca()
@@ -3639,7 +3700,7 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
         if len(files[-1])>5:
             uncertainties = mat2.table-np.median(mat2.table,axis=0)
         else:
-            uncertainties = mat2.table-quiet.y_interp
+            uncertainties = mat2.table-quiet.y_interp*0
 
         if not np.sum(wings_uncertainties):
             wings_uncertainties = np.ones(len(line_wave)).astype('bool')

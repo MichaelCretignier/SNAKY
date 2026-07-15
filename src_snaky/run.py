@@ -657,14 +657,14 @@ class start():
             rv_sys_correction = 0
         
         rv_sys = sinfo['Rv_sys']['SNAKY'] - rv_sys_correction
-        CT,EW = mym.yarara_iron_lines(dir_root, master, fwhm, rv_sys=rv_sys)
+        CT,EW,FLAG = mym.yarara_iron_lines(dir_root, master, fwhm, rv_sys=rv_sys)
         for kw in CT.keys():
             sinfo['Contrast'][kw] = CT[kw]
         for kw in EW.keys():
             sinfo['EW'][kw] = EW[kw]
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
-        atmos = mym.yarara_atmos_xgb_spectroscopy(dir_root, sinfo, resolution=80000, phot=True)
+        atmos = mym.yarara_atmos_xgb_spectroscopy(dir_root, sinfo, resolution=80000, phot=True, flag=(FLAG!=0))
         teff,feh,logg,M,R,BV,vmicro,vmacro = atmos
 
         suffixe = 'ATLAS_T%.0f_g%.1f'%(np.round(teff,-2),np.round(logg,1))
@@ -742,10 +742,12 @@ class start():
         sinfo = mym.import_star_info(dir_root)
         try:
             ins_res = sinfo['FWHM']['O2']
-        except:
+        except: 
             ins_res = np.nan
-        
-        if (ins_res==ins_res)|(ins in myv.instrument_res_kms.keys()):
+
+        fwhm = sinfo['FWHM']['G2']
+
+        if (ins_res==ins_res)|(ins in myv.instrument_res_kms.keys())|(fwhm>60):
             try:
                 vsini = mym.yarara_vcat(dir_root, sub_dico=sub_dico, debug=self.debug, std_bias_kms=0.1, ref_value=ref_value) 
             except FileNotFoundError:
@@ -783,6 +785,8 @@ class start():
         else:
             try:
                 vsini = sinfo['Vsini']['SNAKY']
+                if vsini!=vsini:
+                    vsini = 0.0
             except:
                 vsini = 0.0
 
@@ -845,7 +849,12 @@ class start():
         material = mym.import_material(dir_root)
         wave_min = np.min(material['wave'][material['reference_spectrum']>0])
         
-        mask_lines = abs(self.sy_sts_wave/100-3950)<30
+        rv_sys = sinfo['Rv_sys']['SNAKY']
+
+        mask_h = (abs(self.sy_sts_wave/100-myf.doppler_r(myv.Ca2H[0],rv_sys*1000)[0])<2)
+        mask_k = (abs(self.sy_sts_wave/100-myf.doppler_r(myv.Ca2H[0],rv_sys*1000)[0])<2)
+
+        mask_lines = (mask_h|mask_k)
         valid_percent = np.sum(self.sy_sts_flux[:,mask_lines]>0,axis=1)*100/np.sum(mask_lines)
         valid_spectra = (valid_percent>50)
 
@@ -856,7 +865,7 @@ class start():
             rv = ccf_output['rv'].y
             rv_sys_correction = np.nanmedian(rv)/1000
 
-            rv_sys = sinfo['Rv_sys']['SNAKY'] - rv_sys_correction*0 # ???? rv should already 
+            rv_sys = rv_sys - rv_sys_correction*0 # ???? rv should already 
             if self.sy_user_object['Teff'] is not None:
                 teff = self.sy_user_object['Teff']
             else:

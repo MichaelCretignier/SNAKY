@@ -731,27 +731,25 @@ class tableXY(object):
         mean_wave = np.nanmean(self.x)
         wave_rv = (self.x-mean_wave)/mean_wave*myv.c_lum/1000
         dv = np.mean(np.diff(wave_rv))
-        grid = np.arange(np.min(wave_rv),np.max(wave_rv),dv)
+        grid = np.arange(np.min(wave_rv)-veq,np.max(wave_rv)+veq,dv)
 
         new = tableXY(wave_rv,self.y,self.yerr)
-        new.interpolate(new_grid=grid,method='linear',replace=True)
-        
-        vgrid = np.arange(0,2*abs(veq),dv)
-        vgrid = np.hstack([-vgrid[1:][::-1],vgrid])
+        if veq>dv:
+            new.interpolate(new_grid=grid,method='linear',replace=True)
 
-        kernel_rot = myf.gray_rotation(epsilon=epsilon,color='b',vl=abs(veq),Plot=False,vgrid=vgrid)
-        self.rotation_kernel = kernel_rot
-        #if len(kernel_rot)==1:
-        #    kernel_rot = np.array([0.0, 1.0, 0.0])
-        vector = 1-new.y
+            vgrid = np.arange(0,2*abs(veq),dv)
+            vgrid = np.hstack([-vgrid[1:][::-1],vgrid])
 
-        if veq>=0:
+            kernel_rot = myf.gray_rotation(epsilon=epsilon,color='b',vl=abs(veq),Plot=False,vgrid=vgrid)
+            self.rotation_kernel = kernel_rot
+            vector = 1-new.y
+
             new_flux = 1-np.convolve(vector,kernel_rot,mode='same')
 
-        new.y = new_flux
-        new.x = new.x/myv.c_lum*1000*mean_wave+mean_wave
-        new.interpolate(new_grid=self.x,method='linear',replace=True)
-
+            new.y = new_flux
+            new.x = new.x/myv.c_lum*1000*mean_wave+mean_wave
+            new.interpolate(new_grid=self.x,method='linear',replace=True)
+        
         if Plot:
             self.plot(ls='-',color='k')
             new.plot(ls='-',color=None,label=r'$v\sin i$=%.2f km/s'%(veq))
