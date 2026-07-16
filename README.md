@@ -401,8 +401,9 @@ SNAKY can process spectra from the following products from the following spectro
 | [HARPS03](https://dace.unige.ch) | >= 3.3.6 (new) | S1D |  HARPS03_3.3.6 |
 | [HARPS15](https://dace.unige.ch) | >= 3.3.6 (new) | S1D |  HARPS15_3.3.6 |
 | [FEROS](#flag_download) | irrelevant | S1D |  FEROS_1.0 |
-| [FIES](#flag_download) | irrelevenat | S1D |  FIES_1.0 |
+| [FIES](https://www.not.iac.es/observing/forms/fitsarchive/index.php?instrument=FIES) or [FIES](#flag_download) | irrelevenat | S1D |  FIES_1.0 |
 | [UVES](#flag_download) | irrelevant | S1D |  UVES_1.0 |
+| [HERMES](#flag_download) | irrelevant | S1D |  HERMES_1.0 |
 
 HARPS spectra before and after the fiber upgrade (2015-05-23) have to be processed independently as respectively HARPS03 and HARPS15 spectra and the DRS version has to be correctly specified.
 

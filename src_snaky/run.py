@@ -171,7 +171,8 @@ class start():
 
         self.sy_files = files
         self.sy_sub_dico = sub_dico
-        self.sy_source_files = source
+        if (type(source)==str)|(source is None):
+            self.sy_source_files = [source]*len(files)
 
         self.sy_rassine_db = False
         self.sy_yarara_db = False
@@ -321,7 +322,7 @@ class start():
         ins = self.sy_instrument
         files = self.sy_files
         dir_root = self.sy_dir_root
-        source = self.sy_source_files
+        sources = self.sy_source_files
         dace_table = mym.import_dace_table(dir_root)
 
         rv_shift = np.zeros(len(files))
@@ -330,42 +331,38 @@ class start():
             rv_shift = pd.merge(df,dace_table[['fileroot','berv_computed']],how='left')['berv_computed'].values*1000
         
         if self.sy_rassine_db==False:
-            if ins[0:6]=='SOPHIE':
-                for f in files:
-                    mym.read_sophie(f,dir_root,force=True)
-            elif (ins=='HARPS_3.5')|(ins=='HARPS03_3.5')|(ins=='HARPS15_3.5'):
-                for f in files:
-                    mym.read_sophie(f,dir_root,force=True)
-            elif (ins.split('_')[0][0:5]=='HARPS')|(ins.split('_')[0]=='HARPN')|(ins.split('_')[0]=='ESPRESSO'):
-                if source=='ESO':
-                    for f in files:
-                        mym.read_eso(f,dir_root,ins.split('_')[0],force=True)
-                elif source=='IA2':
-                    for f in files:
-                        mym.read_ia2(f,dir_root,force=True)
-                else:
-                    for f in files:
-                        mym.read_espresso(f,dir_root,force=True)
-            elif ins[0:5]=='PEPSI':
+            if ins[0:5]=='PEPSI':
                 new_summary = mym.pepsi_summary(files,self.sy_dir_root)
                 files = new_summary['fileroot'].values
                 self.sy_files = files
                 self.init_workspace()
                 dace_table = mym.import_dace_table(dir_root)
-                for f in files:
+
+            for f,source,rv in zip(files,sources,rv_shift):
+                if ins[0:6]=='SOPHIE':
+                    mym.read_sophie(f,dir_root,force=True)
+                elif (ins=='HARPS_3.5')|(ins=='HARPS03_3.5')|(ins=='HARPS15_3.5'):
+                    mym.read_sophie(f,dir_root,force=True)
+                elif (ins.split('_')[0][0:5]=='HARPS')|(ins.split('_')[0]=='HARPN')|(ins.split('_')[0]=='ESPRESSO'):
+                    if source=='ESO':
+                        mym.read_eso(f,dir_root,ins.split('_')[0],force=True)
+                    elif source=='IA2':
+                        mym.read_ia2(f,dir_root,force=True)
+                    else:
+                        mym.read_espresso(f,dir_root,force=True)
+                elif ins[0:5]=='PEPSI':
                     mym.read_pepsi(f,dir_root,force=True)
-            elif ins[0:4]=='NEID':
-                for f in files:
+                elif ins[0:4]=='HERM':
+                    mym.read_hermes(f,dir_root,force=True)
+                elif ins[0:4]=='NEID':
                     mym.read_neid(f,dir_root,force=True)
-            elif source=='GR8':
-                for f in files:
+                elif source=='GR8':
                     mym.read_gr8(f, dir_root, ins.split('_')[0],force=True)
-            elif source=='ESO':
-                for f,rv in zip(files,rv_shift):
+                elif source=='ESO':
                     mym.read_eso(f, dir_root, ins.split('_')[0], rv_shift=rv, force=True)
-            else:
-                for f,w0,dw in zip(files,cval1,cdelta1): #no more used
-                    mym.read_static(f,dir_root,w0,dw,force=True)
+                else:
+                    pass
+                    #mym.read_static(f,dir_root,w0,dw,force=True)
             self.sy_rassine_files = np.sort(glob.glob(dir_root+'WORKSPACE/RASSINE*.p'))
             myv.vprint(' [INFO] Venting DACE table in RASSINE files...')
             for rf in self.sy_rassine_files:
@@ -657,6 +654,7 @@ class start():
             rv_sys_correction = 0
         
         rv_sys = sinfo['Rv_sys']['SNAKY'] - rv_sys_correction
+
         CT,EW,FLAG = mym.yarara_iron_lines(dir_root, master, fwhm, rv_sys=rv_sys)
         for kw in CT.keys():
             sinfo['Contrast'][kw] = CT[kw]
@@ -747,17 +745,36 @@ class start():
 
         fwhm = sinfo['FWHM']['G2']
 
-        if (ins_res==ins_res)|(ins in myv.instrument_res_kms.keys())|(fwhm>60):
-            try:
-                vsini = mym.yarara_vcat(dir_root, sub_dico=sub_dico, debug=self.debug, std_bias_kms=0.1, ref_value=ref_value) 
-            except FileNotFoundError:
-                pass
+        if fwhm>30:
+            rv_sys = sinfo['Rv_sys']['SNAKY']
+            atmos = mym.yarara_atmos_fast_rotator(dir_root, rv_sys, fwhm*0.75, model='SNAKY')
+            teff,feh,logg,M,R,BV,vmicro,vmacro,vsini = atmos
+            suffixe = 'ATLAS_T%.0f_g%.1f'%(np.round(teff,-2),np.round(logg,1))
+            myv.vprint(' [INFO] Atmospheric model set to : %s'%(suffixe))
+            sinfo = myf.update_info_lvl2(sinfo,'Mstar','SNAKY',M)   
+            sinfo = myf.update_info_lvl2(sinfo,'Rstar','SNAKY',R)
+            sinfo = myf.update_info_lvl2(sinfo,'Teff','SNAKY',teff)
+            sinfo = myf.update_info_lvl2(sinfo,'FeH','SNAKY',feh)
+            sinfo = myf.update_info_lvl2(sinfo,'Log_g','SNAKY',logg)
+            sinfo = myf.update_info_lvl2(sinfo,'BV','SNAKY',BV)
+            sinfo = myf.update_info_lvl2(sinfo,'Vmicro','SNAKY',vmicro)
+            sinfo = myf.update_info_lvl2(sinfo,'Vmacro','SNAKY',vmacro)
+            sinfo = myf.update_info_lvl2(sinfo,'stellar_template','SNAKY',suffixe)
             mym.yarara_vsini(dir_root, Prot=Prot, Rs=Rs)
-            vsini = np.round(np.nanmean(vsini),2)
         else:
-            vsini = np.nan
+            if (ins_res==ins_res)|(ins in myv.instrument_res_kms.keys()):
+                try:
+                    vsini = mym.yarara_vcat(dir_root, sub_dico=sub_dico, debug=self.debug, std_bias_kms=0.1, ref_value=ref_value) 
+                except FileNotFoundError:
+                    pass
+                vsini = np.round(np.nanmean(vsini),2)
+                mym.yarara_vsini(dir_root, Prot=Prot, Rs=Rs)
+            else:
+                vsini = np.nan
+
         sinfo = myf.update_info_lvl2(sinfo,'Vsini','SNAKY',vsini)
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+
 
     #@profile
     def compute_abs_continuum(self):
@@ -871,6 +888,16 @@ class start():
             else:
                 teff = sinfo['Teff']['SNAKY']
 
+            if self.sy_user_object['Vsini'] is not None:
+                vsini = self.sy_user_object['Vsini']
+            else:
+                try:
+                    vsini = sinfo['Vsini']['SNAKY']
+                    if vsini!=vsini:
+                        vsini = 0.0
+                except:
+                    vsini = 0.0
+
             valid_spectra = valid_spectra[np.in1d(summary['filename'],ccf_output['filename'])]
 
             files = ccf_output['filename'][valid_spectra]
@@ -880,7 +907,7 @@ class start():
             files = (self.sy_sts_wave,self.sy_sts_flux[mask],files)
 
             proxy = np.array(summary.loc[mask,'CaII'])        
-            dico, rhk, mhk = mym.yarara_activity_mhk(dir_root, files, rv_sys, rv, teff, material, proxy)
+            dico, rhk, mhk = mym.yarara_activity_mhk(dir_root, files, rv_sys, rv, teff, material, proxy, vsini=vsini)
             
             for kw in ['RHK','RHK_std','MHK','MHK_std']:
                 if kw in summary.keys():

@@ -745,7 +745,6 @@ class tableXY(object):
             vector = 1-new.y
 
             new_flux = 1-np.convolve(vector,kernel_rot,mode='same')
-
             new.y = new_flux
             new.x = new.x/myv.c_lum*1000*mean_wave+mean_wave
             new.interpolate(new_grid=self.x,method='linear',replace=True)

@@ -691,6 +691,35 @@ def create_sts(files, grid = np.round(np.arange(3900,6830.001,0.01),2), sub_dico
     
     return (grid*100).astype('int'),np.array(sts)
 
+
+def read_hermes(file,dir_root,force=False,debug=False):
+    fname = file.split('/')[-1]
+    outname = dir_root+'WORKSPACE/RASSINE_Stacked_spectrum_B0.00_'+fname.replace('.fits','.p')
+    if (not os.path.exists(outname))|(force):
+        t = fits.open(file)
+        cdelt1 = t[0].header['CDELT1']
+        cval1 = t[0].header['CRVAL1']
+        flux = t[0].data[0]
+        wave = np.arange(cval1,cval1+cdelt1*len(flux)-0.0001,cdelt1)
+        flux_std = 0*flux
+        wave_grid = np.round(np.arange(3800,6900.001,0.01),2) #don-t use redder than 6900 (lighter file)
+        spec = myc.tableXY(wave,flux,flux_std)
+        spec.interpolate(new_grid=wave_grid,method='linear',fill_value=0)
+        spec = rassine_normalise(spec)
+        if debug:
+            plt.plot(spec.x,spec.y/spec.rassine_continuum.y)
+
+        if len(spec.x)==len(spec.rassine_continuum.y):
+            export = {
+                'wave':spec.x,
+                'flux':spec.y,
+                'matching_diff':{'continuum_linear':spec.rassine_continuum.y},
+                'parameters':{'arcfiles':[file]}}
+            pickle.dump(export,open(outname,'wb'))
+        else:
+            print('[WARNING] RASSINE continuum size wrong, potential multiprocessing issue')
+    
+
 def read_neid(file,dir_root,force=False,debug=False):
     fname = file.split('/')[-1]
     outname = dir_root+'WORKSPACE/RASSINE_Stacked_spectrum_B0.00_'+fname.replace('.fits','.p')
@@ -1130,6 +1159,8 @@ def extract_header(files, instru, debug=False, ra=None, dec=None, source=None):
            'CORAL':{'ESO DRS BJD':'rjd', 'ESO DRS BERV':'berv', 'ESO DRS SPE EXT SN50':'snr', 'ESO TEL TARG ALPHA':'RA', 'ESO TEL TARG DELTA':'DEC'},
            'ESPRE':{'HIERARCH ESO QC BJD':'rjd', 'HIERARCH ESO QC BERV':'berv', 'HIERARCH ESO QC ORDER100 SNR':'snr', 'HIERARCH ESO TEL1 TARG ALPHA':'RA', 'HIERARCH ESO TEL1 TARG DELTA':'DEC'},
            'FEROS':{'MJD-OBS':'rjd', 'HIERARCH ESO DRS BARYCORR':'berv', 'SNR':'snr', 'RA':'RA', 'DEC':'DEC'},
+           'FIES':{'I-HJD':'rjd', 'I-VBAR':'berv', 'I-SNR':'snr','I-RA':'RA', 'I-DEC':'DEC'},
+           'HERME':{'I-HJD':'rjd', 'I-VBAR':'berv', 'I-SNR':'snr','I-RA':'RA', 'I-DEC':'DEC'},
            'UVES':{'MJD-OBS':'rjd', 'HIERARCH ESO DRS BARYCORR':'berv', 'SNR':'snr', 'RA':'RA', 'DEC':'DEC'},
            'GR8':{'ESTSNR':'snr','RA':'RA', 'DEC':'DEC'},
            'ESO':{'MJD-OBS':'rjd','SNR':'snr','RA':'RA', 'DEC':'DEC'},
@@ -2401,7 +2432,7 @@ def yarara_iron_lines(dir_root, master, fwhm, rv_sys=0.0):
         
         SNR = QC[0]/QC[1]
         FLAG = 0
-        print('\n [INFO] SNR signal power = %.2f (Tot = %.0f)'%(SNR,QC[0]))
+        myv.vprint('\n [INFO] SNR signal power = %.2f (Tot = %.0f)'%(SNR,QC[0]))
         if (SNR<0.8):
             print(Fore.YELLOW+' [WARNING] Power SNR < 1 (no lines)'+Fore.RESET)
             FLAG = 1
@@ -2488,6 +2519,10 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
     dlogg = [0.07,0.25][warning]
     dfeh = [0.07,0.5][warning]
 
+    params = create_atmos_sample(dir_root, teff, dteff, logg, dlogg, feh, dfeh, rv_sys)
+    return params
+
+def create_atmos_sample(dir_root, teff, dteff, logg, dlogg, feh, dfeh, rv_sys):
     M, dM, R, dR, samples_ms, samples_rs = myf.find_stellar_mass_radius_MS(teff, logg, samples=99999, dTeff=dteff, dlogg=dlogg) #new function
     M = np.round(M,2)
     R = np.round(R,2)
@@ -2537,7 +2572,7 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
     return teff,feh,logg,M,R,BV,vmicro,vmacro
 
 
-def yarara_vcat(dir_root, sub_dico='matching_diff', Prot=None, debug=False, std_bias_kms = 0.1, ref_value=None):
+def yarara_vcat(dir_root, sub_dico='matching_diff', vsini=None, Prot=None, debug=False, std_bias_kms = 0.1, ref_value=None):
 
     if myv.VERBOSE:
         myf.print_box('\n---- RECIPE : VSINI EXTRACTION ----\n')
@@ -3213,6 +3248,70 @@ def yarara_compute_snr(dir_root,sub_dico):
         snrs.append(int(np.round(1/sigma,0)))
     return np.array(snrs)
 
+def yarara_atmos_fast_rotator(dir_root, rv_sys, vsini, model='SNAKY'):
+
+    if myv.VERBOSE:
+        myf.print_box('\n---- RECIPE : ATMOS PARAMETERS FAST-ROTATORS ----\n')
+
+    master = import_master(dir_root)
+    star_info = import_star_info(dir_root)
+
+    master.clip(min=[5700,None],max=[6490,None])
+    master.y[master.y<=0] = np.nan
+    grid = master.x
+
+    all_template = []
+    parameters = []
+    teff_grid = np.arange(3500,6500,250)
+    v_grid = np.linspace(0.5*vsini,vsini+(0.5*vsini),15)
+    metric = np.zeros((len(teff_grid), len(v_grid)))
+
+    for i,teff in enumerate(teff_grid):
+        template = import_stellar_template(teff,feh=0.0,logg=4.3,model=model,rv_sys=rv_sys)
+        template.interpolate(new_grid=grid,replace=True,method='cubic',interpolate_x=False)
+        template.y[template.y>1] = 1
+        template.y[template.y<=0] = np.nan
+        for j,v in enumerate(v_grid):
+            template.rotation_broadening(veq=v,replace=False)
+            all_template.append(template.degraded.y.copy())
+            metric[i, j] = np.nansum(np.abs(all_template[-1] / master.y - 1))
+            #plt.plot(grid,all_template[-1]/master.y+n)
+    
+    #for n in range(7):
+    #    plt.plot(master.x,1+master.x*0,color='k',zorder=100)
+
+    best = np.where(metric==np.min(metric))
+    teff_best = teff_grid[best[0]][0]
+    v_best = np.round(v_grid[best[1]][0],2)
+    dteff = 125
+    dv_grid = np.diff(v_grid)[0]*0.5
+
+    myv.vprint(' [INFO] Best params (model = %s) Teff = %.0f +/- %.0f K  | vsini = %.1f +/- %.1f km/s'%(model, teff_best, dteff, v_best, dv_grid))
+
+    plt.figure(figsize=(10,8))
+
+    plt.imshow(np.log10(metric), origin="lower", aspect="auto",cmap='jet')
+
+    plt.xticks(np.arange(len(v_grid)), np.round(v_grid,0).astype('int'))
+    plt.yticks(np.arange(len(teff_grid)), teff_grid)
+
+    plt.xlabel(r"$v\sin i$ (km/s)")
+    plt.ylabel(r"$T_{\rm eff}$ (K)")
+    plt.colorbar(label="Metric")
+    plt.scatter(best[1],best[0],color='white',marker='x')
+    plt.title('model = %s\nTeff = %.0f +/- %.0f K  | vsini = %.1f +/- %.1f km/s'%(model, teff_best, dteff, v_best, dv_grid))
+    plt.savefig(dir_root+'IMAGES/Atmos_fast_rotators_%s.png'%(model))
+
+    params = create_atmos_sample(dir_root, teff_best, dteff, 4.3, 0.2, 0.0, 0.5, rv_sys)
+    params = list(params)+[v_best]
+
+    samples = np.random.randn(99999)*dv_grid + v_best
+    samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv.gz')
+    samples_table['vsini'] = samples
+    samples_table.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv.gz',index=False)
+
+    return params
+
 def yarara_correct_continuum_absorption(dir_root, rv_sys, feh, model, vsini=0.0):
     
     if myv.VERBOSE:
@@ -3240,7 +3339,10 @@ def yarara_correct_continuum_absorption(dir_root, rv_sys, feh, model, vsini=0.0)
     parameter = '_'.join(model.split('_')[1:])
     model = model.split('_')[0]
         
-    myv.vprint(' Model selected : %s (%s)'%(model,parameter))
+    if vsini<20:
+        vsini = 0.0
+
+    myv.vprint(' Model selected : %s (%s) - Vsini = %.1f km/s'%(model,parameter,vsini))
 
     teff = float(parameter.split('T')[-1].split('_')[0])
     logg = float(parameter.split('g')[-1].split('_')[0])    
@@ -3317,7 +3419,7 @@ def yarara_correct_continuum_absorption(dir_root, rv_sys, feh, model, vsini=0.0)
     plt.xlabel(r'Wavelength $\lambda$ [$\AA$]',fontsize=16)
     plt.ylabel(r'Flux normalised',fontsize=16)
     plt.plot(master.x, master.y, color='k',label='RASSINE')
-    plt.plot(template.x, template_flux, color='r',label='Template (%s, Teff = %s, log(g) = %s)'%(model,parameter[0][1:],parameter[1][1:]))       
+    plt.plot(template.x, template_flux, color='r',label='Template (%s, Teff = %s, log(g) = %s, vsini = %.1f)'%(model,parameter[0][1:],parameter[1][1:],vsini))       
     plt.legend(loc=4,prop={'size': 14})
     plt.scatter(template.x_max, template.y_max,color='orange',zorder=10,s=20)
     ax = plt.gca()
@@ -3521,11 +3623,12 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
     liste_proxy = [myv.Ca2K,myv.Ca2H]
 
     if vsini<5:
-        vsini=0.0
+        vsini = 0.0
     else:
         vsini = np.sqrt(vsini**2-2**2)
 
-    vsini=0.0
+    myv.vprint(' [INFO] Broadening Vsini = %.1f km/s x 75%%'%(vsini))
+    vsini *= 0.75
 
     save = {}
     for n,l in enumerate(liste_proxy):
@@ -3593,12 +3696,13 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
         db_E1 = chromosphere[l[-1]]
         loc = myf.find_nearest(db_E1['teff'],teff)[0][0]
         E1 = myc.tableXY(db_E1['vel'].copy(),db_E1['model'][loc].copy())
-        E1.x = E1.x/3e5*center+center
-        E1.rotation_broadening(veq=vsini,replace=True)
-        E1.x = 3e5*(E1.x-center)/center
         E1.interpolate(new_grid=wave_vel,replace=True,method='linear')
         E1.y[np.abs(E1.x)>35] = 0
         E1.null()
+
+        E1.x = E1.x/3e5*center+center
+        E1.rotation_broadening(veq=vsini,replace=True)
+
         base_profile = np.array(E1.y)[:,np.newaxis]
         fmodel = 'amp'
         
@@ -3892,7 +3996,7 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
         samples_mhk.append(np.random.randn(nb)*j+i)
     samples_mhk = np.ravel(samples_mhk)
     samples_mhk = samples_mhk[samples_mhk>-40]
-    samples_mhk = samples_mhk[samples_mhk<300]
+    #samples_mhk = samples_mhk[samples_mhk<300]
 
     #assuming no magnetic cycle and a single mu for all the Xi
     #Xi = np.array(dico['MHK'])
@@ -3918,7 +4022,7 @@ def yarara_activity_mhk(dir_root, files, rv_sys, shift_rv, teff, material, proxy
         samples_rhk.append(np.random.randn(nb)*j+i)
     samples_rhk = np.ravel(samples_rhk)
     samples_rhk = samples_rhk[samples_rhk>-6]
-    samples_rhk = samples_rhk[samples_rhk<-4]
+    #samples_rhk = samples_rhk[samples_rhk<-4]
 
     plt.subplot(2,1,2) ; plt.title('RHK = %.2f +/- %.2f dex'%(np.nanmedian(samples_rhk),myf.mad(samples_rhk)))
     pby,pbx = np.histogram(samples_rhk,bins=np.arange(-6.0,-4.0,0.02),density=True)
