@@ -43,11 +43,11 @@ output_dir = TODEFINE # Best practice is to use the same directory all stars pro
 
 import src_snaky.run as snaky
 
-job = snaky.start()
+job = snaky.start(debug=debug)
 job.set_output_dir(output_dir)
 job.set_dataset(star,ins,files) 
 
 job.set_star(prot=Prot, rs=Rs)
-job.reduce(begin=begin, end=end, debug=debug, automatic_db=automatic_db)
+job.reduce(begin=begin, end=end, automatic_db=automatic_db)
 
 

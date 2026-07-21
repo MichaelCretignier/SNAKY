@@ -36,17 +36,20 @@ class SnakyError(Exception):
     pass
 
 class start():
-    def __init__(self, job_id=0, verbose=True):
+    def __init__(self, job_id=0, verbose=True, debug=False):
         self.sy_output_dir = myv.WORKSPACE+'/'
         self.sy_job_id = job_id
         self.warning_printed = 0
         self.prd_ext = ''
+        self.debug = debug
         self.sy_user_object = {'Name':None, 'Ra':None, 'Dec':None, 'Rv_sys':None, 'Prot':None, 'Rs':None, 'Ms':None, 'Teff':None, 'Log_g':None, 'FeH':None, 'RHK':None, 'Vsini':None, 'stellar_template':None, 'reference':None}
         self.missing_file = False
         if not verbose:
             myv.VERBOSE = False
 
     def set_output_dir(self,outputdir):
+        if outputdir[-1]!='/':
+            outputdir = outputdir+'/'
         self.sy_output_dir = outputdir
 
     def format(self,ra=None,dec=None):
@@ -59,7 +62,7 @@ class start():
             dace_table = mym.import_dace_table(dir_root)
             files = np.array(dace_table['fileroot'])
             sinfo = mym.import_star_info(dir_root)
-            query = mym.extract_header(files, ins, debug=self.debug, dec=dec, ra=ra, source=source)
+            query = mym.extract_header(files, ins, debug=self.debug, dec=dec, ra=ra, sources=source)
             sinfo['Ra']['fixed'] = np.median(query['RA'])
             sinfo['Dec']['fixed'] = np.median(query['DEC'])
             pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(starname),'wb'))
@@ -173,6 +176,8 @@ class start():
         self.sy_sub_dico = sub_dico
         if (type(source)==str)|(source is None):
             self.sy_source_files = [source]*len(files)
+        else:
+            self.sy_source_files = source
 
         self.sy_rassine_db = False
         self.sy_yarara_db = False
@@ -338,53 +343,88 @@ class start():
                 self.init_workspace()
                 dace_table = mym.import_dace_table(dir_root)
 
+            file_opened = []
+
             for f,source,rv in zip(files,sources,rv_shift):
                 if ins[0:6]=='SOPHIE':
-                    mym.read_sophie(f,dir_root,force=True)
+                    qc = mym.read_sophie(f,dir_root,force=True)
                 elif (ins=='HARPS_3.5')|(ins=='HARPS03_3.5')|(ins=='HARPS15_3.5'):
-                    mym.read_sophie(f,dir_root,force=True)
+                    qc = mym.read_sophie(f,dir_root,force=True)
                 elif (ins.split('_')[0][0:5]=='HARPS')|(ins.split('_')[0]=='HARPN')|(ins.split('_')[0]=='ESPRESSO'):
                     if source=='ESO':
-                        mym.read_eso(f,dir_root,ins.split('_')[0],force=True)
+                        qc = mym.read_eso(f,dir_root,ins.split('_')[0],force=True)
                     elif source=='IA2':
-                        mym.read_ia2(f,dir_root,force=True)
+                        qc = mym.read_ia2(f,dir_root,force=True)
+                    elif source=='YARARA':
+                        qc = mym.read_yarara(f,dir_root,force=True)
                     else:
-                        mym.read_espresso(f,dir_root,force=True)
+                        qc = mym.read_espresso(f,dir_root,force=True)
                 elif ins[0:5]=='PEPSI':
-                    mym.read_pepsi(f,dir_root,force=True)
+                    qc = mym.read_pepsi(f,dir_root,force=True)
                 elif ins[0:4]=='HERM':
-                    mym.read_hermes(f,dir_root,force=True)
+                    qc = mym.read_hermes(f,dir_root,force=True)
                 elif ins[0:4]=='NEID':
-                    mym.read_neid(f,dir_root,force=True)
+                    qc = mym.read_neid(f,dir_root,force=True)
                 elif source=='GR8':
-                    mym.read_gr8(f, dir_root, ins.split('_')[0],force=True)
+                    qc = mym.read_gr8(f, dir_root, ins.split('_')[0],force=True)
                 elif source=='ESO':
-                    mym.read_eso(f, dir_root, ins.split('_')[0], rv_shift=rv, force=True)
+                    qc = mym.read_eso(f, dir_root, ins.split('_')[0], rv_shift=rv, force=True)
                 else:
+                    qc = 0
                     pass
                     #mym.read_static(f,dir_root,w0,dw,force=True)
+
+                file_opened.append(qc)
+            file_opened = np.array(file_opened).astype('bool')
+            nb_crash = len(file_opened)-np.sum(file_opened)
+            if len(file_opened)!=np.sum(file_opened):
+                print(Fore.YELLOW+'\n[WARNING] %.0f files have not been opened correctly and will be removed from the processing...'%(nb_crash)+Fore.RESET)
+                print(file_opened.astype('int'))
+                self.sy_files = list(np.array(self.sy_files)[file_opened])
+                self.sy_source_files = list(np.array(self.sy_source_files)[file_opened])
+                dace_table = dace_table.loc[file_opened].reset_index(drop=True)
+                dace_table.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
+
             self.sy_rassine_files = np.sort(glob.glob(dir_root+'WORKSPACE/RASSINE*.p'))
             myv.vprint(' [INFO] Venting DACE table in RASSINE files...')
             for rf in self.sy_rassine_files:
                 file_to_update = pd.read_pickle(rf)
                 arcfile = file_to_update['parameters']['arcfiles'][0]
-                entry = dace_table.loc[dace_table['fileroot']==arcfile]
-                file_to_update['parameters']['jdb'] = entry['rjd'].values[0]
-                if entry['berv'].values[0]==entry['berv'].values[0]:
-                    file_to_update['parameters']['berv'] = entry['berv'].values[0]
-                else:
-                    file_to_update['parameters']['berv'] = entry['berv_computed'].values[0]
-                file_to_update['parameters']['SNR_5500'] = entry['snr'].values[0]
-                pickle.dump(file_to_update,open(rf,'wb'))
+                if arcfile is not None:
+                    entry = dace_table.loc[dace_table['fileroot']==arcfile]
+                    file_to_update['parameters']['jdb'] = entry['rjd'].values[0]
+                    if entry['berv'].values[0]==entry['berv'].values[0]:
+                        file_to_update['parameters']['berv'] = entry['berv'].values[0]
+                    else:
+                        file_to_update['parameters']['berv'] = entry['berv_computed'].values[0]
+                    file_to_update['parameters']['SNR_5500'] = entry['snr'].values[0]
+                    pickle.dump(file_to_update,open(rf,'wb'))
         else:
             myv.vprint(' [INFO] No preprocessing needed, spectra already in RASSINE format.')
             self.sy_rassine_files = self.sy_files
 
-    def load_data(self):
+    def load_data(self, use_material=False):
+
+        material = None
+        rv_sys = 0
+        if use_material:
+            try:
+                material = mym.import_material(self.sy_dir_root)
+                correction_factor = material['correction_factor']
+                sinfo = mym.import_star_info(self.sy_dir_root)
+                rv_sys = sinfo['Rv_sys']['SNAKY']
+            except:
+                material = None
+        
         summary = mym.import_summary(self.sy_dir_root)
         self.sy_rassine_files = np.array(summary['filename'])
         try:
-            self.sy_sts_wave, self.sy_sts_flux = mym.create_sts(self.sy_rassine_files, sub_dico=self.sy_sub_dico)
+            self.sy_sts_wave, self.sy_sts_flux = mym.create_sts(
+                self.sy_rassine_files, 
+                sub_dico = self.sy_sub_dico, 
+                material = material,
+                rv_sys = rv_sys,
+                )
         except FileNotFoundError:
             self.missing_file = True
     
@@ -397,7 +437,10 @@ class start():
 
         del sts_err
 
-        anomalous = np.sum((sts>1.02*10000)|((sts<0.01)&(sts!=0.0)),axis=1)*100/len(wave_grid)
+        if self.sy_instrument!='UVES':
+            anomalous = np.sum((sts>1.02*10000)|(sts<0.01),axis=1)*100/len(wave_grid)
+        else:
+            anomalous = np.sum((sts>1.02*10000)|((sts<0.01)&(sts!=0.0)),axis=1)*100/len(wave_grid)
         anomalous = np.round(anomalous,0).astype('int')
 
         empty = np.sum(sts==0.0,axis=1)*100/len(wave_grid)
@@ -454,7 +497,7 @@ class start():
             rv_sys1 = mym.yarara_rough_rv_sys(spec,teff=teff,verbose=False)
             rv_sys.append(rv_sys1)
         rv_sys = np.array(rv_sys)
-
+        
         if len(rv_sys)>2:
             mask_out = abs(rv_sys-np.nanmedian(rv_sys))>50
             if np.sum(~mask_out)!=0:
@@ -600,12 +643,15 @@ class start():
             del ccf_output
             ccf_output = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'G2', debug=self.debug, sub_dico=sub_dico, ccf_tag='', rv_mode=rv_mode)
             sinfo['FWHM']['G2'] = np.round(np.nanmedian(ccf_output['fwhm'].y),2)
-            ccf_output1 = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Kitty', ccf_oversampling=3, debug=self.debug, sub_dico=sub_dico, ccf_tag='',rv_shift=ccf_output['rv'].y)
-            sinfo['FWHM']['KITTY'] = np.round(np.nanmedian(ccf_output1['fwhm'].y),2)
-            del ccf_output1
-            ccf_output2 = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Garfield', ccf_oversampling=3, debug=self.debug, sub_dico=sub_dico, ccf_tag='',rv_shift=ccf_output['rv'].y)
-            sinfo['FWHM']['GARFIELD'] = np.round(np.nanmedian(ccf_output2['fwhm'].y),2)
-            del ccf_output2
+
+            if np.round(np.nanmedian(ccf_output['fwhm'].y),2)<100:
+                ccf_output1 = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Kitty', ccf_oversampling=3, debug=self.debug, sub_dico=sub_dico, ccf_tag='',rv_shift=ccf_output['rv'].y)
+                sinfo['FWHM']['KITTY'] = np.round(np.nanmedian(ccf_output1['fwhm'].y),2)
+                del ccf_output1
+                ccf_output2 = mym.yarara_ccf(dir_root, files, rv_sys, fwhm, beta_gnd, 'Garfield', ccf_oversampling=3, debug=self.debug, sub_dico=sub_dico, ccf_tag='',rv_shift=ccf_output['rv'].y)
+                sinfo['FWHM']['GARFIELD'] = np.round(np.nanmedian(ccf_output2['fwhm'].y),2)
+                del ccf_output2
+            
             if (np.std(ccf_output['rv'].y)>1000)&(np.median(ccf_output['fwhm'].y)<30):
                 sinfo = myf.update_info_lvl2(sinfo,'SB2','SNAKY',1)
                 print(Fore.YELLOW+' [EMERGENCY STOP] Spectroscopy binary detected'+Fore.RESET)
@@ -678,6 +724,13 @@ class start():
         sinfo = myf.update_info_lvl2(sinfo,'Vmacro','SNAKY',vmacro)
         sinfo = myf.update_info_lvl2(sinfo,'stellar_template','SNAKY',suffixe)
 
+        teff = self.sy_user_object['Teff']
+
+        if (FLAG==0)&(EW['LiI']==EW['LiI']):
+            age = mym.yarara_lithium_age(dir_root, teff=teff)
+            if age is not None:
+                sinfo = myf.update_info_lvl2(sinfo,'Age','Jeffr+23',np.round(age,3))
+
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
     #@profile
@@ -707,7 +760,12 @@ class start():
         #    },open('/Users/cretignier/Desktop/Snaky/TEST/compute_resolution/export.p','wb'))
 
         try:
-            fwhm_ins, berv_output = mym.yarara_instrumental_resolution(dir_root, (self.sy_sts_wave,self.sy_sts_flux[mask],files[mask]), np.zeros(len(berv)), berv.copy())
+            if self.sy_source_files[0]!='YARARA':
+                fwhm_ins, berv_output = mym.yarara_instrumental_resolution(dir_root, (self.sy_sts_wave,self.sy_sts_flux[mask],files[mask]), np.zeros(len(berv)), berv.copy())
+            else:
+                fwhm_ins = np.nan*berv
+                berv_output = berv
+
             summary = mym.import_summary(dir_root) # to reload updated table
             if np.sum(berv!=berv_output)!=0:
                 summary.loc[mask,'berv_computed'] = berv_output
@@ -734,7 +792,7 @@ class start():
         dir_root = self.sy_dir_root
         star = self.sy_starname
         sub_dico = self.sy_sub_dico
-        ins = self.sy_instrument
+        ins = self.sy_instrument.split('_')[0]
         ref_value = self.sy_user_object['Vsini']
 
         sinfo = mym.import_star_info(dir_root)
@@ -743,38 +801,40 @@ class start():
         except: 
             ins_res = np.nan
 
-        fwhm = sinfo['FWHM']['G2']
+        if 'G2' in sinfo['FWHM'].keys():
+            fwhm = sinfo['FWHM']['G2']
 
-        if fwhm>30:
-            rv_sys = sinfo['Rv_sys']['SNAKY']
-            atmos = mym.yarara_atmos_fast_rotator(dir_root, rv_sys, fwhm*0.75, model='SNAKY')
-            teff,feh,logg,M,R,BV,vmicro,vmacro,vsini = atmos
-            suffixe = 'ATLAS_T%.0f_g%.1f'%(np.round(teff,-2),np.round(logg,1))
-            myv.vprint(' [INFO] Atmospheric model set to : %s'%(suffixe))
-            sinfo = myf.update_info_lvl2(sinfo,'Mstar','SNAKY',M)   
-            sinfo = myf.update_info_lvl2(sinfo,'Rstar','SNAKY',R)
-            sinfo = myf.update_info_lvl2(sinfo,'Teff','SNAKY',teff)
-            sinfo = myf.update_info_lvl2(sinfo,'FeH','SNAKY',feh)
-            sinfo = myf.update_info_lvl2(sinfo,'Log_g','SNAKY',logg)
-            sinfo = myf.update_info_lvl2(sinfo,'BV','SNAKY',BV)
-            sinfo = myf.update_info_lvl2(sinfo,'Vmicro','SNAKY',vmicro)
-            sinfo = myf.update_info_lvl2(sinfo,'Vmacro','SNAKY',vmacro)
-            sinfo = myf.update_info_lvl2(sinfo,'stellar_template','SNAKY',suffixe)
-            mym.yarara_vsini(dir_root, Prot=Prot, Rs=Rs)
-        else:
-            if (ins_res==ins_res)|(ins in myv.instrument_res_kms.keys()):
-                try:
-                    vsini = mym.yarara_vcat(dir_root, sub_dico=sub_dico, debug=self.debug, std_bias_kms=0.1, ref_value=ref_value) 
-                except FileNotFoundError:
-                    pass
-                vsini = np.round(np.nanmean(vsini),2)
+            if fwhm>30:
+                rv_sys = sinfo['Rv_sys']['SNAKY']
+                atmos = mym.yarara_atmos_fast_rotator(dir_root, rv_sys, fwhm*0.75, model='SNAKY')
+                teff,feh,logg,M,R,BV,vmicro,vmacro,vsini = atmos
+                suffixe = 'ATLAS_T%.0f_g%.1f'%(np.round(teff,-2),np.round(logg,1))
+                myv.vprint(' [INFO] Atmospheric model set to : %s'%(suffixe))
+                sinfo = myf.update_info_lvl2(sinfo,'Mstar','SNAKY',M)   
+                sinfo = myf.update_info_lvl2(sinfo,'Rstar','SNAKY',R)
+                sinfo = myf.update_info_lvl2(sinfo,'Teff','SNAKY',teff)
+                sinfo = myf.update_info_lvl2(sinfo,'FeH','SNAKY',feh)
+                sinfo = myf.update_info_lvl2(sinfo,'Log_g','SNAKY',logg)
+                sinfo = myf.update_info_lvl2(sinfo,'BV','SNAKY',BV)
+                sinfo = myf.update_info_lvl2(sinfo,'Vmicro','SNAKY',vmicro)
+                sinfo = myf.update_info_lvl2(sinfo,'Vmacro','SNAKY',vmacro)
+                sinfo = myf.update_info_lvl2(sinfo,'stellar_template','SNAKY',suffixe)
                 mym.yarara_vsini(dir_root, Prot=Prot, Rs=Rs)
             else:
-                vsini = np.nan
+                if (ins_res==ins_res)|(ins in myv.instrument_res_kms.keys()):
+                    try:
+                        vsini = mym.yarara_vcat(dir_root, sub_dico=sub_dico, debug=self.debug, std_bias_kms=0.1, ref_value=ref_value) 
+                    except FileNotFoundError:
+                        pass
+                    vsini = np.round(np.nanmean(vsini),2)
+                    mym.yarara_vsini(dir_root, Prot=Prot, Rs=Rs)
+                else:
+                    vsini = np.nan
 
-        sinfo = myf.update_info_lvl2(sinfo,'Vsini','SNAKY',vsini)
-        pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
-
+            sinfo = myf.update_info_lvl2(sinfo,'Vsini','SNAKY',vsini)
+            pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+        else:
+            print(Fore.YELLOW+' [ERROR] G2 FWHM missing from the Star_info table'+Fore.RESET)
 
     #@profile
     def compute_abs_continuum(self):
@@ -909,29 +969,30 @@ class start():
             proxy = np.array(summary.loc[mask,'CaII'])        
             dico, rhk, mhk = mym.yarara_activity_mhk(dir_root, files, rv_sys, rv, teff, material, proxy, vsini=vsini)
             
-            for kw in ['RHK','RHK_std','MHK','MHK_std']:
-                if kw in summary.keys():
-                    del summary[kw]
-            summary = pd.merge(summary,dico[['filename','RHK','RHK_std','MHK','MHK_std']],on='filename',how='left')
-            summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
+            if rhk==rhk:
+                for kw in ['RHK','RHK_std','MHK','MHK_std']:
+                    if kw in summary.keys():
+                        del summary[kw]
+                summary = pd.merge(summary,dico[['filename','RHK','RHK_std','MHK','MHK_std']],on='filename',how='left')
+                summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
 
-            sinfo = myf.update_info_lvl2(sinfo,'RHK','SNAKY',np.round(rhk,3))
-            sinfo = myf.update_info_lvl2(sinfo,'MHK','SNAKY',np.round(mhk,1))
+                sinfo = myf.update_info_lvl2(sinfo,'RHK','SNAKY',np.round(rhk,3))
+                sinfo = myf.update_info_lvl2(sinfo,'MHK','SNAKY',np.round(mhk,1))
 
-            prot = myf.conv_rhk_prot(sinfo['RHK']['SNAKY'], sinfo['BV']['SNAKY'])
-            prot_vsini = np.round(sinfo['Rstar']['SNAKY']*25/(sinfo['Vsini']['SNAKY']/2),1)
-            prot1 = np.round(prot[2],1)
-            prot2 = np.round(prot[0],1)
-            prot1 = np.max([prot1,1])
-            prot2 = np.max([prot2,1])
-            prot_vsini = np.min([prot_vsini,100])
-            sinfo = myf.update_info_lvl2(sinfo,'Prot','Mamaj+08', prot1)
-            sinfo = myf.update_info_lvl2(sinfo,'Prot','Noyes+84', prot2)
-            sinfo = myf.update_info_lvl2(sinfo,'Prot','VSINI', prot_vsini)
-            pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
+                prot = myf.conv_rhk_prot(sinfo['RHK']['SNAKY'], sinfo['BV']['SNAKY'])
+                prot_vsini = np.round(sinfo['Rstar']['SNAKY']*25/(sinfo['Vsini']['SNAKY']/2),1)
+                prot1 = np.round(prot[2],1)
+                prot2 = np.round(prot[0],1)
+                prot1 = np.min([np.max([prot1,1]),100])
+                prot2 = np.min([np.max([prot2,1]),100])
+                prot_vsini = np.min([prot_vsini,100])
+                sinfo = myf.update_info_lvl2(sinfo,'Prot','Mamaj+08', prot1)
+                sinfo = myf.update_info_lvl2(sinfo,'Prot','Noyes+84', prot2)
+                sinfo = myf.update_info_lvl2(sinfo,'Prot','VSINI', prot_vsini)
+                pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
-            mym.plot_mhk(dir_root,rhk_ref=rhk_ref)
-            mym.create_finch_db(dir_root,sub_dico=self.sy_sub_dico)
+                mym.plot_mhk(dir_root,rhk_ref=rhk_ref)
+                mym.create_finch_db(dir_root,sub_dico=self.sy_sub_dico)
 
     def compute_spectroscopy(self):
         dir_root = self.sy_dir_root
@@ -1168,7 +1229,6 @@ class start():
             automatic_db = False,
             atmos_db = False,
             rv_mode = 'RV', #either RV or EPRV 
-            debug = False, 
             copy_rassine_files = True,
             ):
         
@@ -1230,6 +1290,8 @@ class start():
         ins = self.sy_instrument
         dir_root = self.sy_dir_root
 
+        debug = self.debug
+
         timestamp_reduction = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
         filename_time = dir_root + 'REDUCTION_INFO/Time_info_reduction_snaky_%s_B%sE%s_%s.csv'%(__version__,str(begin).zfill(2),str(end).zfill(2),timestamp_reduction)
 
@@ -1242,8 +1304,6 @@ class start():
         self.time_step = {'init':begin}
 
         self.write_progress(-1, 'start', savefile=filename_time)
-
-        self.debug = debug
 
         myf.print_box('\n---- Launching reduction %s with instrument %s  ----\n'%(star,ins))
         time_start = time.time()
@@ -1313,6 +1373,7 @@ class start():
         except:
             pass
 
+
         self.load_data()
 
         if force_summary: #2
@@ -1329,8 +1390,8 @@ class start():
             teff = mym.import_star_info(dir_root)['Teff']['FluxD']
             fwhm = mym.import_star_info(dir_root)['FWHM']['fixed']
             if teff>8000:
-                force_ccf, force_vsini, force_activity, force_mhk, force_magcycle = [False]*5
-                print(Fore.YELLOW+' [TRIGGER] Teff > 8000, CCF + VSINI + ACT + MHK + MAG skipped'+Fore.RESET)
+                force_activity, force_mhk, force_magcycle = [False]*3
+                print(Fore.YELLOW+' [TRIGGER] Teff > 8000, ACT + MHK + MAG skipped'+Fore.RESET)
             elif teff>7500:
                 force_activity, force_mhk, force_magcycle = [False]*3
                 print(Fore.YELLOW+' [TRIGGER] Teff > 7500, ACT + MHK + MAG skipped'+Fore.RESET)
@@ -1349,6 +1410,12 @@ class start():
             self.compute_master()
             self.write_progress(5, 'master', savefile=filename_time)
         qc5 = mym.check_force_master(dir_root,step_nb='(5)')
+
+        try:
+            material = mym.import_master(dir_root)
+            del material
+        except:
+            force_atmos, force_resolution, force_vsini, force_abs_continuum, force_activity, force_mhk, force_spectroscopy, force_magcycle, force_cleaning = [False]*9
 
         if force_atmos: #6
             self.compute_atmos()
@@ -1374,6 +1441,8 @@ class start():
                 self.compute_abs_continuum()
                 self.write_progress(9, 'abs_continuum', savefile=filename_time)
         qc9 = mym.check_force_abs_continuum(dir_root,step_nb='(9)')
+
+        self.load_data(use_material=True)
 
         if force_activity: #10
             self.compute_activity()

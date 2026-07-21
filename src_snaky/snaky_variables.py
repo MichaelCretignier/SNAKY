@@ -54,6 +54,7 @@ He1D3 = [5875.62, 0.15, 0, 0, 'HeID3']
 CaIIa = [8498.00, 0.15, 0, 0, 'CaIIa']
 CaIIb = [8542.00, 0.15, 0, 0, 'CaIIb']
 CaIIc = [8662.00, 0.15, 0, 0, 'CaIIc']
+CaIIc = [8662.00, 0.15, 0, 0, 'CaIIc']
 
 list_proxies = [Ca2H, Ca2K, Ca1, Mg1a, Mg1b, Mg1c, NaDl, NaDr, Ha, Hb, Hc, Hd, Heps, He1D3, CaIIa, CaIIb, CaIIc]
 

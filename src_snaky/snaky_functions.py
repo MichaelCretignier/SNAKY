@@ -1134,3 +1134,72 @@ def gray_rotation(vl=1,epsilon=0.6,color='k', Plot=False, vgrid=None):
         plt.plot(vgrid,profile1+profile2,color=color,ls='-')
 
     return (profile1+profile2)/norm
+
+def lithium_age(teff, ew, nsamples=5000, lower=False): # https://doi.org/10.1093/mnras/stad1293 (Jeffries + 23, The Gaia-ESO Survey: empirical estimates of stellar ages from lithium equivalent widths (eagles))
+
+    pars = {
+        "tc":  (3.524, 0.001),
+        "ac":  (291.3, 1.1),
+        "at":  (20687., 239.),
+        "bc":  (0.111, 0.006),
+        "bt":  (-164.7, 3.5),
+        "cc":  (7.131, 0.007),
+        "ct0": (-6.44, 0.50),
+        "ct1": (4.040, 0.095),
+    }
+
+    if lower:
+        nsamples_old = nsamples
+        nsamples = 50000
+
+    if nsamples!=len(teff):
+        teff = np.random.choice(teff,nsamples,replace=True)
+    if nsamples!=len(ew):
+        ew = np.random.choice(ew,nsamples,replace=True)
+
+    rng = np.random.default_rng()
+
+    tc  = rng.normal(*pars["tc"],  nsamples)
+    ac  = rng.normal(*pars["ac"],  nsamples)
+    at  = rng.normal(*pars["at"],  nsamples)
+    bc  = rng.normal(*pars["bc"],  nsamples)
+    bt  = rng.normal(*pars["bt"],  nsamples)
+    cc  = rng.normal(*pars["cc"],  nsamples)
+    ct0 = rng.normal(*pars["ct0"], nsamples)
+    ct1 = rng.normal(*pars["ct1"], nsamples)
+
+    logT = np.log10(teff)
+
+    A = ac - at * (logT - tc)**2 / (2 * tc)
+    B = bc - bt * (logT - tc)**2 / (2 * tc)
+
+    if np.isscalar(logT):
+        if logT < tc:
+            C = cc + ct0 * (logT - tc)
+        else:
+            C = cc + ct1 * (logT - tc)
+    else:
+        C = np.where(
+            logT < tc,
+            cc + ct0 * (logT - tc),
+            cc + ct1 * (logT - tc),
+        )
+
+    x = np.clip(1 - ew / A, -0.999999, 0.999999)
+
+    logAge = C + B * np.arctanh(x)
+
+    age = 10**logAge / 1e9
+
+    if lower:
+        index = np.digitize(ew,np.arange(0,1000,10))
+        lower = np.array([np.percentile(age[index==i],5) for i in np.unique(index)])
+        bins = np.array([np.percentile(ew[index==i],50) for i in np.unique(index)])
+        loc = find_nearest(bins,np.median(ew))[0][0]
+        age = np.random.uniform(lower[loc],10,nsamples_old)
+
+    age[age>13] = 13
+    age[age<0] = 0
+
+    return age
+

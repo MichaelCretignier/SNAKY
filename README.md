@@ -1,4 +1,4 @@
-# SNAKY v1.6.0
+# SNAKY v1.6.1
 
 <p align="center">
   <img src="logo.png" alt="Project logo" width="400">
@@ -346,7 +346,7 @@ job1.reduce(begin=9, end=14, atmos_db=True)
 job2.reduce(begin=9, end=14, atmos_db=True) 
 ```
 
-## ⑦ Public ESO and TNG archives query and SNAKY processing
+## ⑦ Public ESO + TNG + OHP archives queries and SNAKY processing
 
 <a id="flag_download"></a>
 
@@ -365,8 +365,8 @@ The list of parameters are:
 `-e`  Ending SNAKY reduction stage (e.g. `-e 14`) \
 `-a`  Value of the `automatic_db` parameter (`0` or `1`; e.g. `-a 1`) \
 `-P`  Number of parallelization (e.g. `-P 1`) \
-`-p`  Index of the current parallel process, between `1` and `P` (e.g. `-p 1`)
-`-i`  Instrument to SNAKY process (e.g. `-i 1`) \
+`-p`  Index of the current parallel process, between `1` and `P` (e.g. `-p 1`) \
+`-i`  Instrument to SNAKY process (e.g. `-i 1`) 
 
 
 ## ⑧ Large-Scale Processing (SLURM / sbatch parallelization)
@@ -390,7 +390,7 @@ SNAKY can process spectra from the following products from the following spectro
 | CORALIE07 | irrelevant | S1D | CORALIE07_3.4 |
 | CORALIE14 | irrelevant | S1D | CORALIE14_3.8 |
 | PEPSI | irrelevant | S1D | PEPSI_1.0 |
-| [SOPHIE](http://atlas.obs-hp.fr/sophie/) | irrelevant | S1D | SOPHIE_0.5 |
+| [SOPHIE](http://atlas.obs-hp.fr/sophie/) or [SOPHIE](#flag_download) | irrelevant | S1D | SOPHIE_0.5 |
 | [SOPHIE-HE](http://atlas.obs-hp.fr/sophie/)  | irrelevant | S1D | SOPHIE-HE_0.5 |
 | [HARPN](http://archives.ia2.inaf.it/tng/) or [HARPN](#flag_download)| >= 3.0.1 (new) | S1D |  HARPN_3.0.1 |
 | [ESPRESSO](https://archive.eso.org/scienceportal/home) or [ESPRESSO](#flag_download)| irrelevant | S1D |  ESPRESSO_3.3.6 |
