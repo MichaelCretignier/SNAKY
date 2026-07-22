@@ -1486,13 +1486,13 @@ class start():
             self.cleaning()
 
 
-def benchmark1(output_dir):
+def benchmark1(output_dir=None, starname='BENCHMARK1'):
     # Benchmark Dataset1 (HARPS Epsilon Eridani)
     files = glob.glob(myv.TEST_DATASET1)
 
     job = start()
     job.set_output_dir(output_dir)
-    job.set_dataset('BENCHMARK1','HARPS03_3.5',files) 
+    job.set_dataset(starname,'HARPS03_3.5',files)
     job.warning_printed = 1
     job.reset(suppression='all')
 

@@ -147,9 +147,9 @@ import src_snaky.run as snaky
 snaky.benchmark2() 
 ```
 
-*You should see a text like "[INFO] Processing achieved in ..." if the processing was successful.*
+*You should see a green text line "[INFO] The final cleaning of the output products was done." if the processing was successful.*
 
-*All the products should also be visible in `.../GitHub/SNAKY/snaky_data` which is the default output directory. 
+*All the products should also be visible in `.../GitHub/SNAKY/snaky_data` which is the default output directory.* 
 
 ### • Step-by-step 
 
