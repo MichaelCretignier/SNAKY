@@ -4,9 +4,7 @@
   <img src="logo.png" alt="Project logo" width="400">
 </p>
 
-SNAKY (a Spectroscopic Novel Analysis Kit of Yᴀʀᴀʀᴀ) is a fast execution code aiming to determine in a complete way an observed star from high resolution spectra in the visible (R>50'000).
-
-By complete, we mean:
+SNAKY (a Spectroscopic Novel Analysis Kit of Yᴀʀᴀʀᴀ) is a fast execution code aiming to determine in a complete way an observed star from high resolution spectra in the visible (R>50'000). Derived parameters are:
 
 1) Teff temperature
 2) Log(g) surface gravity
