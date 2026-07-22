@@ -114,6 +114,12 @@ import src_snaky.run as snaky
 
 ### • Benchmark and Test datasets
 
+*Launch an IPython shell:*
+
+```bash
+ipython
+```
+
 <a id="flag3"></a>
 
 *You can test your installation is working and monitor your speed performance with the following benchmark command-lines:*
