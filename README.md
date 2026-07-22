@@ -149,6 +149,8 @@ snaky.benchmark2()
 
 *You should see a text like "[INFO] Processing achieved in ..." if the processing was successful.*
 
+*All the products should also be visible in `.../GitHub/SNAKY/snaky_data` which is the default output directory. 
+
 ### • Step-by-step 
 
 *Launch an IPython shell:*
