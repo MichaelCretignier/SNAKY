@@ -130,7 +130,7 @@ cd .../GitHub/SNAKY/
 ipython
 ```
 
-*To run the benchmark, the command-lines are:*
+*To run the two benchmarks, the command-lines are:*
 
 
 ```python
