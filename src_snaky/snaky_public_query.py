@@ -15,18 +15,23 @@ from requests.adapters import HTTPAdapter
 import pyvo
 from pyvo.dal.adhoc import DatalinkResults
 import gzip, shutil
+import time
+from pathlib import Path
 
 instruments_excluded = ['','CRIRES','EFOSC','SOFI','PIONIER','MUSE','XSHOOTER','VIRCAM','GRAVITY','ALMA','SPHERE','NIRPS','OMEGACAM','GIRAFFE','HAWKI','KMOS','FORS2']
 
 def build_session():
     s = requests.Session()
     retry = Retry(
-        total=4,
-        connect=4,
-        read=4,
-        backoff_factor=1.5,
+        total=8,
+        connect=8,
+        read=8,
+        status=8,
+        backoff_factor=2,
         status_forcelist=[429, 500, 502, 503, 504],
-        allowed_methods=["GET"],
+        allowed_methods=frozenset(["GET"]),
+        respect_retry_after_header=True,
+        raise_on_status=False,
     )
     adapter = HTTPAdapter(max_retries=retry)
     s.mount("http://", adapter)
@@ -66,7 +71,7 @@ def sophie_rectangle(ra_deg, dec_deg, fov_deg):
 
 def query_sophie(
         starname: str,
-        output_dir: str = '/Users/cretignier/Desktop/test/',
+        output_dir: Path = Path('/Users/cretignier/Desktop/test/').expanduser().resolve(),
         ra: Optional[float] = None,
         dec: Optional[float] = None,
         search_by: str = 'coordinates', 
@@ -105,7 +110,8 @@ def query_sophie(
     
 
     if download:
-        os.makedirs(output_dir + f'{starname}/SOPHIE/',exist_ok=True)
+        sophie_dir = output_dir / starname / "SOPHIE"
+        sophie_dir.mkdir(parents=True, exist_ok=True)
         for cmd in commands:
 
             m = re.search(r'wget "(.*?)" -O (.*)', cmd)
@@ -116,14 +122,13 @@ def query_sophie(
             r = requests.get(url)
             r.raise_for_status()
 
-            output_name = output_dir+f"{starname}/SOPHIE/{filename}"
-
+            output_name = sophie_dir / filename
             with open(output_name, "wb") as f:
                 f.write(r.content)
 
 def query_iac(
         starname: str,
-        output_dir: str = '/Users/cretignier/Desktop/test/',
+        output_dir: Path = Path('/Users/cretignier/Desktop/test/').expanduser().resolve(),
         ra: Optional[float] = None,
         dec: Optional[float] = None,
         fov: float = 2, 
@@ -177,23 +182,35 @@ def query_iac(
         instruments_found = results_df['instrument_name'].value_counts()
         print('\n',starname,instruments_found)
         if download:
-            for ins in list(instruments_found.keys()):
-                os.makedirs(output_dir + f'{starname}/{ins}/',exist_ok=True)
-                subset = results_df.loc[results_df['instrument_name']==ins].reset_index(drop=True)
-                subset = subset.sample(n=np.min([N_spectra, len(subset)]),random_state=42)
+            for ins in instruments_found:
 
-                print(subset[['access_url','instrument_name','object']])
+                ins_dir = output_dir / starname / ins
+                ins_dir.mkdir(parents=True, exist_ok=True)
 
-                for row,filename in subset[['access_url','filename']].values:
+                subset = results_df.loc[
+                    results_df["instrument_name"] == ins
+                ].reset_index(drop=True)
+
+                subset = subset.sample(
+                    n=min(N_spectra, len(subset)),
+                    random_state=42
+                )
+
+                print(subset[["access_url", "instrument_name", "object"]])
+
+                for row, filename in subset[["access_url", "filename"]].values:
+
                     r = requests.get(row, allow_redirects=True)
-                    output_name = output_dir+f"{starname}/{ins}/{filename}"
-                    if not os.path.exists(output_name):
-                        with open(output_name, "wb") as f:
-                            f.write(r.content)
+                    r.raise_for_status()
+
+                    output_name = ins_dir / filename
+
+                    if not output_name.exists():
+                        output_name.write_bytes(r.content)
 
 def query_eso(
         starname: str,
-        output_dir: str = '/Users/cretignier/Desktop/test/',
+        output_dir: Path = Path('/Users/cretignier/Desktop/test/').expanduser().resolve(),
         ra: Optional[float] = None,
         dec: Optional[float] = None,
         search_by: str = 'coordinates', 
@@ -251,7 +268,7 @@ def query_eso(
 
     #print(results_df)
 
-    os.makedirs(output_dir + f'{starname}/',exist_ok=True)
+    (output_dir / f'{starname}').mkdir(parents=True, exist_ok=True)
 
     if len(results_df)!=0:
 
@@ -273,7 +290,7 @@ def query_eso(
         print('\n',starname,instruments_found)
         if download:
             for ins in list(instruments_found.keys()):
-                os.makedirs(output_dir + f'{starname}/{ins}/',exist_ok=True)
+                (output_dir / f'{starname}/{ins}').mkdir(parents=True, exist_ok=True)
                 subset = results_df.loc[results_df['instrument_name']==ins].reset_index(drop=True)
                 if selection=='random':
                     subset = subset.sample(n=np.min([N_spectra, len(subset)]),random_state=42)
@@ -285,6 +302,7 @@ def query_eso(
                 session = build_session()
 
                 for row in subset['access_url'].values:
+                    time.sleep(1.0)
                     try:
                         url = str(row)
                         if url.startswith("http://"):
@@ -304,9 +322,9 @@ def query_eso(
                         r.raise_for_status()
 
                         filename = science.get('eso_origfile', os.path.basename(sci_url))
-                        output_name = output_dir + f"{starname}/{ins}/{filename}"
+                        output_name = output_dir / f"{starname}/{ins}/{filename}"
 
-                        if not os.path.exists(output_name):
+                        if not output_name.exists():
                             with open(output_name, "wb") as f:
                                 f.write(r.content)
 
@@ -316,7 +334,7 @@ def query_eso(
 
 def query_tng(
         starname: str,
-        output_dir: str = '/Users/cretignier/Desktop/test/',
+        output_dir: Path = Path('/Users/cretignier/Desktop/test/').expanduser().resolve(),
         ra: Optional[float] = None,
         dec: Optional[float] = None,
         fov: float = 2,
@@ -393,8 +411,7 @@ def query_tng(
         results_df = results_df.sort_values(by=['instrument','object','diff']).reset_index(drop=True)
         
     ins = 'HARPN'
-    os.makedirs(output_dir + f'{starname}/',exist_ok=True)
-    os.makedirs(output_dir + f'{starname}/{ins}/',exist_ok=True)
+    (output_dir / starname / ins).mkdir(parents=True, exist_ok=True)
 
     if len(results_df)!=0:        
         if download:
@@ -408,6 +425,7 @@ def query_tng(
             session = build_session()
 
             for row in subset['file_url'].values:
+                time.sleep(1.0)
                 try:
                     url = str(row)
                     if url.startswith("http://"):
@@ -417,15 +435,14 @@ def query_tng(
                     r.raise_for_status()
 
                     filename = url.split('/')[-1]
-                    output_name = output_dir + f"{starname}/{ins}/{filename}"
+                    output_name = output_dir / starname / ins / filename
 
-                    if not os.path.exists(output_name):
-                        with open(output_name, "wb") as f:
-                            f.write(r.content)
+                    if not output_name.exists():
+                        output_name.write_bytes(r.content)
 
                     if output_name.endswith(".gz"):
                         unzipped = output_name[:-3]
-                        if not os.path.exists(unzipped):
+                        if not Path(unzipped).exists():
                             with gzip.open(output_name, "rb") as fin, open(unzipped, "wb") as fout:
                                 shutil.copyfileobj(fin, fout)
 

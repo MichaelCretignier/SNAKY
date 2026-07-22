@@ -74,11 +74,10 @@ pip install -r requirements_3.10.15.txt
 
 *SNAKY contains materials stored in a directory that need to be downloaded on Zenodo `https://doi.org/10.5281/zenodo.20659152`*.
 
-You can run the following code that will download via `curl` the directory, unzip it, and move it in `../SNAKY/`
+Run the following code that will download the directory:
 
 ```bash
-cd .../GitHub/SNAKY/src_snaky/
-python snaky_install.py
+python /GitHub/SNAKY/src_snaky/install.py
 ```
 
 *You should now have a `../SNAKY/Material_snaky/` directory with files inside.*
@@ -353,7 +352,7 @@ job2.reduce(begin=9, end=14, atmos_db=True)
 *To even simplify further the processing, SNAKY contains a code `snaky_query.py` that can directly download the spectra on your machine. The shortest call of the function is:*
 
 ```bash
-python snaky_query.py -s HD217014,HD4628
+python snaky_query.py -s HD217014,HD4628,HD22049
 ```
 
 The list of parameters are:

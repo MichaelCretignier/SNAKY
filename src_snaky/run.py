@@ -459,7 +459,7 @@ class start():
         elif np.min(anomalous)<10:
             kept = (anomalous<10)
         else:
-            kept = (anomalous<[15,35][int(self.sy_instrument.split('_')[0] in ['UVES'])])
+            kept = (anomalous<[15,40][int(self.sy_instrument.split('_')[0] in ['UVES'])])
 
         myv.vprint(' [INFO] Number of good spectra = %.0f'%(sum(kept)))
         myv.vprint(' [INFO] Number of anomalous spectra = %.0f'%(len(kept)-sum(kept)))

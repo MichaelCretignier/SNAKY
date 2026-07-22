@@ -47,7 +47,7 @@ job = snaky.start(debug=debug)
 job.set_output_dir(output_dir)
 job.set_dataset(star,ins,files) 
 
-job.set_star(prot=Prot, rs=Rs)
+job.set_star(prot=prot, rs=rs)
 job.reduce(begin=begin, end=end, automatic_db=automatic_db)
 
 

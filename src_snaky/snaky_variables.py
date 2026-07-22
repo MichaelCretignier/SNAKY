@@ -16,9 +16,9 @@ SRC_DIR = str(Path(__file__).resolve().parent)
 MATERIAL_DIR = ROOT_DIR + "/Material_snaky"
 DB_DIR = ""
 
-WORKSPACE = ROOT_DIR + "/Snaky_data"
-TEST_DATADIR1 = ROOT_DIR + "/Snaky_data/MY_STAR/data/s1d/"
-TEST_DATADIR2 = ROOT_DIR + "/Snaky_data/RASSINE_STAR/data/s1d/"
+WORKSPACE = ROOT_DIR + "/snaky_data"
+TEST_DATADIR1 = ROOT_DIR + "/snaky_data/MY_STAR/data/s1d/"
+TEST_DATADIR2 = ROOT_DIR + "/snaky_data/RASSINE_STAR/data/s1d/"
 TEST_DATASET1 = TEST_DATADIR1+'HARPS03_3.5/RAW/*.fits'       # Eps Eri DRS H03
 TEST_DATASET2 = TEST_DATADIR2+'HARPS15_3.3.6/RAW/RASSINE*.p' # Cen B RASSINE H15
 TEST_DATASET3 = TEST_DATADIR2+'HARPS03_3.3.6/RAW/RASSINE*.p' # Cen B RASSINE H03

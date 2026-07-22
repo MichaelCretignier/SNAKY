@@ -3,11 +3,11 @@ import sys
 import os
 from pathlib import Path
 
-cwd = os.getcwd()
-root = '/'.join(cwd.split('/')[:-1])
+this_file = Path(__file__).resolve()
+current_dir = this_file.parent
 
-if root+'/SNAKY' not in sys.path:
-    sys.path.append(root+'/SNAKY') #Until SNAKY is pip installable
+#cwd = os.getcwd()
+#root = '/'.join(cwd.split('/')[:-1])
 
 import numpy as np
 import pandas as pd
@@ -57,9 +57,7 @@ if len(sys.argv)>1:
         if j[0] == '-F':
             force_query = bool(int(j[1]))
         if j[0] == '-o':
-            output_root = j[1]
-            if output_root[-1]!='/':
-                output_root = output_root+'/'
+            output_root = Path(j[1]).expanduser().resolve()
         if j[0] == '-s':
             stars_to_process = j[1].split(',')
         if j[0] == '-S':
@@ -76,7 +74,7 @@ if (len(stars_to_process)==1)&(stars_to_process[0][-3:]=='csv'):
     db = pd.read_csv(stars_to_process[0],index_col=0) #optional keywords teff,logg,feh,logRHK,ms,rs,prot
     db = snaky_util.format(db) 
     if output_root is None:
-        output_root = '/'.join(file_db.split('/')[:-1])+'/'
+        output_root = Path(file_db).parent
 else:
     db = pd.DataFrame(np.array([stars_to_process]).T,columns=['starname'])
     db = snaky_util.format(db) 
@@ -84,12 +82,18 @@ else:
 db = snaky_util.fill_coordinates(db)
 
 if output_root is None:
-    output_root = root
-    output_dir = root+'/Python/SNAKY/Snaky_data/SPECTRA_DB/'
-    output_dir_snaky = root+'/Python/SNAKY/Snaky_data/'
+    output_root = current_dir
+    output_dir = current_dir / "snaky_data" / "SPECTRA_DB"
+    output_dir_snaky = current_dir / "snaky_data"
 else:
-    output_dir = output_root+'SPECTRA_DB/'
-    output_dir_snaky = output_root+'SNAKY_DB_SPECTRA/'
+    output_dir = output_root / "SPECTRA_DB"
+    output_dir_snaky = output_root / "SNAKY_DB_SPECTRA"
+
+BLUE = "\033[94m"
+RESET = "\033[0m"
+
+print(f" [INFO] Default output dir for downloaded data is:",Fore.CYAN+f"{output_dir}"+Fore.RESET)
+print(f" [INFO] Default output dir for processed SNAKY data is:",Fore.CYAN+f"{output_dir_snaky}\n"+Fore.RESET)
 
 db2 = db.drop_duplicates(subset=['starname'])
 if star_to_process is not None:
@@ -112,7 +116,7 @@ idxs = np.ravel([db3.index.values])
 print('\n [INFO] Querying ESO archive for stars in the database and downloading spectra...\n')
 for i in idxs:
     s,ra,dec = db2.loc[i,['starname','RA','DEC']]
-    if (not os.path.exists(output_dir+s))|(force_query):
+    if (not (output_dir / s).exists())|(force_query):
         print(f' [INFO] {s} downloading...')
         public_query.query_eso(
             s, 
@@ -130,7 +134,7 @@ for i in idxs:
 print('\n [INFO] Querying TNG archive for stars in the database and downloading spectra...\n')
 for i in idxs:
     s,ra,dec = db2.loc[i,['starname','RA','DEC']]
-    if (not os.path.exists(output_dir+s+'/HARPN'))|(force_query):
+    if (not (output_dir / s / "HARPN").exists())|(force_query):
         print(f' [INFO] {s} downloading...')
         public_query.query_tng(
             s, 
@@ -147,7 +151,7 @@ for i in idxs:
 print('\n [INFO] Querying IAC archive for stars in the database and downloading spectra...\n')
 for i in idxs:
     s,ra,dec = db2.loc[i,['starname','RA','DEC']]
-    if (not os.path.exists(output_dir+s+'/HERMES'))|(not os.path.exists(output_dir+s+'/FIES')):
+    if (not (output_dir / s / "HERMES").exists())|(not (output_dir / s / "FIES").exists()):
         print(f' [INFO] {s} downloading...')
         public_query.query_iac(
             s, 
@@ -164,7 +168,7 @@ for i in idxs:
 print('\n [INFO] Querying SOPHIE archive for stars in the database and downloading spectra...\n')
 for i in idxs:
     s,ra,dec = db2.loc[i,['starname','RA','DEC']]
-    if not os.path.exists(output_dir+s+'/SOPHIE'):
+    if not (output_dir / s / "SOPHIE").exists():
         print(f' [INFO] {s} downloading...')
         public_query.query_sophie(
             s, 
@@ -192,23 +196,23 @@ snaky_ins = {
     'SOPHIE':'SOPHIE_1.0',
     }
 
-print(' [INFO] SNAKY processing...')
+print('\n [INFO] SNAKY processing...')
 
 for idx in idxs:
     s,ra,dec,teff,rhk,logg,feh,ms,rs,vsini,prot = db3.loc[idx,['starname','RA','DEC','teff','logRHK','logg','feh','ms','rs','vsini','prot']]
 
     if instrument is None:
-        ins = snaky.glob.glob(output_dir+s+'/*')
-        ins = np.unique([i.split('/')[-1] for i in ins])
+        ins = sorted({p.name for p in (output_dir / s).iterdir()})
     else:
         ins = instrument
 
     for i in np.sort(ins):
         if i in snaky_ins.keys():
-            files = snaky.glob.glob(output_dir+s+'/'+i+'/*.fits')
+            files = list((output_dir / s / i).glob("*.fits"))
+            files = [str(f) for f in files]
             i2 = snaky_ins[i]
-            products = snaky.glob.glob(output_dir_snaky+s+'/data/s1d/'+i2+'/WORKSPACE/RASSINE_*.p')
-
+            products = list((output_dir_snaky / s / "data" / "s1d" / i2 / "WORKSPACE").glob("RASSINE_*.p"))
+            products = [str(f) for f in products]
             if len(products)!=0:
                 files = list(products)
     
@@ -226,7 +230,7 @@ for idx in idxs:
             if len(files)>0:
                 job = snaky.start(verbose=verbose, debug=debug)
                 try:
-                    job.set_output_dir(output_dir_snaky)
+                    job.set_output_dir(str(output_dir_snaky))
                     job.set_dataset(s, i2, files, source=source)
                     job.set_star(ra=ra, dec=dec, teff=teff, rhk=rhk, ms=ms, rs=rs, logg=logg, feh=feh, vsini=vsini, prot=prot)
                     job.reduce(begin=begin, end=end, automatic_db=automatic_db)
