@@ -47,7 +47,11 @@ class start():
         if not verbose:
             myv.VERBOSE = False
 
-    def set_output_dir(self,outputdir):
+    def set_output_dir(self,outputdir=None):
+
+        if outputdir is None:
+            outputdir = myv.WORKSPACE
+
         if outputdir[-1]!='/':
             outputdir = outputdir+'/'
         self.sy_output_dir = outputdir
