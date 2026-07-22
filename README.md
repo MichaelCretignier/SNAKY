@@ -281,7 +281,7 @@ job.reduce(begin=1, end=14, automatic_db=True)
 ```
 
 *Note that by default in `.reduce()`, `automatic_db=False` in order to relaunch some specific steps.*
-*For instance, you would like to compute the stellar inclination with a user-specified Prot and Rs:*
+*For instance, you would like to compute the stellar inclination with a user-specified rotational period (prot) and stellar radius (rs):*
 
 ```python
 job.set_star(prot=11,rs=0.74)
