@@ -337,7 +337,7 @@ job.reduce(begin=1, end=14)
 *To even simplify further the processing, SNAKY contains a code `snaky_query.py` that can directly download the spectra on your machine. The shortest call of the function is:*
 
 ```bash
-python .../GitHub/SNAKY/snaky_query.py -s HD217014
+python snaky_query.py -s HD217014
 ```
 
 The list of optional parameters are:
@@ -357,7 +357,7 @@ The list of optional parameters are:
 *Let's process three stars rapidly:*
 
 ```bash
-python .../GitHub/SNAKY/snaky_query.py -s HD217014,HD4628,HD22049 -n 1
+python snaky_query.py -s HD120411,HD4628,HD22049 -n 1
 ```
 
 
