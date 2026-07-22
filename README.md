@@ -250,7 +250,7 @@ job.set_dataset('HD123456','HARPS03_3.5',files)  #HARPS03 = before fibre upgrade
 job.reduce(begin=1, end=14) # check the sequence number with: job.reduce?
 ```
 
-*As you may notice, the `.reduce()` method also monitors RAM usage and execution time, and automatically saves this information in `.../REDUCTION_INFO/` for [benchmark](#flag3) purposes.*
+*As you may notice, the `.reduce()` method also monitors RAM usage and execution time, and automatically saves this information in `.../REDUCTION_INFO/` for [benchmark](#flag4) purposes.*
 
 ### • Automatic Restart from the Last Completed Step
 
