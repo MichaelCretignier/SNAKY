@@ -119,9 +119,10 @@ cd .../GitHub/SNAKY/
 
 ### • Benchmark and Test datasets
 
-*Launch an IPython shell:*
+*Move in the `../GitHub/SNAKY/` and launch an IPython shell:*
 
 ```bash
+cd .../GitHub/SNAKY/
 ipython
 ```
 
