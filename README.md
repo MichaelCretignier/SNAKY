@@ -132,21 +132,23 @@ ipython
 
 *To run the benchmark, the command-lines are:*
 
-*Benchmark Dataset 1 (N=1):*
 
 ```python
 import src_snaky.run as snaky
 
-snaky.benchmark1() #check "[INFO] Processing achieved in ..."
+#Benchmark Dataset 1 (N=1)
+snaky.benchmark1() 
 ```
-
-*Benchmark Dataset 2 (N=20,RASSINE files already exist):*
 
 ```python
 import src_snaky.run as snaky
 
-snaky.benchmark2() #check "[INFO] Processing achieved in ..."
+
+# Benchmark Dataset 2 (N=20, RASSINE files already exist)
+snaky.benchmark2() 
 ```
+
+*You should see a text like "[INFO] Processing achieved in ..." if the processing was successful.*
 
 ### • Step-by-step 
 
