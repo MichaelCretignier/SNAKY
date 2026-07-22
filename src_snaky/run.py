@@ -212,10 +212,11 @@ class start():
 
         self.estimate_computation_time()
 
-    def init_workspace(self, ra=None, dec=None, copy_rassine_files=True):
+    def init_workspace(self, ra=None, dec=None, copy_rassine_files=True, rv_mode='RV'):
         dir_root = self.sy_dir_root
 
         self.set_starinfo()
+        self.sy_rv_mode = rv_mode
 
         if (copy_rassine_files)&(self.sy_rassine_db):
             myv.vprint(' [INFO] Copying RASSINE files...')
@@ -340,7 +341,7 @@ class start():
                 new_summary = mym.pepsi_summary(files,self.sy_dir_root)
                 files = new_summary['fileroot'].values
                 self.sy_files = files
-                self.init_workspace()
+                self.init_workspace(rv_mode = self.sy_rv_mode)
                 dace_table = mym.import_dace_table(dir_root)
 
             file_opened = []
@@ -1284,7 +1285,6 @@ class start():
 
         self.sy_begin = begin
         self.sy_end = end
-        self.sy_rv_mode = rv_mode
 
         star = self.sy_starname
         ins = self.sy_instrument
@@ -1355,7 +1355,7 @@ class start():
         self.write_progress(0, 'begin', savefile=filename_time)
         
         if force_pre: #1
-            self.init_workspace(ra=ra, dec=dec, copy_rassine_files=copy_rassine_files)
+            self.init_workspace(ra=ra, dec=dec, copy_rassine_files=copy_rassine_files, rv_mode=rv_mode)
             try:
                 self.preprocess()
             except KeyError:
