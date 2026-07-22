@@ -323,7 +323,7 @@ job2.set_star(ra=219.90, dec=-60.84, prot=36)
 job2.reduce(begin=1, end=14)
 ```
 
-*SNAKY derives a Teff of 5162K for both instruments in this case. But depending on the dataset, this may not be the case (and perhaps you have your own temperature estimate that is different!). You have two options to fix Teff in SNAKY before computing the MHK:*
+*SNAKY derives a Teff of 5140K for both instruments in this case. But depending on the dataset, this may not be the case (and perhaps you have your own temperature estimate that is different!). You have two options to fix Teff in SNAKY before computing the MHK:*
 
 *1) specify Teff manually in the `.set_star()`. Let's for instance extract again the activity time-series with `Teff=5100K`*:
 ```python
