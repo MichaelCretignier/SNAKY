@@ -155,6 +155,7 @@ snaky.benchmark2(output_dir) #check "[INFO] Processing achieved in ..."
 *Launch an IPython shell:*
 
 ```bash
+cd .../GitHub/SNAKY/
 ipython
 ```
 
