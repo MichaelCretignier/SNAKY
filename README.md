@@ -337,13 +337,13 @@ job.reduce(begin=1, end=14)
 *To even simplify further the processing, SNAKY contains a code `snaky_query.py` that can directly download the spectra on your machine. The shortest call of the function is:*
 
 ```bash
-python snaky_query.py -s HD217014,HD4628,HD22049
+python .../GitHub/SNAKY/snaky_query.py -s HD217014,HD4628,HD22049
 ```
 
-The list of parameters are:
+The list of optional parameters are:
 
 `-s`  List of target stars. A comma-separated list (e.g. `HD10700,HD22049`) or a `.csv` file with `'starname'` column \
-`-o`  Output directory (e.g. `.../SNAKY/Snaky_data/`) \
+`-o`  Output directory (e.g. `/Users/Desktop/SNAKY_WORSPACE`) \
 `-n`  Maximum number of spectra to download per instrument (e.g. `-n 5`) \
 `-b`  Starting SNAKY reduction stage (e.g. `-b 1`) \
 `-e`  Ending SNAKY reduction stage (e.g. `-e 14`) \
