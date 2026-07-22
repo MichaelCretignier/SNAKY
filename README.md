@@ -256,7 +256,7 @@ job.reduce(begin=1, end=14) # check the sequence number with: job.reduce?
 
 *SNAKY contains a **trigger** able to assess which steps have already been completed and which are still pending.*
 
-*Thanks to this, `.reduce()` can automatically restart the pipeline from the last successfully completed step after a crash:*
+*Thanks to this, `.reduce()` can restart the pipeline from the last successfully completed step after a crash:*
 
 ```python
 # Simulate a crash at step 7
