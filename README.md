@@ -99,7 +99,7 @@ python snaky_build.py
 
 ## ④ Tutorial
 
-*If you want to run `snaky` from anywhere on your machine (without launching it from inside the `../GitHub/SNAKY/` directory), you can manually add `SNAKY/` to your `sys.path` in your Python scripts:*
+*If you want to run `snaky` from anywhere on your machine (without launching it from inside the `../GitHub/SNAKY/` directory), you can manually add `../GitHub/SNAKY/` to your `sys.path` at the top of your Python scripts:*
 
 ```python
 import sys
