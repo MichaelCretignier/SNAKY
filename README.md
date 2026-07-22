@@ -98,8 +98,7 @@ python snaky_build.py
 
 ## ④ Tutorial
 
-*The code is close to being fully packaged.  
-For now, if you want to run `snaky` from anywhere on your machine (without launching it from inside the `SNAKY/` directory), you can manually add `SNAKY/` to your `sys.path` in your Python scripts:*
+*The code is close to being fully packaged. For now, if you want to run `snaky` from anywhere on your machine (without launching it from inside the `SNAKY/` directory), you can manually add `SNAKY/` to your `sys.path` in your Python scripts:*
 
 
 ```python
@@ -112,11 +111,11 @@ import src_snaky.run as snaky
 
 ```
 
-### BENCHMARK (Computation time)
+### Benchmark and test datasets
 
 <a id="flag3"></a>
 
-*You can test your installation and speed with the following benchmark command-lines:*
+*You can test your installation is working and monitor your speed performance with the following benchmark command-lines:*
 
 *Benchmark Dataset 1 (N=1):*
 
@@ -136,7 +135,7 @@ import src_snaky.run as snaky
 snaky.benchmark2(output_dir) #check "[INFO] Processing achieved in ..."
 ```
 
-### Step-by-step
+### Step-by-step 
 
 *If you haven't add `SNAKY/` to your `sys.path`, first enter into your local git clone `SNAKY/` directory:*
 
