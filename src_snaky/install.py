@@ -11,7 +11,7 @@ url = "https://zenodo.org/records/20659152/files/Material_snaky.zip"
 zip_path = snaky_root / "Material_snaky.zip"
 material_dir = snaky_root / "Material_snaky"
 
-print("\n[INFO] Downloading Material_snaky from Zenodo...\n")
+print("\n[INFO] Downloading Material_snaky from Zenodo, wait...\n")
 
 # Remove any previous installation
 shutil.rmtree(material_dir, ignore_errors=True)
