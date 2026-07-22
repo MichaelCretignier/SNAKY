@@ -136,13 +136,12 @@ ipython
 ```python
 import src_snaky.run as snaky
 
-#Benchmark Dataset 1 (N=1)
+# Benchmark Dataset 1 (N=1)
 snaky.benchmark1() 
 ```
 
 ```python
 import src_snaky.run as snaky
-
 
 # Benchmark Dataset 2 (N=20, RASSINE files already exist)
 snaky.benchmark2() 
