@@ -51,6 +51,7 @@ class start():
 
         if outputdir is None:
             outputdir = myv.WORKSPACE
+            print(' [INFO] No output directory specified, using default: '+outputdir)
 
         if outputdir[-1]!='/':
             outputdir = outputdir+'/'
