@@ -42,7 +42,9 @@ cd .../GitHub/SNAKY/
 *Based on [benchmark](#flag4), the fastest version is the python 3.10.15. \
 Other tested `../SNAKY/requirements/requirement_PYTHON_VERSION.txt` libraries versioning are available if needed. 
 
-For **Mac Intel Chip**, python version 3.8.8 is recommended.*
+Recommended Python versions:
+- **Apple Silicon Macs (M1/M2/M3/M4):** Python **3.10.15**
+- **Intel-based Macs:** Python **3.8.8**
 
 ### [Option 1] Conda install (Python 3.10.15)
 
