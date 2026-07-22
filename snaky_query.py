@@ -107,12 +107,9 @@ db3 = db3[multiprocess_index-1] #multiprocessing splitting
 
 # SPECTRA DOWNLOADING
 
-# public_query.query_eso('51Peg', ra=None, dec=None, output_dir=output_dir, selection='os',search_by='coordinates', N_spectra = N_spectra, fov=field_of_view, download=True)
-# public_query.query_tng('51Peg', ra=None, dec=None, output_dir=output_dir, N_spectra = N_spectra, fov=field_of_view, download=True)
-# public_query.query_sophie('51Peg', ra=None, dec=None, output_dir=output_dir, N_spectra = N_spectra, fov=field_of_view, download=True)
-
 idxs = np.ravel([db3.index.values])
 
+# public_query.query_eso('51Peg', ra=None, dec=None, output_dir=output_dir, selection='os',search_by='coordinates', N_spectra = 1, fov=2, download=True)
 print('\n [INFO] Querying ESO archive for stars in the database and downloading spectra...\n')
 for i in idxs:
     s,ra,dec = db2.loc[i,['starname','RA','DEC']]
@@ -131,6 +128,7 @@ for i in idxs:
     else:
         print(f' [INFO] {s} spectra already downloaded, skipping...')
 
+# public_query.query_tng('51Peg', ra=None, dec=None, output_dir=output_dir, N_spectra = 1, fov=2 download=True)
 print('\n [INFO] Querying TNG archive for stars in the database and downloading spectra...\n')
 for i in idxs:
     s,ra,dec = db2.loc[i,['starname','RA','DEC']]
@@ -165,6 +163,7 @@ for i in idxs:
     else:
         print(f' [INFO] {s} spectra already downloaded, skipping...')
 
+# public_query.query_sophie('51Peg', ra=None, dec=None, output_dir=output_dir, N_spectra = 1, fov=2, download=True)
 print('\n [INFO] Querying SOPHIE archive for stars in the database and downloading spectra...\n')
 for i in idxs:
     s,ra,dec = db2.loc[i,['starname','RA','DEC']]

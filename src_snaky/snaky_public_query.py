@@ -350,17 +350,17 @@ def query_tng(
         ra = c.ra.deg
         dec = c.dec.deg
 
-    ra = ra*np.pi/180
-    dec = dec*np.pi/180
+    ra_rad = ra*np.pi/180
+    dec_rad = dec*np.pi/180
 
     fov_query = np.round(fov*60,0)
-    ra_min = ra - (fov_query/3600.)*np.pi/180
-    ra_max = ra + (fov_query/3600.)*np.pi/180
-    dec_min = dec - (fov_query/3600.)*np.pi/180
-    dec_max = dec + (fov_query/3600.)*np.pi/180
+    ra_min = ra_rad - (fov_query/3600.)*np.pi/180
+    ra_max = ra_rad + (fov_query/3600.)*np.pi/180
+    dec_min = dec_rad - (fov_query/3600.)*np.pi/180
+    dec_max = dec_rad + (fov_query/3600.)*np.pi/180
 
     query = f"""
-    SELECT TOP 20 OFFSET 0
+    SELECT TOP 30 OFFSET 0
         tng.EXP_ID AS file_name,
         tng.policy AS policy,
         tng.DATE_OBS AS DATE_OBS,
@@ -381,9 +381,10 @@ def query_tng(
         AND tng.RA_RAD BETWEEN {ra_min} AND {ra_max}
         AND tng.DEC_RAD BETWEEN {dec_min} AND {dec_max}
         AND tng.PROGRAM <> 'SOLAR'
+        AND tng.policy LIKE 'FREE'
         AND harpn.FILE_TYPE_REDUCED = 's1d_fluxcal'
         AND harpn.FILE_TYPE = 'reduced'
-        """
+                """
     
     job = tap.submit_job(query)
     job.run()
@@ -406,7 +407,7 @@ def query_tng(
 
         results_df["ra"] = coords.ra.radian
         results_df["dec"] = coords.dec.radian
-        results_df['diff'] = np.sqrt((ra-results_df['ra'])**2+(dec-results_df['dec'])**2)*180/np.pi*3600.
+        results_df['diff'] = np.sqrt((ra_rad-results_df['ra'])**2+(dec_rad-results_df['dec'])**2)*180/np.pi*3600.
         
         results_df = results_df.sort_values(by=['instrument','object','diff']).reset_index(drop=True)
         
@@ -428,24 +429,25 @@ def query_tng(
                 time.sleep(1.0)
                 try:
                     url = str(row)
-                    if url.startswith("http://"):
-                        url = "https://" + url[len("http://"):]
-
-                    r = session.get(url, timeout=(10, 180), allow_redirects=True)
-                    r.raise_for_status()
+                    r = session.get(url, timeout=(10, 30), allow_redirects=True)
+                    #r.raise_for_status()
 
                     filename = url.split('/')[-1]
                     output_name = output_dir / starname / ins / filename
 
                     if not output_name.exists():
                         output_name.write_bytes(r.content)
+                    
+                    if output_name.suffix == ".gz":
+                        unzipped = output_name.with_suffix("")
 
-                    if output_name.endswith(".gz"):
-                        unzipped = output_name[:-3]
-                        if not Path(unzipped).exists():
-                            with gzip.open(output_name, "rb") as fin, open(unzipped, "wb") as fout:
+                        if not unzipped.exists():
+                            with gzip.open(output_name, "rb") as fin, unzipped.open("wb") as fout:
                                 shutil.copyfileobj(fin, fout)
 
+                            # Delete the compressed file
+                            output_name.unlink()
+                
                 except Exception as e:
                     print(f"[skip] failed download for {row}: {e}")
                     continue

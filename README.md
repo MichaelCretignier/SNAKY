@@ -357,7 +357,7 @@ The list of optional parameters are:
 *Let's process three stars rapidly:*
 
 ```bash
-python snaky_query.py -s HD120411,HD4628,HD22049 -n 1
+python snaky_query.py -s HD217014,HD120411,HD4628,HD22049,HD197481 -n 1
 ```
 
 

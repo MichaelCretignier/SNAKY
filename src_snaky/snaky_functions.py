@@ -1135,7 +1135,7 @@ def gray_rotation(vl=1,epsilon=0.6,color='k', Plot=False, vgrid=None):
 
     return (profile1+profile2)/norm
 
-def lithium_age(teff, ew, nsamples=5000, lower=False): # https://doi.org/10.1093/mnras/stad1293 (Jeffries + 23, The Gaia-ESO Survey: empirical estimates of stellar ages from lithium equivalent widths (eagles))
+def lithium_age(teff, ew, nsamples=5000): # https://doi.org/10.1093/mnras/stad1293 (Jeffries + 23, The Gaia-ESO Survey: empirical estimates of stellar ages from lithium equivalent widths (eagles))
 
     pars = {
         "tc":  (3.524, 0.001),
@@ -1148,15 +1148,13 @@ def lithium_age(teff, ew, nsamples=5000, lower=False): # https://doi.org/10.1093
         "ct1": (4.040, 0.095),
     }
 
-    if lower:
-        nsamples_old = nsamples
-        nsamples = 50000
+    warning = 0
+    if np.nanmean(ew)<15:
+        warning = 1
 
     if nsamples!=len(teff):
         teff = np.random.choice(teff,nsamples,replace=True)
-    if nsamples!=len(ew):
-        ew = np.random.choice(ew,nsamples,replace=True)
-
+        
     rng = np.random.default_rng()
 
     tc  = rng.normal(*pars["tc"],  nsamples)
@@ -1185,21 +1183,52 @@ def lithium_age(teff, ew, nsamples=5000, lower=False): # https://doi.org/10.1093
             cc + ct1 * (logT - tc),
         )
 
+    if nsamples!=len(ew):
+        ew = np.random.choice(ew,nsamples,replace=True)
+
     x = np.clip(1 - ew / A, -0.999999, 0.999999)
 
     logAge = C + B * np.arctanh(x)
 
     age = 10**logAge / 1e9
 
-    if lower:
-        index = np.digitize(ew,np.arange(0,1000,10))
+    if warning: #Deprecated, but kept for reference
+        ew_curve = np.linspace(0, 1000, 100000)
+        x = np.clip(1 - ew_curve / np.random.choice(A,100000,replace=True), -0.999999, 0.999999)
+        logAge = np.random.choice(C,100000,replace=True) + np.random.choice(B,100000,replace=True) * np.arctanh(x)
+        age = 10**logAge / 1e9
+
+        index = np.digitize(ew_curve,np.arange(0,1000,5))
         lower = np.array([np.percentile(age[index==i],5) for i in np.unique(index)])
-        bins = np.array([np.percentile(ew[index==i],50) for i in np.unique(index)])
-        loc = find_nearest(bins,np.median(ew))[0][0]
-        age = np.random.uniform(lower[loc],10,nsamples_old)
+        bins = np.array([np.percentile(ew_curve[index==i],50) for i in np.unique(index)])
+
+        order = np.argsort(bins)
+        bins = bins[order]
+        lower = lower[order]
+
+        age = interp1d(
+            bins,
+            lower,
+            kind="cubic",
+            bounds_error=False,
+            fill_value="extrapolate",
+        )(ew)
+
+        age = np.random.uniform(np.percentile(age,5), 13, nsamples)
 
     age[age>13] = 13
-    age[age<0] = 0
+    age[age<0.001] = 0
 
-    return age
+    if np.nanmedian(age)==0:
+        warning = 2
 
+    return age,warning
+
+def paraboloid(coord, a, b, c, x0, y0, d):
+    x, y = coord
+    return (
+        a*(x-x0)**2
+        + b*(y-y0)**2
+        + c*(x-x0)*(y-y0)
+        + d
+    ).ravel()

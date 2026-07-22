@@ -62,7 +62,7 @@ class start():
         starname = self.sy_starname
         ins = self.sy_instrument
         source = self.sy_source_files
-        if starname.split('_')[0]!='Sun':
+        if (starname.split('_')[0]!='Sun')|(source[0]=='YARARA'):
             myv.vprint(' [INFO] Formatting SNAKY with basic minimal information...')
             dace_table = mym.import_dace_table(dir_root)
             files = np.array(dace_table['fileroot'])
@@ -356,14 +356,14 @@ class start():
                     qc = mym.read_sophie(f,dir_root,force=True)
                 elif (ins=='HARPS_3.5')|(ins=='HARPS03_3.5')|(ins=='HARPS15_3.5'):
                     qc = mym.read_sophie(f,dir_root,force=True)
+                elif source=='YARARA':
+                    qc = mym.read_yarara(f,dir_root,force=True)
                 elif (ins.split('_')[0][0:5]=='HARPS')|(ins.split('_')[0]=='HARPN')|(ins.split('_')[0]=='ESPRESSO'):
                     if source=='ESO':
                         qc = mym.read_eso(f,dir_root,ins.split('_')[0],force=True)
                     elif source=='IA2':
                         qc = mym.read_ia2(f,dir_root,force=True)
-                    elif source=='YARARA':
-                        qc = mym.read_yarara(f,dir_root,force=True)
-                    else:
+                    else:   
                         qc = mym.read_espresso(f,dir_root,force=True)
                 elif ins[0:5]=='PEPSI':
                     qc = mym.read_pepsi(f,dir_root,force=True)
@@ -384,8 +384,8 @@ class start():
             file_opened = np.array(file_opened).astype('bool')
             nb_crash = len(file_opened)-np.sum(file_opened)
             if len(file_opened)!=np.sum(file_opened):
-                print(Fore.YELLOW+'\n[WARNING] %.0f files have not been opened correctly and will be removed from the processing...'%(nb_crash)+Fore.RESET)
-                print(file_opened.astype('int'))
+                print(Fore.YELLOW+'\n [WARNING] %.0f files have not been opened correctly and will be removed from the processing...'%(nb_crash)+Fore.RESET)
+                print(' ',file_opened.astype('int'))
                 self.sy_files = list(np.array(self.sy_files)[file_opened])
                 self.sy_source_files = list(np.array(self.sy_source_files)[file_opened])
                 dace_table = dace_table.loc[file_opened].reset_index(drop=True)
@@ -825,6 +825,10 @@ class start():
                 sinfo = myf.update_info_lvl2(sinfo,'Vmicro','SNAKY',vmicro)
                 sinfo = myf.update_info_lvl2(sinfo,'Vmacro','SNAKY',vmacro)
                 sinfo = myf.update_info_lvl2(sinfo,'stellar_template','SNAKY',suffixe)
+                age = mym.yarara_lithium_age(dir_root) #recompute the age for fast rotators, as the previous one might be wrong due to the bad EW measurement
+                if age is not None:
+                    sinfo = myf.update_info_lvl2(sinfo,'Age','Jeffr+23',np.round(age,3))
+
                 mym.yarara_vsini(dir_root, Prot=Prot, Rs=Rs)
             else:
                 if (ins_res==ins_res)|(ins in myv.instrument_res_kms.keys()):

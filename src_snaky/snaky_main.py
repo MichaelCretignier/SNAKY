@@ -1,3 +1,4 @@
+from doctest import master
 import getopt
 import datetime
 import pandas as pd
@@ -17,7 +18,8 @@ import astropy.units as u
 from sklearn.neighbors import KNeighborsRegressor #saved in the pickle calibration file
 from colorama import Fore
 from scipy.stats import gaussian_kde
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d,RectBivariateSpline
+from scipy.optimize import minimize
 
 from . import snaky_variables as myv
 from . import snaky_functions as myf
@@ -407,6 +409,7 @@ def yarara_lithium_age(dir_root, teff=None, teff_std=70):
 
     if teff is None:
         teff_samples = np.array(samples['teff'])
+        teff_std = np.std(teff_samples)
     else:
         teff_samples = np.random.randn(5000)*teff_std+teff
     teff = np.mean(teff_samples)
@@ -425,7 +428,7 @@ def yarara_lithium_age(dir_root, teff=None, teff_std=70):
         error = myf.mad(master.y[~mask_line])
         master.yerr = np.ones(len(master.x))*error
 
-        continuum = np.median(master.y[~mask_line])
+        continuum = np.nanpercentile(master.y[~mask_line],90)
         master.y = master.y/continuum
 
         dl = np.gradient(master.x[mask_line])
@@ -433,7 +436,7 @@ def yarara_lithium_age(dir_root, teff=None, teff_std=70):
         ew_std = np.sqrt(np.nansum((master.yerr[mask_line] * dl)**2))*1000
 
         if ew<10:
-            samples2 = np.random.uniform(0,1,500)*10
+            samples2 = np.random.uniform(0,1,500)*20
         else:
             samples2 = np.random.randn(500)*ew_std + ew
 
@@ -444,42 +447,76 @@ def yarara_lithium_age(dir_root, teff=None, teff_std=70):
     ew = np.mean(ew_samples)
     ew_std = np.std(ew_samples)
 
+    ew_curve = np.random.rand(20000)*295+5
+
     print(' [INFO] Li1 EW = %.2f +/- %.2f mA'%(ew,ew_std))
 
+    warn = 0
+    age_curve,warn = myf.lithium_age(teff_samples, ew_curve, nsamples=len(ew_curve))
     if np.mean(teff)<6700: #outside calibration
-        age = myf.lithium_age(teff_samples, ew_samples, nsamples=5000, lower=bool(ew<10))
+        age,warn = myf.lithium_age(teff_samples, ew_samples, nsamples=5000)
     else:
-        age = np.nan*teff_samples
+        age = np.nan*ew_samples
 
     if np.sum(age!=13):
-        age = age[age!=13]   
+        age[age==13] = np.nan
+
+    if np.sum(age!=0):
+        age[age==0] = np.nan
+
+    print(' [INFO] Age = %.2f +/- %.2f Gyr'%(np.nanmean(age),np.nanstd(age)))
+
+    samples['age'] = np.random.choice(age,len(samples),replace=True)
+    samples.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv.gz',index=False)
 
     plt.figure(figsize=(15,6))
-    plt.axes([0.1,0.1,0.6,0.8])
+    plt.axes([0.08,0.09,0.55,0.87])
     master.plot()
     plt.axhline(y=1,color='g')
     plt.axvline(x=wc,color='k',ls=':',label='%.2f A'%(wc))
     plt.fill_between(master.x[mask_line],master.y[mask_line],master.y[mask_line]*0+1,alpha=0.3,color='g')
-    plt.title(r'EW = %.2f +/- %.2f [$m\AA$]'%(ew,ew_std),fontsize=14)
+    plt.title(r'EW = %.2f +/- %.2f [$m\AA$]'%(ew,ew_std),fontsize=13)
     plt.xlim(wc-5*windows,wc+5*windows)
-    plt.ylabel('Flux normalised',fontsize=15)
-    plt.xlabel(r'Wavelength [$\lambda$]',fontsize=15)
+    plt.ylabel('Flux normalised',fontsize=14)
+    plt.xlabel(r'Wavelength [$\lambda$]',fontsize=14)
+    plt.ylim(0.7,1.05)
 
-    plt.axes([0.75,0.1,0.2,0.8])    
-    plt.title('Teff = %.0f +/- %.0f \nAge = %.2f +/- %.2f Gyr'%(np.mean(teff_samples),np.std(teff_samples),np.median(age),myf.mad(age)),fontsize=14)
+    plt.axes([0.70,0.59,0.25,0.37])    
+    plt.scatter(np.log10(age_curve*1.e9),ew_curve,alpha=0.1,color='k',s=1)
+    plt.scatter(np.log10(age*1.e9),ew_samples,alpha=0.1,color='C0',s=1)
+    plt.scatter(np.mean(np.log10(age*1.e9)), np.mean(ew_samples), color='C0', s=50, ec='k')
+    plt.title('Teff = %.0f +/- %.0f'%(np.mean(teff_samples),np.std(teff_samples)),fontsize=13)
+    plt.xlim(6,10)
+    plt.ylim(0,300)
+    plt.grid()
+    plt.ylabel('EW [mA]',fontsize=14)
+    plt.xlabel('Log Age [yr]',fontsize=14)
 
-    if np.mean(teff)<6700: #outside calibration
-        plt.hist(age,bins=30,alpha=0.3,color='C0')
-        plt.hist(age,bins=30,alpha=1.0,color='C0',histtype='step')
+    plt.axes([0.70,0.09,0.25,0.37])    
+
+    if np.mean(teff)<6700: 
+        plt.hist(age[age==age],bins=30,alpha=0.3,color='C0')
+        plt.hist(age[age==age],bins=30,alpha=1.0,color='C0',histtype='step')
         plt.xlim(0,None)
 
-    plt.xlabel('Age [Gyr]',fontsize=15)
+    plt.xlabel('Age [Gyr]',fontsize=14)
 
-    print(' [INFO] Age = %.2f +/- %.2f Gyr'%(np.mean(age),np.std(age)))
+    scale = 1
+    unit = 'Gyr'
+    precision = '%.2f'
+    if np.nanmedian(age)<1:
+        scale = 1000
+        unit = 'Myr'
+        precision = '%.0f'
+
+    if warn==0:
+        plt.title('Age = '+precision+' +/- '+precision+' %s'%(np.nanmedian(age)*scale,myf.mad(age)*scale,unit),fontsize=13)
+    elif warn==1:
+        plt.title('Age > '+precision+' %s '%(np.nanpercentile(age,2.5)*scale,unit),fontsize=13)
+    elif warn==2:
+        plt.title('Age < '+precision+' %s '%(np.nanpercentile(age,97.5)*scale,unit),fontsize=13)
+
     plt.savefig(dir_root+'IMAGES/Age_Lithium.png')
-
-    samples['age'] = np.random.choice(age,len(samples),replace=True)
-    samples.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv.gz',index=False)
 
     return np.mean(age)
 
@@ -1300,7 +1337,7 @@ def extract_header(files, instru, debug=False, ra=None, dec=None, sources=None):
            'YARARA':{'jdb':'rjd', 'berv':'berv', 'SNR_5500':'snr'},
            'TBD':{'KEYWORD BJD':'rjd', 'KEYWORD BERV':'berv', 'KEYWORD SNR':'snr', 'KEYWORD ALPHA':'RA', 'KEYWORD DELTA':'DEC'},
            }
-    
+
     for file,source in zip(files,sources):
 
         if source=='GR8':
@@ -3411,7 +3448,7 @@ def yarara_atmos_fast_rotator(dir_root, rv_sys, vsini, model='SNAKY'):
     master.y[master.y<=0] = np.nan
     grid = master.x
 
-    all_template = []
+    #all_template = []
     parameters = []
     teff_grid = np.arange(3500,6500,250)
     v_grid = np.linspace(0.5*vsini,vsini+(0.5*vsini),15)
@@ -3424,18 +3461,49 @@ def yarara_atmos_fast_rotator(dir_root, rv_sys, vsini, model='SNAKY'):
         template.y[template.y<=0] = np.nan
         for j,v in enumerate(v_grid):
             template.rotation_broadening(veq=v,replace=False)
-            all_template.append(template.degraded.y.copy())
-            metric[i, j] = np.nansum(np.abs(all_template[-1] / master.y - 1))
+            #all_template.append(template.degraded.y.copy())
+            ratio = abs(template.degraded.y / master.y - 1)
+            metric[i, j] = np.nansum(ratio)
             #plt.plot(grid,all_template[-1]/master.y+n)
     
     #for n in range(7):
     #    plt.plot(master.x,1+master.x*0,color='k',zorder=100)
 
-    best = np.where(metric==np.min(metric))
-    teff_best = teff_grid[best[0]][0]
-    v_best = np.round(v_grid[best[1]][0],2)
+    # bicubic interpolation of the metric   
+    f = RectBivariateSpline(teff_grid, v_grid, metric, kx=3, ky=3)
+
+    # initial guess = grid minimum
+    imin, jmin = np.unravel_index(np.argmin(metric), metric.shape)
+    teff_best = np.round(teff_grid[imin],0)
+    v_best = np.round(v_grid[jmin],2)
+
+    x0 = np.array([teff_best,v_best])
+
+    # objective function
+    fun = lambda p: f(p[0], p[1])[0, 0]
+
+    res = minimize(
+        fun,
+        x0=x0,
+        bounds=[
+            (teff_grid.min(), teff_grid.max()),
+            (v_grid.min(), v_grid.max())
+        ],
+    )
+
+    teff_opt, vsini_opt = res.x
+    teff_best = np.round(teff_opt,0)
+    v_best = np.round(vsini_opt,2)
+    
     dteff = 125
     dv_grid = np.diff(v_grid)[0]*0.5
+
+    chi2 = metric
+
+    L = np.exp(-(chi2 - np.nanmin(chi2))/2)
+    L /= np.nansum(L)
+    P_teff = np.nansum(L, axis=1)
+    P_vsini = np.nansum(L, axis=0)
 
     myv.vprint(' [INFO] Best params (model = %s) Teff = %.0f +/- %.0f K  | vsini = %.1f +/- %.1f km/s'%(model, teff_best, dteff, v_best, dv_grid))
 
@@ -3454,7 +3522,7 @@ def yarara_atmos_fast_rotator(dir_root, rv_sys, vsini, model='SNAKY'):
 
     fig.colorbar(im, ax=ax, label="Metric")
 
-    ax.scatter(best[1], best[0], color="white", marker="x")
+    ax.scatter(jmin, imin, color="white", marker="x")
 
     ax.set_title(
         "model = %s\nTeff = %.0f +/- %.0f K  | vsini = %.1f +/- %.1f km/s"
@@ -3466,7 +3534,7 @@ def yarara_atmos_fast_rotator(dir_root, rv_sys, vsini, model='SNAKY'):
 
     ax2.plot(
         np.arange(len(v_grid)),
-        np.log10(metric)[best[0], :][0],
+        np.log10(metric)[imin, :],
         color="white", 
         lw=2,
     )
@@ -3476,9 +3544,11 @@ def yarara_atmos_fast_rotator(dir_root, rv_sys, vsini, model='SNAKY'):
     params = create_atmos_sample(dir_root, teff_best, dteff, 4.3, 0.2, 0.0, 0.5, rv_sys)
     params = list(params)+[v_best]
 
-    samples = np.random.randn(99999)*dv_grid + v_best
+    samples_teff = np.random.randn(99999)*dteff + teff_best
+    samples_vsini = np.random.randn(99999)*dv_grid + v_best
     samples_table = pd.read_csv(dir_root+'WORKSPACE/Analyse_samples.csv.gz')
-    samples_table['vsini'] = samples
+    samples_table['vsini'] = samples_vsini
+    samples_table['teff'] = samples_teff
     samples_table.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv.gz',index=False)
 
     return params
