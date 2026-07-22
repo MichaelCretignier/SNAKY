@@ -98,7 +98,7 @@ python snaky_build.py
 
 ## ④ Tutorial
 
-*The code is close to being fully packaged. For now, if you want to run `snaky` from anywhere on your machine (without launching it from inside the `SNAKY/` directory), you can manually add `SNAKY/` to your `sys.path` in your Python scripts:*
+*The code is close to being fully packaged. For now, if you want to run `snaky` from anywhere on your machine (without launching it from inside the `../GitHub/SNAKY/` directory), you can manually add `SNAKY/` to your `sys.path` in your Python scripts:*
 
 
 ```python
@@ -111,7 +111,7 @@ import src_snaky.run as snaky
 
 ```
 
-### Benchmark and test datasets
+### Benchmark and Test datasets
 
 <a id="flag3"></a>
 
