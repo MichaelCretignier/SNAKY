@@ -117,7 +117,11 @@ import src_snaky.run as snaky
 cd .../GitHub/SNAKY/
 ```
 
-### • Benchmark and Test datasets
+### • Test your installation
+
+<a id="flag3"></a>
+
+*You can test if your installation is working and monitor your speed performance with the benchmark data sets.*
 
 *Move in the `../GitHub/SNAKY/` and launch an IPython shell:*
 
@@ -126,9 +130,7 @@ cd .../GitHub/SNAKY/
 ipython
 ```
 
-<a id="flag3"></a>
-
-*You can test your installation is working and monitor your speed performance with the following benchmark command-lines:*
+*To run the benchmark, the command-lines are:*
 
 *Benchmark Dataset 1 (N=1):*
 
