@@ -366,7 +366,9 @@ The list of parameters are:
 `-a`  Value of the `automatic_db` parameter (`0` or `1`; e.g. `-a 1`) \
 `-P`  Number of parallelization (e.g. `-P 1`) \
 `-p`  Index of the current parallel process, between `1` and `P` (e.g. `-p 1`) \
-`-i`  Instrument to SNAKY process (e.g. `-i 1`) 
+`-i`  Instrument to SNAKY process (e.g. `-i HARPS`) \
+`-v`  Toggle the verbose of the code (e.g `-v 0`)
+`-H`  Toggle the extended Help of the code (e.g `-H 1`)
 
 
 ## ⑧ Large-Scale Processing (SLURM / sbatch parallelization)

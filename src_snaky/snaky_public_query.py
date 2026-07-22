@@ -10,12 +10,28 @@ import subprocess
 import re
 import os
 from urllib.parse import quote
-
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 import pyvo
 from pyvo.dal.adhoc import DatalinkResults
-
+import gzip, shutil
 
 instruments_excluded = ['','CRIRES','EFOSC','SOFI','PIONIER','MUSE','XSHOOTER','VIRCAM','GRAVITY','ALMA','SPHERE','NIRPS','OMEGACAM','GIRAFFE','HAWKI','KMOS','FORS2']
+
+def build_session():
+    s = requests.Session()
+    retry = Retry(
+        total=4,
+        connect=4,
+        read=4,
+        backoff_factor=1.5,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET"],
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    s.mount("http://", adapter)
+    s.mount("https://", adapter)
+    return s
 
 def sophie_rectangle(ra_deg, dec_deg, fov_deg):
 
@@ -233,7 +249,6 @@ def query_eso(
     results = tap.search(query)
     results_df = pd.DataFrame(results)
 
-
     #print(results_df)
 
     os.makedirs(output_dir + f'{starname}/',exist_ok=True)
@@ -267,17 +282,37 @@ def query_eso(
 
                 print(subset[['access_url','instrument_name','target_name','diff']])
 
-                for row in subset['access_url'].values:
-                    dl = DatalinkResults.from_result_url(row)
-                    science = next(dl.bysemantics("#this"))
-                    r = requests.get(science.access_url, allow_redirects=True)
-                    #r.raise_for_status()
+                session = build_session()
 
-                    filename = science['eso_origfile']
-                    output_name = output_dir+f"{starname}/{ins}/{filename}"
-                    if not os.path.exists(output_name):
-                        with open(output_name, "wb") as f:
-                            f.write(r.content)
+                for row in subset['access_url'].values:
+                    try:
+                        url = str(row)
+                        if url.startswith("http://"):
+                            url = "https://" + url[len("http://"):]
+
+                        dl = DatalinkResults.from_result_url(url, session=session)
+                        science = next(dl.bysemantics("#this"), None)
+                        if science is None or not science.access_url:
+                            print(f"[skip] no science product for {url}")
+                            continue
+
+                        sci_url = str(science.access_url)
+                        if sci_url.startswith("http://"):
+                            sci_url = "https://" + sci_url[len("http://"):]
+
+                        r = session.get(sci_url, allow_redirects=True, timeout=(10, 120))
+                        r.raise_for_status()
+
+                        filename = science.get('eso_origfile', os.path.basename(sci_url))
+                        output_name = output_dir + f"{starname}/{ins}/{filename}"
+
+                        if not os.path.exists(output_name):
+                            with open(output_name, "wb") as f:
+                                f.write(r.content)
+
+                    except Exception as e:
+                        print(f"[skip] failed for {row}: {e}")
+                        continue
 
 def query_tng(
         starname: str,
@@ -370,15 +405,31 @@ def query_tng(
 
             print(subset[['file_url','instrument','object','diff']])
 
+            session = build_session()
+
             for row in subset['file_url'].values:
-                r = requests.get(row)
-                #r.raise_for_status()
+                try:
+                    url = str(row)
+                    if url.startswith("http://"):
+                        url = "https://" + url[len("http://"):]
 
-                filename = row.split('/')[-1]
-                output_name = output_dir+f"{starname}/{ins}/{filename}"
-                if not os.path.exists(output_name):
-                    with open(output_name, "wb") as f:
-                        f.write(r.content)
+                    r = session.get(url, timeout=(10, 180), allow_redirects=True)
+                    r.raise_for_status()
 
-                os.system('gunzip ' + output_name)
+                    filename = url.split('/')[-1]
+                    output_name = output_dir + f"{starname}/{ins}/{filename}"
+
+                    if not os.path.exists(output_name):
+                        with open(output_name, "wb") as f:
+                            f.write(r.content)
+
+                    if output_name.endswith(".gz"):
+                        unzipped = output_name[:-3]
+                        if not os.path.exists(unzipped):
+                            with gzip.open(output_name, "rb") as fin, open(unzipped, "wb") as fout:
+                                shutil.copyfileobj(fin, fout)
+
+                except Exception as e:
+                    print(f"[skip] failed download for {row}: {e}")
+                    continue
 
