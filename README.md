@@ -345,9 +345,9 @@ The list of optional parameters are:
 `-s`  List of target stars. A comma-separated list (e.g. `HD10700,HD22049`) or a `.csv` file with `'starname'` column \
 `-o`  Output directory (e.g. `/Users/Desktop/SNAKY_WORSPACE`) \
 `-n`  Maximum number of spectra to download per instrument (e.g. `-n 5`) \
-`-b`  Starting SNAKY reduction stage (e.g. `-b 1`) \
-`-e`  Ending SNAKY reduction stage (e.g. `-e 14`) \
-`-a`  Value of the `automatic_db` parameter (`0` or `1`; e.g. `-a 1`) \
+`-b`  Starting SNAKY reduction stage (e.g. `-b 1`) from `.reduce()` \
+`-e`  Ending SNAKY reduction stage (e.g. `-e 14`) from `.reduce()` \
+`-a`  Value of the `automatic_db` parameter (`0` or `1`; e.g. `-a 1`) from `.reduce()` \
 `-P`  Number of parallelization (e.g. `-P 1`) \
 `-p`  Index of the current parallel process, between `1` and `P` (e.g. `-p 1`) \
 `-i`  Instrument to SNAKY process (e.g. `-i HARPS`) \
