@@ -111,7 +111,7 @@ import src_snaky.run as snaky
 
 ```
 
-### Benchmark and Test datasets
+### • Benchmark and Test datasets
 
 <a id="flag3"></a>
 
@@ -135,7 +135,7 @@ import src_snaky.run as snaky
 snaky.benchmark2(output_dir) #check "[INFO] Processing achieved in ..."
 ```
 
-### Step-by-step 
+### • Step-by-step 
 
 *If you haven't add `SNAKY/` to your `sys.path`, first enter into your local git clone `SNAKY/` directory:*
 
@@ -220,7 +220,7 @@ job.reset(suppression='all')
 
 ```
 
-### Simplified Call (.reduce)
+### • Simplified Call (.reduce)
 
 *Let's start again, all the previous lines can be called shortly using the `.reduce()` method:* 
 
@@ -241,7 +241,7 @@ job.reduce(begin=1, end=14) # check the sequence number with: job.reduce?
 
 *As you may notice, the `.reduce()` method also monitors RAM usage and execution time, and automatically saves this information in `.../REDUCTION_INFO/` for [benchmark](#flag3) purposes.*
 
-### Automatic Restart from the Last Completed Step
+### • Automatic Restart from the Last Completed Step
 
 *SNAKY contains a **trigger** able to assess which steps have already been completed and which are still pending.*
 
