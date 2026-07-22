@@ -99,8 +99,7 @@ python snaky_build.py
 
 ## ④ Tutorial
 
-*The code is close to being fully packaged. For now, if you want to run `snaky` from anywhere on your machine (without launching it from inside the `../GitHub/SNAKY/` directory), you can manually add `SNAKY/` to your `sys.path` in your Python scripts:*
-
+*If you want to run `snaky` from anywhere on your machine (without launching it from inside the `../GitHub/SNAKY/` directory), you can manually add `SNAKY/` to your `sys.path` in your Python scripts:*
 
 ```python
 import sys
@@ -110,6 +109,12 @@ import src_snaky.run as snaky
 
 ...
 
+```
+
+*Otherwise you need to launch the code by moving inside the directory:*
+
+```bash
+cd .../GitHub/SNAKY/
 ```
 
 ### • Benchmark and Test datasets
@@ -143,12 +148,6 @@ snaky.benchmark2(output_dir) #check "[INFO] Processing achieved in ..."
 ```
 
 ### • Step-by-step 
-
-*If you haven't add `SNAKY/` to your `sys.path`, first enter into your local git clone `SNAKY/` directory:*
-
-```bash
-cd .../GitHub/SNAKY/
-```
 
 *Launch an IPython shell:*
 
