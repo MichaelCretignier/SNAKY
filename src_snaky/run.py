@@ -1492,32 +1492,32 @@ def benchmark1(output_dir):
 
     job = start()
     job.set_output_dir(output_dir)
-    job.set_dataset('HD123456','HARPS03_3.5',files) 
+    job.set_dataset('BENCHMARK1','HARPS03_3.5',files) 
     job.warning_printed = 1
     job.reset(suppression='all')
 
     job.reduce(begin=1, end=14)
 
-def benchmark2(output_dir=None):
+def benchmark2(output_dir=None, starname='BENCHMARK2'):
     # Benchmark Dataset2
     files = glob.glob(myv.TEST_DATASET2)
     
     job = start()
     job.set_output_dir(output_dir)
-    job.set_dataset('HD128621','HARPS15_3.3.6',files) 
+    job.set_dataset(starname,'HARPS15_3.3.6',files)
     job.warning_printed = 1
     job.reset(suppression='all')
 
     job.set_star(ra=219.90, dec=-60.84, prot=36) # ra and dec in degrees (prot optional)
     job.reduce(begin=1, end=14,  copy_rassine_files=True) 
 
-def benchmark3(output_dir=None):
+def benchmark3(output_dir=None, starname='BENCHMARK3'):
     # Benchmark Dataset3
     files = glob.glob(myv.TEST_DATASET3)
     
     job = start()
     job.set_output_dir(output_dir)
-    job.set_dataset('HD128621','HARPS03_3.3.6',files) 
+    job.set_dataset(starname,'HARPS03_3.3.6',files)
     job.warning_printed = 1
     job.reset(suppression='all')
 
