@@ -137,8 +137,7 @@ ipython
 ```python
 import src_snaky.run as snaky
 
-#output_dir = '/Users/cretignier/Desktop/Snaky'
-snaky.benchmark1(output_dir) #check "[INFO] Processing achieved in ..."
+snaky.benchmark1() #check "[INFO] Processing achieved in ..."
 ```
 
 *Benchmark Dataset 2 (N=20,RASSINE files already exist):*
@@ -146,8 +145,7 @@ snaky.benchmark1(output_dir) #check "[INFO] Processing achieved in ..."
 ```python
 import src_snaky.run as snaky
 
-#output_dir = '/Users/cretignier/Desktop/Snaky'
-snaky.benchmark2(output_dir) #check "[INFO] Processing achieved in ..."
+snaky.benchmark2() #check "[INFO] Processing achieved in ..."
 ```
 
 ### • Step-by-step 
