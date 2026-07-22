@@ -112,6 +112,30 @@ import src_snaky.run as snaky
 
 ```
 
+### BENCHMARK (Computation time)
+
+<a id="flag3"></a>
+
+*You can test your installation and speed with the following benchmark command-lines:*
+
+*Benchmark Dataset 1 (N=1):*
+
+```python
+import src_snaky.run as snaky
+
+#output_dir = '/Users/cretignier/Desktop/Snaky'
+snaky.benchmark1(output_dir) #check "[INFO] Processing achieved in ..."
+```
+
+*Benchmark Dataset 2 (N=20,RASSINE files already exist):*
+
+```python
+import src_snaky.run as snaky
+
+#output_dir = '/Users/cretignier/Desktop/Snaky'
+snaky.benchmark2(output_dir) #check "[INFO] Processing achieved in ..."
+```
+
 ### Step-by-step
 
 *If you haven't add `SNAKY/` to your `sys.path`, first enter into your local git clone `SNAKY/` directory:*
@@ -296,7 +320,86 @@ job.reduce(begin=1, end=14)
 
 -->
 
-## ⑥ An accurate multi-instruments MHK time-series
+## ⑥ Public ESO + TNG + OHP archives queries and SNAKY processing
+
+<a id="flag_download"></a>
+
+*To even simplify further the processing, SNAKY contains a code `snaky_query.py` that can directly download the spectra on your machine. The shortest call of the function is:*
+
+```bash
+python snaky_query.py -s HD217014,HD4628,HD22049
+```
+
+The list of parameters are:
+
+`-s`  List of target stars. A comma-separated list (e.g. `HD10700,HD22049`) or a `.csv` file with `'starname'` column \
+`-o`  Output directory (e.g. `.../SNAKY/Snaky_data/`) \
+`-n`  Maximum number of spectra to download per instrument (e.g. `-n 5`) \
+`-b`  Starting SNAKY reduction stage (e.g. `-b 1`) \
+`-e`  Ending SNAKY reduction stage (e.g. `-e 14`) \
+`-a`  Value of the `automatic_db` parameter (`0` or `1`; e.g. `-a 1`) \
+`-P`  Number of parallelization (e.g. `-P 1`) \
+`-p`  Index of the current parallel process, between `1` and `P` (e.g. `-p 1`) \
+`-i`  Instrument to SNAKY process (e.g. `-i HARPS`) \
+`-v`  Toggle the verbose of the code (e.g `-v 0`)
+`-H`  Toggle the extended Help of the code (e.g `-H 1`)
+
+
+## ⑦ Large-Scale Processing (SLURM / sbatch parallelization)
+
+*SNAKY is designed to process easily and rapidly thousands of datasets (as a recall a dataset corresponds to a star + an instrument combination). For large runs, the recommended approach is to use `sbatch`.* \
+*This is possible by using the `run_snaky_med.s` SLURM script, that calls the `snaky_trigger.py` Python script.*
+
+```bash
+sbatch run_snaky_med.s HD128621 HARPS15_3.3.6 1 14
+```
+
+## ⑧ Your favourite instrument missing?
+
+<a id="flag4"></a>
+
+SNAKY can process spectra from the following products from the following spectrographs (high efficiency spectrograph mode should be specified with SPECTRO-HE):
+
+| SPECTRO | DRS        | PRODUCT        |  SNAKY_CODE        | 
+|---------------|---------------|---------------|---------------|
+| CORALIE98 | irrelevant | S1D | CORALIE98_3.3 |
+| CORALIE07 | irrelevant | S1D | CORALIE07_3.4 |
+| CORALIE14 | irrelevant | S1D | CORALIE14_3.8 |
+| PEPSI | irrelevant | S1D | PEPSI_1.0 |
+| [SOPHIE](http://atlas.obs-hp.fr/sophie/) or [SOPHIE](#flag_download) | irrelevant | S1D | SOPHIE_0.5 |
+| [SOPHIE-HE](http://atlas.obs-hp.fr/sophie/)  | irrelevant | S1D | SOPHIE-HE_0.5 |
+| [HARPN](http://archives.ia2.inaf.it/tng/) or [HARPN](#flag_download)| >= 3.0.1 (new) | S1D |  HARPN_3.0.1 |
+| [ESPRESSO](https://archive.eso.org/scienceportal/home) or [ESPRESSO](#flag_download)| irrelevant | S1D |  ESPRESSO_3.3.6 |
+| [NEID](https://neid.ipac.caltech.edu) | irrelevant | E2DS |  NEID_1.0 |
+| [NEID-HE](https://neid.ipac.caltech.edu) | irrelevant | E2DS |  NEID-HE_1.0 |
+| [HARPS03](https://archive.eso.org/scienceportal/home) or [HARPS](#flag_download)| 3.5 (old) | S1D |  HARPS03_3.5 |
+| [HARPS15](https://archive.eso.org/scienceportal/home) or [HARPS](#flag_download)| 3.5 (old) | S1D |  HARPS15_3.5 |
+| [HARPS03](https://dace.unige.ch) | >= 3.3.6 (new) | S1D |  HARPS03_3.3.6 |
+| [HARPS15](https://dace.unige.ch) | >= 3.3.6 (new) | S1D |  HARPS15_3.3.6 |
+| [FEROS](#flag_download) | irrelevant | S1D |  FEROS_1.0 |
+| [FIES](https://www.not.iac.es/observing/forms/fitsarchive/index.php?instrument=FIES) or [FIES](#flag_download) | irrelevenat | S1D |  FIES_1.0 |
+| [UVES](#flag_download) | irrelevant | S1D |  UVES_1.0 |
+| [HERMES](#flag_download) | irrelevant | S1D |  HERMES_1.0 |
+
+HARPS spectra before and after the fiber upgrade (2015-05-23) have to be processed independently as respectively HARPS03 and HARPS15 spectra and the DRS version has to be correctly specified.
+
+To add a new instrument you only need 5 information from its header:
+1) jdb   [!mandatory!]
+2) alpha [!mandatory!]
+3) dec   [!mandatory!]
+4) berv  [optional]
+5) snr   [optional]
+
+Then create your own function `read_espresso()` in `snaky_main.py`
+and modify the `extract_header()` function too. 
+
+If only e2ds spectra exist and not s1d, follow the `read_neid()` example.
+NB: s1d spectra should always be preferred over e2ds/s2d spectra
+
+
+
+
+## ⑨ An accurate multi-instruments MHK time-series
 
 *The MHK index is a precise activity indicator, but its extraction depends on the stellar effective temperature (`Teff`). Currently, `Teff` is determined independently by SNAKY for each dataset. Therefore, when combining multi-instrument MHK time series, you should ensure that the same `Teff` value is used consistently across all instruments.*
 
@@ -344,125 +447,6 @@ job1.get_atmos_db()
 job1.reduce(begin=9, end=14, atmos_db=True) 
 job2.reduce(begin=9, end=14, atmos_db=True) 
 ```
-
-## ⑦ Public ESO + TNG + OHP archives queries and SNAKY processing
-
-<a id="flag_download"></a>
-
-*To even simplify further the processing, SNAKY contains a code `snaky_query.py` that can directly download the spectra on your machine. The shortest call of the function is:*
-
-```bash
-python snaky_query.py -s HD217014,HD4628,HD22049
-```
-
-The list of parameters are:
-
-`-s`  List of target stars. A comma-separated list (e.g. `HD10700,HD22049`) or a `.csv` file with `'starname'` column \
-`-o`  Output directory (e.g. `.../SNAKY/Snaky_data/`) \
-`-n`  Maximum number of spectra to download per instrument (e.g. `-n 5`) \
-`-b`  Starting SNAKY reduction stage (e.g. `-b 1`) \
-`-e`  Ending SNAKY reduction stage (e.g. `-e 14`) \
-`-a`  Value of the `automatic_db` parameter (`0` or `1`; e.g. `-a 1`) \
-`-P`  Number of parallelization (e.g. `-P 1`) \
-`-p`  Index of the current parallel process, between `1` and `P` (e.g. `-p 1`) \
-`-i`  Instrument to SNAKY process (e.g. `-i HARPS`) \
-`-v`  Toggle the verbose of the code (e.g `-v 0`)
-`-H`  Toggle the extended Help of the code (e.g `-H 1`)
-
-
-## ⑧ Large-Scale Processing (SLURM / sbatch parallelization)
-
-*SNAKY is designed to process easily and rapidly thousands of datasets (as a recall a dataset corresponds to a star + an instrument combination). For large runs, the recommended approach is to use `sbatch`.* \
-*This is possible by using the `run_snaky_med.s` SLURM script, that calls the `snaky_trigger.py` Python script.*
-
-```bash
-sbatch run_snaky_med.s HD128621 HARPS15_3.3.6 1 14
-```
-
-## ⑨ Your favourite instrument missing?
-
-<a id="flag4"></a>
-
-SNAKY can process spectra from the following products from the following spectrographs (high efficiency spectrograph mode should be specified with SPECTRO-HE):
-
-| SPECTRO | DRS        | PRODUCT        |  SNAKY_CODE        | 
-|---------------|---------------|---------------|---------------|
-| CORALIE98 | irrelevant | S1D | CORALIE98_3.3 |
-| CORALIE07 | irrelevant | S1D | CORALIE07_3.4 |
-| CORALIE14 | irrelevant | S1D | CORALIE14_3.8 |
-| PEPSI | irrelevant | S1D | PEPSI_1.0 |
-| [SOPHIE](http://atlas.obs-hp.fr/sophie/) or [SOPHIE](#flag_download) | irrelevant | S1D | SOPHIE_0.5 |
-| [SOPHIE-HE](http://atlas.obs-hp.fr/sophie/)  | irrelevant | S1D | SOPHIE-HE_0.5 |
-| [HARPN](http://archives.ia2.inaf.it/tng/) or [HARPN](#flag_download)| >= 3.0.1 (new) | S1D |  HARPN_3.0.1 |
-| [ESPRESSO](https://archive.eso.org/scienceportal/home) or [ESPRESSO](#flag_download)| irrelevant | S1D |  ESPRESSO_3.3.6 |
-| [NEID](https://neid.ipac.caltech.edu) | irrelevant | E2DS |  NEID_1.0 |
-| [NEID-HE](https://neid.ipac.caltech.edu) | irrelevant | E2DS |  NEID-HE_1.0 |
-| [HARPS03](https://archive.eso.org/scienceportal/home) or [HARPS](#flag_download)| 3.5 (old) | S1D |  HARPS03_3.5 |
-| [HARPS15](https://archive.eso.org/scienceportal/home) or [HARPS](#flag_download)| 3.5 (old) | S1D |  HARPS15_3.5 |
-| [HARPS03](https://dace.unige.ch) | >= 3.3.6 (new) | S1D |  HARPS03_3.3.6 |
-| [HARPS15](https://dace.unige.ch) | >= 3.3.6 (new) | S1D |  HARPS15_3.3.6 |
-| [FEROS](#flag_download) | irrelevant | S1D |  FEROS_1.0 |
-| [FIES](https://www.not.iac.es/observing/forms/fitsarchive/index.php?instrument=FIES) or [FIES](#flag_download) | irrelevenat | S1D |  FIES_1.0 |
-| [UVES](#flag_download) | irrelevant | S1D |  UVES_1.0 |
-| [HERMES](#flag_download) | irrelevant | S1D |  HERMES_1.0 |
-
-HARPS spectra before and after the fiber upgrade (2015-05-23) have to be processed independently as respectively HARPS03 and HARPS15 spectra and the DRS version has to be correctly specified.
-
-To add a new instrument you only need 5 information from its header:
-1) jdb   [!mandatory!]
-2) alpha [!mandatory!]
-3) dec   [!mandatory!]
-4) berv  [optional]
-5) snr   [optional]
-
-Then create your own function `read_espresso()` in `snaky_main.py`
-and modify the `extract_header()` function too. 
-
-If only e2ds spectra exist and not s1d, follow the `read_neid()` example.
-NB: s1d spectra should always be preferred over e2ds/s2d spectra
-
-## BENCHMARK (Computation time)
-
-<a id="flag3"></a>
-
-*You can test your installation and speed with the following benchmark command-lines:*
-
-*Benchmark Dataset 1 (N=1):*
-
-```python
-import src_snaky.run as snaky
-
-#output_dir = '/Users/cretignier/Desktop/Snaky'
-snaky.benchmark1(output_dir) #check "[INFO] Processing achieved in ..."
-```
-
-*Benchmark Dataset 2 (N=20,RASSINE files already exist):*
-
-```python
-import src_snaky.run as snaky
-
-#output_dir = '/Users/cretignier/Desktop/Snaky'
-snaky.benchmark2(output_dir) #check "[INFO] Processing achieved in ..."
-```
-
-| Computer | Processor        | VERSION        | LIBRARIES       | DATASET1    | DATASET2    |
-|---------------|---------------|---------------|---------------|--------------|--------------|
-| MC1 | Apple M4 MAX (2024) | SNAKY (1.2.5) | 3.10.15 | 00 min 58 s  | 00 min 57 s  |
-| MC1 | Apple M4 MAX (2024) | SNAKY (1.2.5) | 3.12.5 | 01 min 45 s  | 01 min 30 s  |
-| SA1 | Apple M2 (2022) | SNAKY (1.1.1) | 3.10.15 | 01 min 13 s  | 01 min 28 s  |
-| MC2 | Intel Mac (2018) | SNAKY (1.2.5) | 3.8.8 | 03 min 31 s  | 06 min 47 s  |
-| DF1 | Intel i5 12600k (2021) | SNAKY (1.0.7) | 3.12.5 | 03 min 25 s  | 03 min 28 s  |
-| CC1 | Apple M4 PRO (2024) | SNAKY (1.0.1) | 3.10.15 | 01 min 30 s  | 01 min 05 s  |
-| ? | Yours! ☺ | SNAKY (1.0.1) | ??? | ???  | ???  |
-
-### RAM requirement
-
-*The RAM requirement for SNAKY (without RASSINE preprocessing) scales as O(N) for HARPS spectra (~300k wavelength bins):*
-
-$$
-\text{Total RAM} =
-4.2 + 0.72 \times \left( \frac{N}{100} \right) \quad [GB]
-$$
 
 ## ⑩ Analysing SNAKY DB
 
@@ -535,4 +519,28 @@ Please cite the relevant works:
 ```bash
 conda remove --name snaky --all
 ```
+
+
+### BENCHMARK (TABLE)
+
+Dataset1 and Dataset2 are equivalent to the [Benchmark](#flag3)
+
+| Computer | Processor        | VERSION        | LIBRARIES       | DATASET1    | DATASET2    |
+|---------------|---------------|---------------|---------------|--------------|--------------|
+| MC1 | Apple M4 MAX (2024) | SNAKY (1.2.5) | 3.10.15 | 00 min 58 s  | 00 min 57 s  |
+| MC1 | Apple M4 MAX (2024) | SNAKY (1.2.5) | 3.12.5 | 01 min 45 s  | 01 min 30 s  |
+| SA1 | Apple M2 (2022) | SNAKY (1.1.1) | 3.10.15 | 01 min 13 s  | 01 min 28 s  |
+| MC2 | Intel Mac (2018) | SNAKY (1.2.5) | 3.8.8 | 03 min 31 s  | 06 min 47 s  |
+| DF1 | Intel i5 12600k (2021) | SNAKY (1.0.7) | 3.12.5 | 03 min 25 s  | 03 min 28 s  |
+| CC1 | Apple M4 PRO (2024) | SNAKY (1.0.1) | 3.10.15 | 01 min 30 s  | 01 min 05 s  |
+| ? | Yours! ☺ | SNAKY (1.0.1) | ??? | ???  | ???  |
+
+### RAM requirement
+
+*The RAM requirement for SNAKY (without RASSINE preprocessing) scales as O(N) for HARPS spectra (~300k wavelength bins):*
+
+$$
+\text{Total RAM} =
+4.2 + 0.72 \times \left( \frac{N}{100} \right) \quad [GB]
+$$
 
