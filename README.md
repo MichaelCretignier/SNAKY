@@ -77,7 +77,7 @@ pip install -r requirements_3.10.15.txt
 Run the following code that will download the directory:
 
 ```bash
-python /GitHub/SNAKY/src_snaky/install.py
+python .../GitHub/SNAKY/src_snaky/install.py
 ```
 
 *You should now have a `../SNAKY/Material_snaky/` directory with files inside.*
