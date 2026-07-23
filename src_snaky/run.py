@@ -18,6 +18,7 @@ from . import snaky_variables as myv
 from . import snaky_functions as myf
 from . import snaky_classes as myc
 from . import snaky_main as mym
+from . import snaky_utilities as myu
 
 try:
     from memory_profiler import profile
@@ -619,6 +620,13 @@ class start():
             ct = ccf_output['contrast'].y
             med_ct = np.nanmedian(ct)
             kept2 = abs(ct-med_ct)<[2,10][int(ins=='UVES')]
+            if np.sum(kept2)==0:
+                print(Fore.YELLOW+' [WARNING] No good spectra after CCF check, searching reference CCF in DB...'+Fore.RESET)
+                files = glob.glob(self.sy_dir_root.replace(self.sy_instrument,'*')+'WORKSPACE/Analyse_ccf.p')
+                if len(files)>1:
+                    med_ct = 100*np.median(np.hstack([np.array(pd.read_pickle(f)['CCF_G2']['table']['contrast']) for f in files]))
+                    print(' [INFO] Reference CCF contrast = %.1f'%(med_ct))
+                    kept2[np.argmin(abs(ct-med_ct))] = True
             myv.vprint(' [INFO] Number of good spectra (after CCF check) = %.0f'%(sum(kept2)))
             myv.vprint(' [INFO] Number of bad spectra (after CCF check) = %.0f'%(len(kept)-sum(kept)+len(kept2)-sum(kept2)))
             if np.sum(kept2)==0:
@@ -733,7 +741,7 @@ class start():
         teff = self.sy_user_object['Teff']
 
         if (FLAG==0)&(EW['LiI']==EW['LiI']):
-            age = mym.yarara_lithium_age(dir_root, teff=teff)
+            age = mym.yarara_lithium_age(dir_root, teff=teff, ref_age=self.sy_user_object['Age'])
             if age is not None:
                 sinfo = myf.update_info_lvl2(sinfo,'Age','Jeffr+23',np.round(age,3))
 
@@ -825,7 +833,7 @@ class start():
                 sinfo = myf.update_info_lvl2(sinfo,'Vmicro','SNAKY',vmicro)
                 sinfo = myf.update_info_lvl2(sinfo,'Vmacro','SNAKY',vmacro)
                 sinfo = myf.update_info_lvl2(sinfo,'stellar_template','SNAKY',suffixe)
-                age = mym.yarara_lithium_age(dir_root) #recompute the age for fast rotators, as the previous one might be wrong due to the bad EW measurement
+                age = mym.yarara_lithium_age(dir_root,ref_age=self.sy_user_object['Age']) #recompute the age for fast rotators, as the previous one might be wrong due to the bad EW measurement
                 if age is not None:
                     sinfo = myf.update_info_lvl2(sinfo,'Age','Jeffr+23',np.round(age,3))
 
@@ -1055,51 +1063,21 @@ class start():
         stellar_atmos_user = self.sy_user_object
         
         reference = {'ins':stellar_atmos_user['reference']}
-        for kw1,kw2 in zip(['ms','rs','teff','logg','feh','rhk','vsini'],['Ms','Rs','Teff','Log_g','FeH','RHK','Vsini']):
+        for kw1,kw2 in zip(['ms','rs','teff','logg','feh','rhk','vsini','age'],['Ms','Rs','Teff','Log_g','FeH','RHK','Vsini','Age']):
             if kw2 in stellar_atmos_user.keys():
                 if stellar_atmos_user[kw2] is not None:
                     reference[kw1] = stellar_atmos_user[kw2]
         
         parent_dir = '/'.join(dir_root.split('/')[:-2])
-
-        count = -1
         files = glob.glob(parent_dir+'/*/WORKSPACE/Analyse_samples*')
 
-        extract = []
+        table, extract, lims = myu.boxplot_comparison(files, reference=reference)
+        plt.savefig(parent_dir+'/ALLINS_MERGED/Atmos_all_instrument.png')
 
-        variables = ['ms','rs','teff','logg','feh','vsini','mhk','rhk']
-        save = {kw:[] for kw in variables}
+        myu.pdf_comparison(files, xlims=lims,reference=reference)
+        plt.savefig(parent_dir+'/ALLINS_MERGED/Atmos_all_instrument_pdf.png')
 
-        plt.figure(figsize=(18,7))
-        plt.subplots_adjust(left=0.06,right=0.96,hspace=0.60,top=0.95,bottom=0.15,wspace=0.30)
-        for f in files:
-            ins = f.split('/WORKSPACE')[0].split('/')[-1]
-            code = ins[0]+ins.split('_')[0][-2:]+'_'+ins.split('_')[1]
-            count += 1
-            table = pd.read_csv(f)
-            extract.append([ins]+list(np.array(table.mean())))
-            borders = {'ms':[0,3,3],'rs':[0,3,3],'teff':[3000,8000,0],'logg':[3.5,5.0,3],'feh':[-1.5,0.5,3],'vsini':[0,10,3],'mhk':[-50,200,2],'rhk':[-6,-4,3],'prot':[0,100,1],'sini':[0,1,3]} #min max and digits
-            
-            for j,kw in enumerate(variables):
-                if kw in table.keys():
-                    plt.subplot(2,4,j+1)
-                    plt.boxplot(np.array(table[kw]),positions=[count],showfliers=False,labels=[code],widths=[0.5])
-                    plt.ylabel(kw,fontsize=14)
-                    plt.xticks(rotation=45,ha='right')
-                    save[kw].append(np.array(table[kw]))
-        
-        for j,kw in enumerate(variables):
-            plt.subplot(2,4,j+1)
-            plt.boxplot(np.ravel(save[kw]),positions=[count+2],showfliers=False,labels=['ALL'],widths=[0.5],patch_artist=True,boxprops=dict(facecolor='lightsteelblue',edgecolor='black',linewidth=1.))
-            if kw=='teff':
-                plt.title('%s = %.0f +/- %.0f'%(kw,np.median(save[kw]),myf.mad(np.ravel(save[kw]))))
-            else:
-                plt.title('%s = %.2f +/- %.2f'%(kw,np.median(save[kw]),myf.mad(np.ravel(save[kw]))))
-            plt.xticks(rotation=90,ha='center')
-
-            if kw in reference.keys():
-                plt.axhline(y=reference[kw], ls='-.', color='k', alpha=0.7, lw=1)
-            plt.savefig(parent_dir+'/ALLINS_MERGED/Atmos_all_instrument.png')
+        borders = {'ms':[0,3,3],'rs':[0,3,3],'teff':[3000,8000,0],'logg':[3.5,5.0,3],'feh':[-1.5,0.5,3],'vsini':[0,10,3],'mhk':[-50,200,2],'rhk':[-6,-4,3],'prot':[0,100,1],'sini':[0,1,3],'age':[0,13,2]} #min max and digits
 
         extract = pd.DataFrame(extract,columns=['ins']+list(table.columns))
         med_values = extract.drop(columns='ins').median(numeric_only=True)
@@ -1298,6 +1276,7 @@ class start():
         star = self.sy_starname
         ins = self.sy_instrument
         dir_root = self.sy_dir_root
+        self.sy_rv_mode = rv_mode
 
         debug = self.debug
 

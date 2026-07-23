@@ -185,20 +185,21 @@ for i in idxs:
 # SNAKY PROCESSING
 
 snaky_ins = {
-    'FEROS':'FEROS_1.0',
     'HARPS':'HARPS_3.8',
-    'UVES':'UVES_1.0',
-    'FIES':'FIES_1.0',
     'ESPRESSO':'ESPRESSO_3.3.6',
     'HARPN':'HARPN_3.0.1',
+    'UVES':'UVES_1.0',
+    'FIES':'FIES_1.0',
+    'FEROS':'FEROS_1.0',
     'HERMES':'HERMES_1.0',
     'SOPHIE':'SOPHIE_1.0',
+    'NEID':'NEID_1.0',
     }
 
 print('\n [INFO] SNAKY processing...')
 
 for idx in idxs:
-    s,ra,dec,teff,rhk,logg,feh,ms,rs,vsini,prot = db3.loc[idx,['starname','RA','DEC','teff','logRHK','logg','feh','ms','rs','vsini','prot']]
+    s,ra,dec,teff,rhk,logg,feh,ms,rs,vsini,prot,age = db3.loc[idx,['starname','RA','DEC','teff','logRHK','logg','feh','ms','rs','vsini','prot','age']]
 
     if instrument is None:
         ins = sorted({p.name for p in (output_dir / s).iterdir()})
@@ -231,7 +232,7 @@ for idx in idxs:
                 try:
                     job.set_output_dir(str(output_dir_snaky))
                     job.set_dataset(s, i2, files, source=source)
-                    job.set_star(ra=ra, dec=dec, teff=teff, rhk=rhk, ms=ms, rs=rs, logg=logg, feh=feh, vsini=vsini, prot=prot)
+                    job.set_star(ra=ra, dec=dec, teff=teff, rhk=rhk, ms=ms, rs=rs, logg=logg, feh=feh, vsini=vsini, prot=prot, age=age)
                     job.reduce(begin=begin, end=end, automatic_db=automatic_db)
                 except SnakyError:
                     print(Fore.RED+' [ERROR] The process interrupted somewhere.'+Fore.RESET)

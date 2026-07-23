@@ -393,7 +393,7 @@ def plot_mhk(dir_root, hide_outliers=True, daily_binned=True, debug=False, rhk_r
     plt.savefig(dir_root+'IMAGES/MHK'+myv.PRD_EXT+'.png')
     plt.savefig(dir_root.replace(ins,'ALLINS_MERGED')+'MHK'+myv.PRD_EXT+'.png')
 
-def yarara_lithium_age(dir_root, teff=None, teff_std=70):
+def yarara_lithium_age(dir_root, teff=None, teff_std=70, ref_age=None):
     master = import_master(dir_root)
     star_info = import_star_info(dir_root)
     rv_sys = star_info['Rv_sys']['SNAKY']
@@ -500,7 +500,8 @@ def yarara_lithium_age(dir_root, teff=None, teff_std=70):
         plt.xlim(0,None)
 
     plt.xlabel('Age [Gyr]',fontsize=14)
-
+    plt.axvline(x=ref_age,color='k',ls='-.')
+    
     scale = 1
     unit = 'Gyr'
     precision = '%.2f'
@@ -509,12 +510,12 @@ def yarara_lithium_age(dir_root, teff=None, teff_std=70):
         unit = 'Myr'
         precision = '%.0f'
 
-    if warn==0:
-        plt.title('Age = '+precision+' +/- '+precision+' %s'%(np.nanmedian(age)*scale,myf.mad(age)*scale,unit),fontsize=13)
-    elif warn==1:
-        plt.title('Age > '+precision+' %s '%(np.nanpercentile(age,2.5)*scale,unit),fontsize=13)
-    elif warn==2:
-        plt.title('Age < '+precision+' %s '%(np.nanpercentile(age,97.5)*scale,unit),fontsize=13)
+    if warn == 0:
+        plt.title((f"Age = {precision} ± {precision} %s") % (np.nanmedian(age)*scale, myf.mad(age)*scale, unit), fontsize=13)
+    elif warn == 1:
+        plt.title((f"Age > {precision} %s") % (np.nanpercentile(age, 2.5)*scale, unit), fontsize=13)
+    elif warn == 2:
+        plt.title((f"Age < {precision} %s") % (np.nanpercentile(age, 97.5)*scale, unit), fontsize=13)
 
     plt.savefig(dir_root+'IMAGES/Age_Lithium.png')
 
