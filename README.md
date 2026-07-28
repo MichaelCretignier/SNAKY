@@ -360,7 +360,7 @@ The list of optional parameters are:
 python snaky_query.py -s HD217014,HD120411,HD4628,HD22049,HD197481 -n 1
 ```
 
-*Alternatively, you can provide a `.csv` file with `'starname'` column*
+*Alternatively, you can provide the full path toward a `.csv` file that contains a `'starname'` column:*
 
 ```bash
 python snaky_query.py -s /Users/cretignier/Desktop/my_star_list.csv
