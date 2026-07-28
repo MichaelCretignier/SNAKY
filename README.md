@@ -386,6 +386,7 @@ SNAKY can process spectra from the following products from the following spectro
 | [SOPHIE-HE](http://atlas.obs-hp.fr/sophie/)  | irrelevant | S1D | SOPHIE-HE_0.5 |
 | [HARPN](http://archives.ia2.inaf.it/tng/) or [HARPN](#flag_download)| >= 3.0.1 (new) | S1D |  HARPN_3.0.1 |
 | [ESPRESSO](https://archive.eso.org/scienceportal/home) or [ESPRESSO](#flag_download)| irrelevant | S1D |  ESPRESSO_3.3.6 |
+| EXPRES | irrelevant | E2DS |  EXPRES_1.0 |
 | [NEID](https://neid.ipac.caltech.edu) | irrelevant | E2DS |  NEID_1.0 |
 | [NEID-HE](https://neid.ipac.caltech.edu) | irrelevant | E2DS |  NEID-HE_1.0 |
 | [HARPS](https://archive.eso.org/scienceportal/home) or [HARPS](#flag_download)| 3.5 (old) | S1D |  HARPS_3.5 |
