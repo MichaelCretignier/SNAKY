@@ -354,12 +354,17 @@ The list of optional parameters are:
 `-v`  Toggle the verbose of the code (e.g `-v 0`) \
 `-H`  Toggle the extended Help of the code (e.g `-H 1`)
 
-*Let's process three stars rapidly:*
+*Let's process five stars rapidly:*
 
 ```bash
 python snaky_query.py -s HD217014,HD120411,HD4628,HD22049,HD197481 -n 1
 ```
 
+*Alternatively, you can provide a `.csv` file with `'starname'` column*
+
+```bash
+python snaky_query.py -s /Users/cretignier/Desktop/my_star_list.csv
+```
 
 ## ⑦ Large-Scale Processing (SLURM / sbatch parallelization)
 
