@@ -18,6 +18,8 @@ import gzip, shutil
 import time
 from pathlib import Path
 
+from . import snaky_functions as myf
+
 instruments_excluded = ['','CRIRES','EFOSC','SOFI','PIONIER','MUSE','XSHOOTER','VIRCAM','GRAVITY','ALMA','SPHERE','NIRPS','OMEGACAM','GIRAFFE','HAWKI','KMOS','FORS2']
 
 def build_session():
@@ -231,59 +233,53 @@ def query_eso(
 
     if search_by == 'name':
         query = f"""
-        SELECT
-            target_name,
-            instrument_name,
-            s_ra,
-            s_dec,
-            t_exptime,
-            snr,
-            t_min,
-            access_url,
-            dp_id
+        SELECT target_name, instrument_name, s_ra, s_dec, t_exptime, snr, t_min, access_url, dp_id
         FROM ivoa.ObsCore
         WHERE target_name='{starname}'
         """
     else:
         query = f"""
-        SELECT
-            target_name,
-            instrument_name,
-            s_ra,
-            s_dec,
-            t_exptime,
-            snr,
-            t_min,
-            access_url,
-            dp_id
+        SELECT target_name, instrument_name, s_ra, s_dec, t_exptime, snr, t_min, access_url, dp_id
         FROM ivoa.ObsCore
-        WHERE CONTAINS(
-            POINT('ICRS', s_ra, s_dec),
-            CIRCLE('ICRS', {ra}, {dec}, {fov}/3600.)
-        ) = 1
+        WHERE CONTAINS(POINT('ICRS', s_ra, s_dec),CIRCLE('ICRS', {ra}, {dec}, {fov}/3600.)) = 1
         """
 
     results = tap.search(query)
     results_df = pd.DataFrame(results)
 
-    #print(results_df)
-
     (output_dir / f'{starname}').mkdir(parents=True, exist_ok=True)
 
     if len(results_df)!=0:
 
-        results_df.loc[results['target_name']==starname,'target_name'] = '*'
-        results_df['diff'] = np.sqrt((ra-results_df['s_ra'])**2+(dec-results_df['s_dec'])**2)*3600
+        results_df['dyear'] = (myf.today() - results_df['t_min'])//365
         
-        results_df = results_df.sort_values(by=['instrument_name','target_name','diff']).reset_index(drop=True)
+        results_df['dra']= (ra-results_df['s_ra'])*3600
+        results_df['ddec']= (dec-results_df['s_dec'])*3600
         
+        results_df.loc[results_df['target_name']==starname,'target_name'] = '*'
+        results_df['diff'] = np.sqrt((results_df['dra'])**2+(results_df['ddec'])**2)
+
+        if np.sum(results_df['target_name']=='*')==0:
+            results_df = results_df.sort_values(by=['instrument_name','diff']).reset_index(drop=True)
+        else:
+            results_df = results_df.sort_values(by=['instrument_name','target_name','diff']).reset_index(drop=True)
         instruments_found = results_df['instrument_name'].value_counts()
-        
+
         print('\nFov query [arcsec]:', fov)
         print(starname,instruments_found)
 
         mask = np.in1d(results_df['instrument_name'],instruments_excluded)
         results_df = results_df[~mask]
+
+
+    #print(results_df[['instrument_name','diff','dra','ddec','dyear','target_name']])
+    #import matplotlib.pyplot as plt
+    #plt.scatter(results_df['dra'],results_df['ddec'],c=results_df['dyear'],s=50,cmap='plasma')
+    #plt.axvline(x=0,color='k',ls='--')
+    #plt.axhline(y=0,color='k',ls='--')
+    #plt.plot(np.sin(np.linspace(0,2*np.pi,100))*fov,np.cos(np.linspace(0,2*np.pi,100))*fov,color='k',ls='--')
+    #plt.colorbar()
+    #plt.show()
 
     if len(results_df)!=0:
         instruments_found = results_df['instrument_name'].value_counts()
@@ -292,6 +288,9 @@ def query_eso(
             for ins in list(instruments_found.keys()):
                 (output_dir / f'{starname}/{ins}').mkdir(parents=True, exist_ok=True)
                 subset = results_df.loc[results_df['instrument_name']==ins].reset_index(drop=True)
+                if np.sum(results_df['target_name']=='*')!=0: #if the target is found with the same user specified name
+                    subset = subset.loc[subset['target_name']=='*'].reset_index(drop=True)
+
                 if selection=='random':
                     subset = subset.sample(n=np.min([N_spectra, len(subset)]),random_state=42)
                 else:
@@ -437,7 +436,7 @@ def query_tng(
 
                     if not output_name.exists():
                         output_name.write_bytes(r.content)
-                    
+
                     if output_name.suffix == ".gz":
                         unzipped = output_name.with_suffix("")
 

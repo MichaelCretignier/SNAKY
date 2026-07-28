@@ -46,7 +46,7 @@ SNAKY — Spectroscopic Novel Analysis Kit of Yarara
 
 """
 
-__version__ = '1.6.1'
+__version__ = '1.7.0'
 
 print(Fore.GREEN+"""\n[INFO SNAKY]
 [INFO USER] SNAKY version = """+__version__ +""" 
@@ -479,7 +479,10 @@ def yarara_lithium_age(dir_root, teff=None, teff_std=70, ref_age=None):
     plt.xlim(wc-5*windows,wc+5*windows)
     plt.ylabel('Flux normalised',fontsize=14)
     plt.xlabel(r'Wavelength [$\lambda$]',fontsize=14)
-    plt.ylim(0.7,1.05)
+    if np.min(master.y[mask_line])>0.5:
+        plt.ylim(0.7,1.05)
+    else:
+        plt.ylim(0.0,1.05)
 
     plt.axes([0.70,0.59,0.25,0.37])    
     plt.scatter(np.log10(age_curve*1.e9),ew_curve,alpha=0.1,color='k',s=1)
@@ -500,8 +503,9 @@ def yarara_lithium_age(dir_root, teff=None, teff_std=70, ref_age=None):
         plt.xlim(0,None)
 
     plt.xlabel('Age [Gyr]',fontsize=14)
-    plt.axvline(x=ref_age,color='k',ls='-.')
-    
+    if ref_age is not None:
+        plt.axvline(x=ref_age,color='k',ls='-.')
+
     scale = 1
     unit = 'Gyr'
     precision = '%.2f'
@@ -859,6 +863,46 @@ def read_hermes(file,dir_root,force=False,debug=False):
             pickle.dump(export,open(outname,'wb'))
         else:
             print('[WARNING] RASSINE continuum size wrong, potential multiprocessing issue')
+    return 1
+
+def read_expres(file,dir_root,force=False,debug=False):
+    fname = file.split('/')[-1]
+    outname = dir_root+'WORKSPACE/RASSINE_Stacked_spectrum_B0.00_'+fname.replace('.fits','.p')
+    if (not os.path.exists(outname))|(force):
+        t = fits.open(file)
+        wave = t[1].data['bary_wavelength'].copy()
+        flux = t[1].data['spectrum'] 
+        flux_err = t[1].data['uncertainty'] 
+        continuum = t[1].data['continuum'] 
+
+        flux = flux/continuum
+        flux_err = flux_err/continuum
+        
+        grid = np.round(np.arange(3800,6900.001,0.01),2) #don-t use redder than 6900 (lighter file)
+        merged = np.ones(len(grid))*np.nan
+        merged_weight = np.zeros(len(grid))
+        for i in tqdm(np.arange(len(wave))):
+            w = wave[i] ; f = flux[i] ; f2 = flux_err[i]
+            if (np.max(w)>np.min(grid))&(np.min(w)<np.max(grid)):
+                s = myc.tableXY(myf.conv_void_air(w),f,f2)
+
+                s.interpolate(new_grid=grid,fill_value=np.nan,method='linear')
+                s_weight = 1/s.yerr**2
+                merged = np.nansum(np.array([merged*merged_weight,s.y*s_weight]),axis=0)/np.nansum(np.array([merged_weight,s_weight]),axis=0)
+                merged_weight = np.nansum(np.array([merged_weight,s_weight]),axis=0)
+        
+        merged[merged!=merged] = 0
+        spec = myc.tableXY(grid,merged,0*merged)
+
+        if debug:
+            plt.plot(spec.x,spec.y/spec.rassine_continuum.y)
+
+        export = {
+            'wave':spec.x,
+            'flux':spec.y,
+            'matching_diff':{'continuum_linear':np.ones(len(spec.y))},
+            'parameters':{'arcfiles':[file]}}
+        pickle.dump(export,open(outname,'wb'))
     return 1
 
 def read_neid(file,dir_root,force=False,debug=False):
@@ -1332,6 +1376,7 @@ def extract_header(files, instru, debug=False, ra=None, dec=None, sources=None):
            'FIES':{'I-HJD':'rjd', 'I-VBAR':'berv', 'I-SNR':'snr','I-RA':'RA', 'I-DEC':'DEC'},
            'HERME':{'I-HJD':'rjd', 'I-VBAR':'berv', 'I-SNR':'snr','I-RA':'RA', 'I-DEC':'DEC'},
            'UVES':{'MJD-OBS':'rjd', 'HIERARCH ESO DRS BARYCORR':'berv', 'SNR':'snr', 'RA':'RA', 'DEC':'DEC'},
+           'EXPRE':{'TELMJD':'rjd', 'RA':'RA', 'DEC':'DEC'},
            'GR8':{'ESTSNR':'snr','RA':'RA', 'DEC':'DEC'},
            'ESO':{'MJD-OBS':'rjd','SNR':'snr','RA':'RA', 'DEC':'DEC'},
            'RASSINE':{'jdb':'rjd', 'berv':'berv', 'SNR_5500':'snr'},
@@ -1362,6 +1407,12 @@ def extract_header(files, instru, debug=False, ra=None, dec=None, sources=None):
         snaky_help()
         print(summary, ins)
 
+    if ins=='EXPRE':
+        summary['RA'] = np.round(np.array([ra_to_deg(ra2.replace(':','')) for ra2 in np.array(summary['RA'])]),6)
+        summary['DEC'] = np.round(np.array([dec_to_deg(dec2.replace(':','')) for dec2 in np.array(summary['DEC'])]),6)
+        summary['berv'] = np.nan
+        summary['snr'] = np.nan
+        summary['rjd'] = summary['rjd'].astype('float') + 2400000
     if ins=='GR8':
         summary['rjd'] = np.nan
         summary['berv'] = np.nan
@@ -1416,22 +1467,20 @@ def extract_header(files, instru, debug=False, ra=None, dec=None, sources=None):
         summary['RA'] = np.round(summary['RA'].astype('float'),6)
         summary['DEC'] = np.round(summary['DEC'].astype('float'),6)
     if ins=='RASSINE':
-        missing_time = (summary['rjd']!=summary['rjd'])
+        missing_time = np.array(summary['rjd']!=summary['rjd'])
         myv.vprint(' [INFO] Nb of missing time = %.0f'%(np.sum(missing_time)))
         if np.sum(missing_time)!=0: #search ut in filename
             if instrument[0:4]=='NEID':
                 uttime = np.array([f[-17:-2] for f in files])
                 uttime = np.array([f"{s[:4]}-{s[4:6]}-{s[6:8]}T{s[9:11]}:{s[11:13]}:{s[13:15]}.000" for s in uttime])
             else:
-                uttime = np.array([f[-25:-2] for f in files])
+                uttime = np.array(myf.detect_uttime_str(files))
             year = np.array([ut[0:4] for ut in uttime])
             year_num = np.array([float(y) if y.isdigit() else np.nan for y in year])
             valid = (year_num>1950)&(year_num<2050)
-            missing_time = missing_time[valid]
-            rjd = np.ones(len(summary))[missing_time]*np.nan
-            if np.sum(valid)>0:
-                rjd = myf.conv_time(uttime[valid])[0]
-                summary.loc[missing_time,'rjd'] = rjd
+            if np.sum(valid&missing_time)>0:
+                rjd = myf.conv_time(uttime[valid&missing_time])[0]
+                summary.loc[valid&missing_time,'rjd'] = rjd
             missing_time = (summary['rjd']!=summary['rjd'])
             myv.vprint(' [INFO] Nb of missing time after UT search = %.0f'%(np.sum(missing_time)))
         
@@ -2571,11 +2620,19 @@ def yarara_iron_lines(dir_root, master, fwhm, rv_sys=0.0):
 
         QC = [0,0]
 
+        MISSING = {}
         for species in ['FeIS','FeIIS','TiI','VI','MnI','NdII','TiII','CrI','NiI','CoI','CaI','SiI','ScII','CaH','LiI']:
             count+=1
             mask2 = np.genfromtxt(MATERIAL_DIR+'/MASK_CCF/%s.txt'%(species))
             mask22 = np.array([0.5*(mask2[:,0]+mask2[:,1]),mask2[:,2]]).T
             non_zero = np.sum([master.y[myf.find_nearest(master.x,w1)[0][0]] for w1 in myf.doppler_r(mask22[:,0],rv_sys*1000)[1]])
+            missing = np.array([master.y[myf.find_nearest(master.x,w1)[0][0]]<0.05 for w1 in myf.doppler_r(mask22[:,0],rv_sys*1000)[1]]).astype('int')
+            missing = np.round(np.sum(missing)/len(missing)*100,0)
+            if missing!=0:
+                MISSING[species] = missing
+                warning = '<---- Some lines are missing (%s%%)'%(missing)
+            else:
+                warning = ''
             master.ccf(mask22, weighted=False, rv_range=rv_range,rv_sys=rv_sys*1000,fit_gaussian=False, save_if_missing=False)
 
             master.ccf_profile.smooth(box_pts=10,replace=False,shape='rectangular')
@@ -2602,7 +2659,7 @@ def yarara_iron_lines(dir_root, master, fwhm, rv_sys=0.0):
             plt.legend(loc=3)
             plt.savefig(dir_root+'IMAGES/Atmos_%s'%(species)+myv.PRD_EXT+'.png')
 
-            myv.vprint('\n [INFO] Contrast %s = %.3f kms | EW = %.1f mA'%(species,contrast2,ew2))
+            myv.vprint('\n [INFO] Contrast %s = %.3f kms | EW = %.1f mA | %s'%(species,contrast2,ew2,warning))
             
             Contrast[species]=np.round(contrast2,5)
             EW[species] = np.round(ew2,1)
@@ -2627,12 +2684,12 @@ def yarara_iron_lines(dir_root, master, fwhm, rv_sys=0.0):
         if (SNR<1.5)&(QC[0]>5000):
             print(Fore.YELLOW+' [WARNING] The power is not distributed on the line profiles.'+Fore.RESET)
             FLAG = 2
-        
+
         plt.subplots_adjust(hspace=0.35,wspace=0.35,top=0.95,left=0.07,right=0.96,bottom=0.13)
         plt.savefig(dir_root+'IMAGES/Atmos_all'+myv.PRD_EXT+'.png')
-    return Contrast, EW, FLAG
+    return Contrast, EW, FLAG, MISSING
 
-def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=False, flag=False):
+def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=False, flag=False, missing_fraction=None):
     
     if myv.VERBOSE:
         myf.print_box('\n---- RECIPE : XGB ATMOSPHERIC PARAMETERS ----\n')
@@ -2647,6 +2704,7 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
         xgb_file = MATERIAL_DIR+'/xgb_model_yarara_atmos'+myv.SKLEARN_VERSION+'.p'
     ew = np.array([star_info['Contrast'][kw] for kw in lines])
     rv_sys = star_info['Rv_sys']['SNAKY']
+    lines = np.array(lines)
 
     if flag:
         ew *= np.nan
@@ -2667,15 +2725,26 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
         norm_std = np.array(stds[[l+' EW' for l in lines]])
         ew = (ew-norm_mean)/norm_std
 
-        output = model.predict(ew[:,np.newaxis].T)
+        if missing_fraction is None:
+            X = (np.ones(100)*ew[:,np.newaxis]).T
+        else:
+            X = (np.ones(1000)*ew[:,np.newaxis]).T
+            for line in missing_fraction.keys():
+                if (line in lines):
+                    loc = np.where(lines==line)[0][0]
+                    X[:,loc] = np.random.uniform(low=0,high=2*X[0,loc],size=1000)
+
+        output = model.predict(X)
         output = pd.DataFrame(output,columns=['teff','feh','logg'])
 
         norm_mean = np.array(means[['teff','feh','logg']])
         norm_std = np.array(stds[['teff','feh','logg']])
 
         output = output*norm_std+norm_mean
-        teff,feh,logg = output.values[0]
+
+        teff,feh,logg = np.array(output.mean())
         teff_rough = sinfo['Teff']['FluxD']
+        teff_std, feh_std, logg_std = np.array(output.std())
 
         if (sinfo['Teff']['FluxD']>6500): #outside calibration range
             if abs(teff-teff_rough)>600:
@@ -2701,10 +2770,15 @@ def yarara_atmos_xgb_spectroscopy(dir_root, star_info, resolution=110000, phot=F
         logg = 4.5
         feh = 0.0
         warning = 1
+        teff_std, feh_std, logg_std = 0,0,0
 
     dteff = [70,300][warning]
     dlogg = [0.07,0.25][warning]
     dfeh = [0.07,0.5][warning]
+
+    dteff = dteff+teff_std
+    dlogg = dlogg+logg_std
+    dfeh = dfeh+feh_std
 
     params = create_atmos_sample(dir_root, teff, dteff, logg, dlogg, feh, dfeh, rv_sys)
     return params
@@ -2733,9 +2807,9 @@ def create_atmos_sample(dir_root, teff, dteff, logg, dlogg, feh, dfeh, rv_sys):
         print(' [INFO] Vmic = %.1f km/s '%(vmicro))
         print(' [INFO] Vmac = %.1f km/s '%(vmacro))
 
-    samples_teff = np.random.randn(99999)*70+teff
-    samples_feh = np.random.randn(99999)*0.07+feh
-    samples_logg = np.random.randn(99999)*0.07+logg
+    samples_teff = np.random.randn(99999)*dteff+teff
+    samples_feh = np.random.randn(99999)*dfeh+feh
+    samples_logg = np.random.randn(99999)*dlogg+logg
 
     samples = pd.DataFrame(np.array([samples_ms, samples_rs, samples_teff, samples_logg, samples_feh]).T,columns=['ms','rs','teff','logg','feh'])
     samples.to_csv(dir_root+'WORKSPACE/Analyse_samples.csv.gz',index=False)

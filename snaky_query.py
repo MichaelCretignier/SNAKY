@@ -64,8 +64,10 @@ if len(sys.argv)>1:
             star_to_process = j[1]
         if j[0] == '-v':
             verbose = bool(int(j[1]))
-        elif j[0] == '-H':
+        if j[0] == '-H':
             debug = bool(int(j[1]))
+        if j[0] == '-I':
+            job_id = int(j[1])
 
 # CONFIG PART
 
@@ -121,7 +123,7 @@ for i in idxs:
             dec = dec, 
             output_dir = output_dir,
             search_by = 'coordinates',
-            selection = 'closest',
+            selection = 'random',
             fov = field_of_view,
             N_spectra = N_spectra,
             download = True)
@@ -140,7 +142,7 @@ for i in idxs:
             dec = dec, 
             output_dir = output_dir,
             fov = field_of_view,
-            selection = 'closest',
+            selection = 'random',
             N_spectra = N_spectra,
             download = True)
     else:
@@ -157,7 +159,7 @@ for i in idxs:
             dec = dec, 
             output_dir = output_dir,
             fov = field_of_view,
-            selection = 'closest',
+            selection = 'random',
             N_spectra = N_spectra,
             download = True)
     else:
@@ -194,6 +196,7 @@ snaky_ins = {
     'HERMES':'HERMES_1.0',
     'SOPHIE':'SOPHIE_1.0',
     'NEID':'NEID_1.0',
+    'EXPRES':'EXPRES_1.0',
     }
 
 print('\n [INFO] SNAKY processing...')
@@ -220,7 +223,7 @@ for idx in idxs:
                 source = ['IA2']*len(files)
             elif (i=='HERMES'):
                 source = ['IAC']*len(files)
-            elif (i=='SOPHIE')|(i=='NEID'):
+            elif (i=='SOPHIE')|(i=='NEID')|(i=='EXPRES'):
                 source = None
             else:
                 source = ['ESO']*len(files)

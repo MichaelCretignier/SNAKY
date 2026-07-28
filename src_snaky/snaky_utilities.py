@@ -3,6 +3,7 @@ import numpy as np
 from astropy.coordinates import SkyCoord, Angle
 import glob as glob
 import matplotlib.pylab as plt
+from scipy.interpolate import interp1d
 
 keywords_allowed = {
     'starname':['hd','hip','primary'],
@@ -117,6 +118,8 @@ def pdf_comparison(files, xlims={}, reference={}):
 
     variables = ['teff','logg','feh','ms','rs','vsini','mhk','rhk','age']
     save = {kw:[] for kw in variables}
+    pdf = {kw:[] for kw in variables}
+    pdf_grid = {kw:[] for kw in variables}
 
     plt.figure(figsize=(18,12))
     plt.subplots_adjust(left=0.06,right=0.96,hspace=0.60,top=0.95,bottom=0.15,wspace=0.30)
@@ -149,13 +152,25 @@ def pdf_comparison(files, xlims={}, reference={}):
                 if len(vec)>0:
                     plt.subplot(3,3,j+1)
                     a,b = np.histogram(vec, bins=bins, density=True)
-                    plt.plot(b[:-1], a, color='C%.0f'%(count), alpha=0.5)
+                    plt.plot(b[:-1], a/np.sum(a), color='C%.0f'%(count), alpha=0.5)
                     plt.xlabel(kw,fontsize=14)
                     plt.yticks(ha='right')
                     save[kw].append(vec)
+                    pdf[kw].append(a)
+                    pdf_grid[kw] = b[:-1]
     
     for j,kw in enumerate(variables):
+
+        pdf_tot = np.array(pdf[kw])
+        ptot = np.product(pdf_tot,axis=0)
+        ptot /= np.sum(ptot)
+        cdf = np.cumsum(ptot)
+
+        cdf = interp1d(pdf_grid[kw], cdf, kind='cubic', bounds_error=False, fill_value='extrapolate')(np.linspace(pdf_grid[kw][0], pdf_grid[kw][-1], 1000))
+        cquantile = np.interp([0.16,0.50,0.84], cdf, np.linspace(pdf_grid[kw][0], pdf_grid[kw][-1], 1000))
+
         save[kw] = np.hstack(save[kw])
+
         plt.subplot(3,3,j+1)
         med_val = np.median(np.ravel(save[kw]))
         sup_val = np.nanpercentile(np.ravel(save[kw]),75) - med_val
@@ -163,15 +178,36 @@ def pdf_comparison(files, xlims={}, reference={}):
         xlim = [med_val-5*inf_val,med_val+5*sup_val]
 
         a,b = np.histogram(np.ravel(save[kw]), bins=np.linspace(xlim[0], xlim[1], 50), density=True)
-        plt.plot(b[:-1], a, alpha=1.0, label='ALL', color='k',lw=2.5)
+        x = 0.5 * (b[:-1] + b[1:])
+        y = a / np.sum(a)
+
+        plt.plot(x,y, alpha=1.0, label='ALL', color='k',lw=2.5)
+        plt.plot(pdf_grid[kw], 3*np.max(y)-ptot/np.max(ptot)*np.max(y), alpha=1.0, label='BAYE', color='k',lw=2,ls='-')
+        plt.fill_between(pdf_grid[kw], 3*np.max(y)-ptot/np.max(ptot)*np.max(y), 3*np.max(y), color='k', alpha=0.10)
+        plt.tick_params(top=True,direction='inout')
+
+        for i1,i2 in zip([16,2.5],[84,97.5]):
+            p1, p2 = np.percentile(np.ravel(save[kw]), [i1, i2])
+            mask = (x >= p1) & (x <= p2)
+            plt.fill_between(x, 0, y, where=mask, color='k', alpha=0.10)
+
         plt.ylabel('PDF',fontsize=14)
+        if kw=='age':
+            if xlim[0]<0:
+                xlim[0] = 0
+            if xlim[1]>13:
+                xlim[1] = 13
         plt.xlim(xlim)
-        plt.ylim(0,None)
+        plt.ylim(0,3*np.max(y))
 
         if kw=='teff':
-            plt.title('%s = %.0f +/- %.0f'%(kw,np.median(save[kw]),mad(np.ravel(save[kw]))))
+            title = '%s = %.0f +/- %.0f (BAYE)\n'%(kw,cquantile[1],cquantile[2]-cquantile[1])
+            title = title+'%s = %.0f +/- %.0f (MIXT)'%(kw,np.median(save[kw]),mad(np.ravel(save[kw])))
         else:
-            plt.title('%s = %.2f +/- %.2f'%(kw,np.median(save[kw]),mad(np.ravel(save[kw]))))
+            title = '%s = %.2f +/- %.2f (BAYE)\n'%(kw,cquantile[1],cquantile[2]-cquantile[1])
+            title = title+'%s = %.2f +/- %.2f (MIXT)'%(kw,np.median(save[kw]),mad(np.ravel(save[kw])))
+
+        plt.title(title)
 
         if kw in reference.keys():
             plt.axvline(x=reference[kw], ls='-.', color='k', alpha=0.7, lw=1)

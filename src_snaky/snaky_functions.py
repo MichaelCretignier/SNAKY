@@ -8,6 +8,7 @@ import pickle
 import sys
 import time
 import warnings
+import datetime
 
 import matplotlib.pylab as plt
 import numpy as np
@@ -32,6 +33,7 @@ from colorama import Fore
 from collections import namedtuple
 from typing import TypeVar
 import glob as glob
+import re
 
 MATERIAL_DIR = myv.MATERIAL_DIR
 
@@ -61,6 +63,16 @@ au_m = 149597871*1000
 
 cwd = os.getcwd()
 root = '/'.join(cwd.split('/')[:-1])
+
+def today():
+    today = datetime.datetime.now().isoformat()
+    jdb = Time.Time(today, format='isot').jd-2400000
+    return jdb
+
+def now():
+    now = datetime.datetime.now().isoformat()
+    return now
+
 
 # statistical
 
@@ -835,13 +847,32 @@ def rm_outliers(array, m=1.5, kind='sigma',axis=0, return_borders=False,Plot=Fal
     else:
         return mask,  array[mask]
 
+def conv_void_air(wave_vac):
+    sigma2 = (1e4 / wave_vac)**2 #according to GPT this is a common error in modern astronomy codes (indeed sharper and deeper CCF with the square)
+    n = (
+        1.0
+        + 8.34254e-5
+        + 2.406147e-2 / (130.0 - sigma2)
+        + 1.5998e-4 / (38.9 - sigma2)
+    )
+    return wave_vac / n
 
-def conv_void_air(wave):
+def conv_air_void(wave_air): 
+    sigma2 = (1e4 / wave_air)**2
+    n = (
+        1.0
+        + 8.34254e-5
+        + 2.406147e-2 / (130.0 - sigma2)
+        + 1.5998e-4 / (38.9 - sigma2)
+    )
+    return wave_air * n
+
+def conv_void_air_old(wave): #deprecated (see GPT correction above) ~1.2 km/s difference
     s2 = 1e4/wave
     n = 1 + 0.0000834254 + 0.02406147 / (130 - s2) + 0.00015998 / (38.9 - s2)
     return wave/n
 
-def conv_air_void(wave):
+def conv_air_void_old(wave): #deprecated (see GPT correction above)
     s2 = 1e4/wave
     n = 1 + 0.00008336624212083 + 0.02408926869968 / (130.1065924522 - s2) + 0.0001599740894897 / (38.92568793293 - s2)
     return wave*n
@@ -1232,3 +1263,18 @@ def paraboloid(coord, a, b, c, x0, y0, d):
         + c*(x-x0)*(y-y0)
         + d
     ).ravel()
+
+def detect_uttime_str(filenames):
+
+    pattern = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?")
+
+    ut_times = []
+
+    for f in filenames:
+        m = pattern.search(f)
+        if m:
+            ut_times.append(m.group(0))
+        else:
+            ut_times.append('0000-00-00T00:00:00.000')
+
+    return ut_times

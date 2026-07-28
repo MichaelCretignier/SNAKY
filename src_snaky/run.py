@@ -43,7 +43,7 @@ class start():
         self.warning_printed = 0
         self.prd_ext = ''
         self.debug = debug
-        self.sy_user_object = {'Name':None, 'Ra':None, 'Dec':None, 'Rv_sys':None, 'Prot':None, 'Rs':None, 'Ms':None, 'Teff':None, 'Log_g':None, 'FeH':None, 'RHK':None, 'Vsini':None, 'stellar_template':None, 'reference':None}
+        self.sy_user_object = {'Name':None, 'Ra':None, 'Dec':None, 'Rv_sys':None, 'Prot':None, 'Rs':None, 'Ms':None, 'Teff':None, 'Log_g':None, 'FeH':None, 'RHK':None, 'Vsini':None, 'Age':None, 'stellar_template':None, 'reference':None}
         self.missing_file = False
         if not verbose:
             myv.VERBOSE = False
@@ -368,6 +368,8 @@ class start():
                         qc = mym.read_espresso(f,dir_root,force=True)
                 elif ins[0:5]=='PEPSI':
                     qc = mym.read_pepsi(f,dir_root,force=True)
+                elif ins[0:5]=='EXPRE':
+                    qc = mym.read_expres(f,dir_root,force=True)
                 elif ins[0:4]=='HERM':
                     qc = mym.read_hermes(f,dir_root,force=True)
                 elif ins[0:4]=='NEID':
@@ -715,18 +717,18 @@ class start():
         
         rv_sys = sinfo['Rv_sys']['SNAKY'] - rv_sys_correction
 
-        CT,EW,FLAG = mym.yarara_iron_lines(dir_root, master, fwhm, rv_sys=rv_sys)
+        CT,EW,FLAG,MISSING = mym.yarara_iron_lines(dir_root, master, fwhm, rv_sys=rv_sys)
         for kw in CT.keys():
             sinfo['Contrast'][kw] = CT[kw]
         for kw in EW.keys():
             sinfo['EW'][kw] = EW[kw]
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
-        atmos = mym.yarara_atmos_xgb_spectroscopy(dir_root, sinfo, resolution=80000, phot=True, flag=(FLAG!=0))
+        atmos = mym.yarara_atmos_xgb_spectroscopy(dir_root, sinfo, resolution=80000, phot=True, flag=(FLAG!=0), missing_fraction=MISSING)
         teff,feh,logg,M,R,BV,vmicro,vmacro = atmos
 
         suffixe = 'ATLAS_T%.0f_g%.1f'%(np.round(teff,-2),np.round(logg,1))
-        myv.vprint(' [INFO] Atmospheric model set to : %s'%(suffixe))
+        myv.vprint(' [INFO] Atmospheric model set to : %s'%(suffixe))   
 
         sinfo = myf.update_info_lvl2(sinfo,'Mstar','SNAKY',M)   
         sinfo = myf.update_info_lvl2(sinfo,'Rstar','SNAKY',R)
@@ -1279,6 +1281,10 @@ class start():
         self.sy_rv_mode = rv_mode
 
         debug = self.debug
+
+        if (begin==1)&(automatic_db==False):
+            self.warning_printed=1
+            self.reset()
 
         timestamp_reduction = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
         filename_time = dir_root + 'REDUCTION_INFO/Time_info_reduction_snaky_%s_B%sE%s_%s.csv'%(__version__,str(begin).zfill(2),str(end).zfill(2),timestamp_reduction)
