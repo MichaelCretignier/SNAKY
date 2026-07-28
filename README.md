@@ -401,7 +401,6 @@ SNAKY can process spectra from the following products from the following spectro
 | [UVES](#flag_download) | irrelevant | S1D |  UVES_1.0 |
 | [HERMES](#flag_download) | irrelevant | S1D |  HERMES_1.0 |
 
-HARPS spectra before and after the fiber upgrade (2015-05-23) have to be processed independently as respectively HARPS03 and HARPS15 spectra and the DRS version has to be correctly specified.
 
 To add a new instrument you only need 5 information from its header:
 1) jdb   [!mandatory!]
@@ -410,7 +409,7 @@ To add a new instrument you only need 5 information from its header:
 4) berv  [optional]
 5) snr   [optional]
 
-Then create your own function `read_espresso()` in `snaky_main.py`
+Then create your own function `read_new_instrument()` in `snaky_main.py`
 and modify the `extract_header()` function too. 
 
 If only e2ds spectra exist and not s1d, follow the `read_neid()` example.
