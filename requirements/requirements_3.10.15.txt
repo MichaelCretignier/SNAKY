@@ -9,3 +9,5 @@ tqdm==4.67.0
 lmfit==1.3.4
 colorama==0.4.6
 psutil==6.1.0
+requests==2.32.4
+pyvo==1.7
