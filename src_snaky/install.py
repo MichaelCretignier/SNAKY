@@ -45,5 +45,3 @@ if material_dir.exists():
     print(f"\n[INFO] Material_snaky successfully installed in:\n       {material_dir}")
 else:
     print("\n[ERROR] Material_snaky was not found after extraction.")
-
-updated_files = glob.glob(str(material_dir / "**" / "*"), recursive=True)
