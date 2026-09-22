@@ -7,6 +7,7 @@ snaky_root = this_file.parent.parent
 
 zip_path = snaky_root / "Material_snaky.zip"
 material_dir = snaky_root / "Material_snaky"
+updated_material_dir = snaky_root / "Material_update"
 
 print("\n[INFO] Downloading Material_snaky from the Zenodo repository... Wait...\n")
 
@@ -30,7 +31,14 @@ os.system(
 shutil.rmtree(snaky_root / "__MACOSX", ignore_errors=True)
 zip_path.unlink(missing_ok=True)
 
+print('\n [INFO] Updating toward last version files...')
+
+os.system('mv '+str(updated_material_dir)+'/* '+str(material_dir))
+os.system('rm -rf '+str(updated_material_dir))
+
 if material_dir.exists():
     print(f"\n[INFO] Material_snaky successfully installed in:\n       {material_dir}")
 else:
     print("\n[ERROR] Material_snaky was not found after extraction.")
+
+updated_files = glob.glob(str(material_dir / "**" / "*"), recursive=True)
