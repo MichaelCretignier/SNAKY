@@ -33,11 +33,7 @@ zip_path.unlink(missing_ok=True)
 
 print('\n [INFO] Updating toward last version files...')
 
-shutil.copytree(
-    updated_material_dir,
-    material_dir,
-    dirs_exist_ok=True
-)
+shutil.copytree(updated_material_dir, material_dir, dirs_exist_ok=True)
 
 shutil.rmtree(updated_material_dir)
 
