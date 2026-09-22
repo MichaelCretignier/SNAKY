@@ -33,8 +33,13 @@ zip_path.unlink(missing_ok=True)
 
 print('\n [INFO] Updating toward last version files...')
 
-os.system('mv '+str(updated_material_dir)+'/* '+str(material_dir))
-os.system('rm -rf '+str(updated_material_dir))
+shutil.copytree(
+    updated_material_dir,
+    material_dir,
+    dirs_exist_ok=True
+)
+
+shutil.rmtree(updated_material_dir)
 
 if material_dir.exists():
     print(f"\n[INFO] Material_snaky successfully installed in:\n       {material_dir}")
