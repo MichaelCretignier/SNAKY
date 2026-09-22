@@ -33,6 +33,30 @@ interp_degree = 'linear'
 # ACTIVITY PROXY
 # =============================================================================
 
+EW_std = {
+    'CaI':[0,10],
+    'CaH':[0,1.2],
+    'CoI':[0,6],
+    'CrI':[0,5],
+    'FeIIS':[0,11],
+    'FeIS':[0,6],
+    'FeIU':[0,10],
+    'MnI':[0,12],
+    'NdII':[0,8],
+    'NiI':[0,8],
+    'ScII':[0,25],
+    'SiI':[0,4],
+    'TiI':[0,9],
+    'TiII':[0,10],
+    'VI':[0,9],
+    'Z':[0,0.25],
+    'Ha':[0.1,0.7],
+    'Hb':[0.1,0.7],
+    'MgI':[0.2,1.2],
+    'NaD':[0.1,0.8],
+    'NaDC':[0.35,1.0],
+}
+
 #[center, half-window, hole_size, half-window-continuum,database_kw, subplot]
 Ca2H =  [3968.47, 0.45, 0, 1.5, 'CaIIH']
 Ca2K =  [3933.66, 0.45, 0, 1.5, 'CaIIK']
@@ -93,9 +117,9 @@ instrument_res_kms = {
     'CORALIE14': 5.01,    # R ≈ 60 000
     'SOPHIE-HE': 7.89,    # R ≈ 38 000 (HE)
     'FEROS': 6.10,        # R ≈ 48 000
-    #'FIES': 5.25,        # R ≈ 57 000
+    'FIES': 5.25,         # R ≈ 57 000
     'SOPHIE': 4.18,       # R ≈ 72 000 (HR)
-    #'UVES': 3.50,         # R ≈ 85 000 (depends of the slit)
+    #'UVES': 3.50,        # R ≈ 85 000 (depends of the slit)
     'HARPS15': 3.47,      # R ≈ 86 000
     'HARPS03': 3.36,      # R ≈ 89 000
     'HARPS': 3.40,        # R ≈ 89 000
@@ -106,6 +130,7 @@ instrument_res_kms = {
     'ESPRESSO18': 2.74,   # R ≈ 109 000
     'ESPRESSO19': 2.74,   # R ≈ 109 000
     'PEPSI': 2.89,        # R ≈ 109 000
+    #'EXPRES': 2.80,      # R ≈ 109 000
 }
 
 instrument_lat_deg = {
@@ -245,6 +270,7 @@ star_info = {
     'FWHM':{'fixed':6.0},
     'Rv_sys':{'fixed':0.0},
     'Contrast':{'fixed':0.4},
+    'Contrast_err':{'fixed':0.0},
     'CCF_beta':{'fixed':2.0},
     'SB1':{'fixed':0.0},
     'SB2':{'fixed':0.0},
@@ -267,7 +293,22 @@ star_info = {
     'Pmag':{'fixed':11.0},
     }
 
-
+user_object = {
+    'Name':None, 
+    'Ra':None, 
+    'Dec':None, 
+    'Rv_sys':None, 
+    'Prot':None, 
+    'Rs':None, 
+    'Ms':None, 
+    'Teff':None, 
+    'Log_g':None, 
+    'FeH':None, 
+    'RHK':None, 
+    'Vsini':None, 
+    'Age':None, 
+    'stellar_template':None, 
+    'reference':None}
 
 def vprint(*args, **kwargs):
     if VERBOSE:
