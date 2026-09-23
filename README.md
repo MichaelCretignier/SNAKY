@@ -65,7 +65,7 @@ conda env list
 ### [Option 2] Venv install (Python 3.10.15)
 
 ```bash
-python3 -m venv snaky
+python3.10 -m venv snaky
 source snaky/bin/activate 
 pip install --upgrade pip 
 pip install -r requirements_3.10.15.txt
