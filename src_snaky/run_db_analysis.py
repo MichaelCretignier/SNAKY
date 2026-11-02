@@ -1,4 +1,5 @@
 import os 
+from matplotlib.pyplot import table
 import numpy as np 
 import matplotlib.pylab as plt
 import pandas as pd
@@ -11,8 +12,10 @@ from . import snaky_functions as myf
 from . import snaky_classes as myc
 from . import snaky_variables as myv
 from . import snaky_main as mym
+import src_snaky.snaky_utilities as snaky_util
 
 version = mym.__version__
+MATERIAL_DIR = myv.MATERIAL_DIR
 
 def check_snaky_processing(output_dir,instrument='*'):
 
@@ -269,6 +272,796 @@ def create_snaky_db(output_dir, filename='All_stars', stars=['*'], branch=None):
     infos.to_csv(output_dir+'/database/'+filename+'_summary_infos.csv')
 
     return infos
+
+def get_plim(text=''):
+    ax = plt.gca()
+    ylim = ax.get_ylim()
+    xlim = ax.get_xlim()
+    print(ylim,xlim,text)
+
+def update_atmos_databases(output_dir, xbg_model='_phot_1.8.0_sklearn_1.7.2'):
+    file_xgb = pd.read_pickle(MATERIAL_DIR+'/xgb_model_yarara_atmos'+xbg_model+'.p')
+    means = file_xgb['mean']
+    stds = file_xgb['std']
+
+    all_files = glob.glob(str(output_dir)+'/SNAKY_DB_SPECTRA/*/data/s1d/*/STAR_INFO/Stellar_info*.p')
+    keys = means.keys()
+
+
+def compare_atmos_databases(ref_table, output_dir, csv_file=None, reference='SNAKY'):
+    
+    if csv_file is None:
+        csv_files = glob.glob(str(output_dir)+'/*.csv')
+        starnames = []
+        for c in csv_files:
+            c1 = pd.read_csv(c,index_col=0)
+            c1 = snaky_util.format(c1) 
+            c1['src_file'] = c.split('/')[-1]
+            starnames.append(c1)
+        starnames = pd.concat(starnames,axis=0)
+        ref_table = starnames.drop_duplicates(subset=['starname'])
+        csv_file = 'all_csv_files.csv'
+    
+    output_db_analysis = output_dir+'/DB_ANALYSIS/'+csv_file.split('/')[-1].replace('.csv','')
+
+    os.makedirs(output_db_analysis, exist_ok=True)
+
+    paths = output_dir+'/SNAKY_DB_SPECTRA/*/data/s1d/ALLINS_MERGED/Atmos_all_parameters.csv'
+    all_files = glob.glob(paths)
+    mask_file = np.in1d([f.split('/data')[0].split('/')[-1] for f in all_files],ref_table['starname'].values)
+    all_files = np.array(all_files)[mask_file]
+
+    db = []
+    for f in tqdm(all_files):
+        starname = f.split(str(output_dir))[1].split('/data')[0].split('/')[-1]
+        file = pd.read_csv(f,index_col=0)
+        file.index = [starname]*len(file)
+        file['starname'] = starname
+        db.append(file)
+    db = pd.concat(db,axis=0)
+
+    paths_lit = output_dir+'/SNAKY_DB_SPECTRA/*/data/s1d/ALLINS_MERGED/Atmos_literature.csv'
+    all_files_lit = glob.glob(paths_lit)
+    mask_file = np.in1d([f.split('/data')[0].split('/')[-1] for f in all_files_lit],ref_table['starname'].values)
+    all_files_lit = np.array(all_files_lit)[mask_file]
+
+    db_lit = []
+    for f in tqdm(all_files_lit):
+        starname = f.split(str(output_dir))[1].split('/data')[0].split('/')[-1]
+        file = pd.read_csv(f,index_col=0)
+        file.index = [starname]*len(file)
+        file['starname'] = starname
+        db_lit.append(file)
+    db_lit = pd.concat(db_lit,axis=0)
+
+    ref_table['REF_ID'] = ref_table.index
+
+    zero_value = {
+        'teff':5775,
+        'feh':0.0,
+        'logg':4.44,
+        'ms':1.0,
+        'rs':1.0,
+        'vsini':0.0,
+        'prot':0.0,
+        'mhk':0.0,
+        'rhk':-4.7,
+        'age':0.0}
+
+    missing_values = {
+        'teff_std>':300,
+        'feh_std>':0.20,
+        'feh=':0.0,
+        'logg_std>':0.15,
+        'logg=':4.0,
+        'rs_std>':1.0,
+        'rs>':2.0,
+        'vsini>':25,
+        'vsini_std>':7,
+        'rhk>':0,
+        'rhk_std>':1.0,
+        'mhk_std>':100,
+        'ms>':1.5,
+        'ms_std>':1.0,
+        'age<':0.1}
+
+    all_kw = ['teff','logg','feh','ms','rs','vsini','rhk','age']
+
+    for kw in missing_values:
+        k = kw[0:-1]
+        condition = kw[-1]
+        if condition=='=':
+            db.loc[db[k]==missing_values[kw],k] = np.nan
+        elif condition=='>':
+            db.loc[db[k]>missing_values[kw],k] = np.nan
+        elif condition=='<':
+            db.loc[db[k]<missing_values[kw],k] = np.nan
+
+    db = db.loc[db['ins']=='ALLINS_MIXTURE']
+    db['ins'] = 'SNAKY'
+
+    db = pd.concat([db,db_lit],axis=0)
+    for kw in db.keys():
+        try:
+            db[kw] = np.round(db[kw].astype(float),[3,0][int(kw[0:4]=='teff')])
+        except:
+            pass
+    db.to_csv(output_db_analysis+'/ALL_atmos_parameters.csv',index=False)
+
+    db_ref = db.loc[db['ins']==reference].copy()
+    db_aggregated = db.loc[db['ins']!=reference].copy()
+    del db_aggregated['ins'] ; del db_ref['ins']
+    db_aggregated = db_aggregated.groupby('starname').agg(['mean','std','count'])
+
+    db_aggregated = db_aggregated.reindex(ref_table["starname"])
+    db_ref = db_ref.reindex(ref_table["starname"])
+
+    #TBD implement correction to see
+
+    plt.figure(figsize=(18,8))
+    plt.subplots_adjust(left=0.05,right=0.97,top=0.95,bottom=0.10,wspace=0.3,hspace=0.3)
+    for counter_params, kw in enumerate(all_kw):
+        v1 = db_aggregated[kw]['mean'].values
+        v2 = db_ref[kw].values
+        v1_err = db_aggregated[kw+'_std']['mean'].values
+        v1_std = db_aggregated[kw]['std'].values
+        v1_err[v1_err!=v1_err] = 0
+        v1_err[v1_err<v1_std] = v1_std[v1_err<v1_std]
+        v2_err = db_ref[kw+'_std'].values
+
+
+        diff_err = np.sqrt(v1_err**2+v2_err**2)
+        diff = v2-v1
+
+        delta = np.nanmedian(diff)
+        med_err = np.nanmedian(diff_err)
+        disp1 = myf.mad(diff)
+
+        outliers = np.abs(diff-delta)>7*disp1
+        diff[outliers] = np.nan
+        diff_err[outliers] = np.nan
+
+        if med_err<disp1:
+            disp = np.sqrt(disp1**2-med_err**2)
+        else:
+            disp = -np.sqrt(med_err**2-disp1**2)
+
+        precision = 0 if kw in ['teff'] else 2
+        fmt_str = f'%.{precision}f'
+
+        alpha_data = [0.5,0.2][len(v2)>150]
+
+        bins = {'TEFF': np.arange(3000, 10001, 100),
+                'LOGG': np.arange(0, 5.01, 0.1),
+                'FEH': np.arange(-2.5, 1.01, 0.25),
+                'MS': np.arange(0, 2.01, 0.1),
+                'RS': np.arange(0, 2.01, 0.1),
+                'RHK': np.arange(-5.5, -2.99, 0.1),
+                'AGE': np.arange(0, 10.01, 0.5),
+                'VSINI': np.arange(0, 25, 2)}[kw.upper()]
+
+        v2_binned = np.digitize(v2, bins)
+        v2_binned_median = np.array([np.nanmedian(v2[v2_binned == i]) for i in range(1, len(bins))])
+        diff_binned = [diff[v2_binned == i] for i in range(1, len(bins))]
+        diff_binned_median = np.array([np.nanmedian(d) for d in diff_binned])
+        diff_binned_std = np.array([myf.mad(d) for d in diff_binned])
+        diff_binned_count = np.array([np.sum(~np.isnan(d)) for d in diff_binned])
+
+        diff_binned_median[diff_binned_count<10] = np.nan
+        diff_binned_std[diff_binned_count<10] = np.nan
+        ref_error = np.nanmedian(diff_err)
+
+        diff_binned_std[diff_binned_std==0] = ref_error/np.sqrt(diff_binned_count[diff_binned_std==0])
+        diff_binned_std[diff_binned_std!=diff_binned_std] = ref_error/np.sqrt(diff_binned_count[diff_binned_std!=diff_binned_std])
+
+        deg = 1
+        N = np.sum(~np.isnan(diff))
+        if np.sum(~np.isnan(diff))>10:
+            coeff = np.polyfit(v2[~np.isnan(diff)],diff[~np.isnan(diff)],deg)
+            #print(kw,coeff)
+            coeff2 = np.polyfit(v2[~np.isnan(diff)],diff[~np.isnan(diff)],3)
+            print(kw,[f"{x:.3e}" for x in coeff2])
+            disp2 = myf.mad(diff-np.polyval(coeff, v2))
+            zeroline = -coeff[1]/coeff[0]
+        else:
+            coeff = np.zeros(deg+1)
+            disp2 = myf.mad(diff)
+            zeroline = 0
+
+        plt.subplot(2,4,counter_params+1)
+        plt.errorbar(v2,diff,yerr=diff_err,alpha=alpha_data, capsize=0, ls='',marker='o', markersize=3, color='C0',zorder=1)
+        plt.errorbar(v2_binned_median, diff_binned_median, yerr=diff_binned_std, alpha=1.0, capsize=0, ls='', marker='o', markersize=6, color='k',zorder=10)
+        plt.axhline(y=0,ls='-',color='k',lw=1,alpha=0.4)
+        plt.xlabel('%s (%s)'%(kw.upper(),reference),fontsize=12)
+        plt.ylabel('%s - MEAN'%(reference),fontsize=12)
+        ax = plt.gca()
+        xlim = ax.get_xlim()
+        y1 = np.polyval(coeff, xlim[0])
+        y2 = np.polyval(coeff, xlim[1])
+        plt.plot([xlim[0],xlim[1]],[y1,y2],ls='-',color='k',lw=2,zorder=10,label='S = %.3f | Z = %.2f'%(coeff[0],zeroline))
+        plt.legend(fontsize=10)
+        #plt.title('N = %.0f | '%(N)+r'$\delta$ = ' + fmt_str%(delta) + ' | ' + r'S = ' + '%.2f'%(coeff[0])+'\n ' + r'$\Delta$ = ' + fmt_str%(disp1) + ' | ' + r'$\sigma_{+}$ = ' + fmt_str%(disp),fontsize=10)
+        plt.title('N = %.0f | '%(N)+r'$\delta$ = ' + fmt_str%(delta) + r' | $\sigma$ = ' + fmt_str%(disp1),fontsize=12)
+    plt.subplots_adjust(bottom=0.10,left=0.16)
+    plt.savefig(output_db_analysis+'/ALL_param_%s_with_MEAN.png'%(reference),dpi=200)
+        
+
+    source = np.unique(db['ins'])
+    db2 = {}
+    for s in source:
+        df_small = db.loc[db['ins']==s]
+        df_small = df_small.reindex(ref_table["starname"])
+        db2[s] = df_small
+        db2[s]['ins'] = s
+
+    source = np.array(list(db2.keys()))
+    source = list(np.setdiff1d(source,[reference]))+[reference]
+
+    statistic = {}
+    for counter_params, kw in enumerate(all_kw):
+        print('\n[INFO] Analysis of the parameter: %s'%(kw.upper()))
+
+        source2 = source.copy()
+        for s in source:
+            Nstar = np.sum(~np.isnan(db2[s][kw].values))
+            if Nstar==0:
+                source2.remove(s)
+        i1,i2 = np.triu_indices(len(source2))
+
+        fig = plt.figure(figsize=(18,10))
+        fig.suptitle(kw.upper())
+        gs = fig.add_gridspec(len(source2), len(source2), hspace=0.0, wspace=0.0)
+        mini = np.nanmin(db2[reference][kw])
+        maxi = np.nanmax(db2[reference][kw])
+        span = maxi-mini
+        mini -= 0.10*span ; maxi += 0.10*span
+
+        ax0 = fig.add_subplot(gs[len(source2)-1,0])
+        plt.axis('off')
+
+        params = []
+
+        count=0
+        for j1,j2 in zip(i1,i2):
+            count+=1
+            if j1==j2:
+                ax = fig.add_subplot(gs[j1, j2],sharex=ax0)
+            else:
+                ax = fig.add_subplot(gs[j1, j2],sharex=ax0,sharey=ax0)
+            
+            s1 = source2[j1]
+            s2 = source2[j2]
+            v1 = db2[s1][kw].values ; v1_err = db2[s1][kw+'_std'].values
+            v2 = db2[s2][kw].values ; v2_err = db2[s2][kw+'_std'].values
+            N = len((v1+v2)[~np.isnan(v1+v2)])
+
+            offset = np.nan
+            rpearson = np.nan
+            disp = np.nan
+            disp2 = np.nan
+
+            if (N>10) & (j1!=j2):
+                offset = np.nanmedian(v1-v2)
+                mask = ~np.isnan(v1+v2)
+                weights = 1.0 / (v1_err[mask]**2 + v2_err[mask]**2)
+                weights[np.isinf(weights)] = 0
+                coeff = np.polyfit(v1[mask], v2[mask], 1)
+                rpearson = np.corrcoef(v1[mask], v2[mask])[0, 1]
+                diff = v1-v2
+                v1_err[v1_err!=v1_err] = 0
+                v2_err[v2_err!=v2_err] = 0
+                diff_err = np.sqrt(v1_err**2 + v2_err**2)
+                med_err = np.nanmedian(diff_err)
+                disp = myf.mad(diff)
+                if med_err<disp:
+                    disp = np.sqrt(disp**2-med_err**2)
+                else:
+                    disp = -np.sqrt(med_err**2-disp**2)
+
+                disp2 = myf.mad(v2[mask]-np.polyval(coeff, v1[mask]))
+            else:
+                coeff = [1,0]
+            params.append([j1,j2,offset,coeff[0],coeff[1],N, rpearson, disp, disp2])
+
+            alpha_data = [0.5,0.2][N>150]
+            
+            plt.xlim(mini,maxi)
+            plt.tick_params(labelleft=False,labelbottom=False,direction='inout',which='both',top=True,right=True)
+            if j1==j2:
+                plt.xlabel(s1,fontsize=11)
+                plt.hist(v1,np.linspace(mini,maxi,30),color='C0',alpha=0.8)
+                plt.tick_params(labelbottom=True)
+                plt.text(0.05,0.95,'%.0f'%(len(v1[~np.isnan(v1)])),transform=ax.transAxes,fontsize=8, va='top')
+            else:
+                plt.errorbar(v1, v2, xerr=v1_err, yerr=v2_err, alpha=alpha_data, capsize=0, ls='',marker='o', markersize=3, color='C0')
+                plt.plot([mini,maxi],[mini,maxi],ls='-',color='k',lw=1)
+                plt.ylim(mini,maxi)
+                if N>10:
+                    plt.text(0.95,0.05,'%.2f\n%.2f'%(offset,coeff[0]),transform=ax.transAxes,fontsize=8,va='bottom',ha='right',weight='bold')
+                    plt.text(0.05,0.95,'%.0f\n%.2f'%(N,rpearson),transform=ax.transAxes,fontsize=8,va='top', ha='left')
+        plt.subplots_adjust(wspace=0.0,hspace=0.0,top=0.89,bottom=0.05,right=0.99,left=0.03)
+
+        params = pd.DataFrame(params,columns=['i1','i2','offset','coeff','intercept','N','rpearson','disp','disp2'])
+        statistic[kw] = params
+
+        precision = 0 if kw in ['teff'] else 2
+        for i in range(len(source2)):
+            p = params.loc[(params['i1']==i)|(params['i2']==i)]
+            offset, coeff, disp = p['offset'].values, p['coeff'].values, p['disp'].values
+            
+            offset[np.array(p['i1']==i)] = -offset[np.array(p['i1']==i)]
+            coeff[np.array(p['i1']==i)] = 1.0/coeff[np.array(p['i1']==i)]
+
+            delta = np.nanmean(offset)
+            slope = np.nanmean(coeff)
+            disp = np.nanmean(disp)
+
+            plt.subplot(gs[0,i])
+            fmt_str = f'%.{precision}f'
+            plt.title(r'$\delta$ = ' + fmt_str%(delta) + '\n' + r'S = ' + '%.2f'%(slope)+ '\n' + r'$\sigma_{+}$ = ' + fmt_str%(disp),fontsize=10)
+        plt.savefig(output_db_analysis+'/meta_%s_with_LIT.png'%(kw.upper()),dpi=200)
+
+    plt.figure(figsize=(15,10))
+    plt.subplots_adjust(hspace=0.15,wspace=0.0,top=0.90,left=0.08,right=0.96)
+    col=0
+    for kw in all_kw:
+
+        stat = statistic[kw]
+
+        col+=1
+        v1 = db2[reference][kw].values
+        v1_err = db2[reference][kw+'_std'].values
+        v1_err[v1_err!=v1_err] = 0
+        ax = plt.subplot(len(all_kw),len(source),1+(col-1)*len(source))
+        if col==1:
+            plt.title(reference.replace('+','\n20')+'\n(N=%.0f)'%(len(v1[~np.isnan(v1)])),fontsize=11)
+        plt.ylabel(kw.upper())
+        plt.tick_params(labelbottom=False, right=True, top=True, direction='inout')
+
+        mini = np.nanmin(db2[reference][kw])
+        maxi = np.nanmax(db2[reference][kw])
+        span = maxi-mini
+        mini -= 0.10*span ; maxi += 0.10*span
+        
+        plt.hist(v1[~np.isnan(v1)],np.linspace(mini,maxi,30),alpha=0.5,color='C0',orientation='horizontal')
+
+        row=0
+        for s in np.setdiff1d(source,[reference]):
+            row+=1
+            #print(s)
+            v2 = db2[s][kw].values
+            v2_err = db2[s][kw+'_std'].values
+            v2_err[v2_err!=v2_err] = 0
+            N = np.sum(v2==v2)
+
+            alpha_data = [0.5,0.2][N>150]
+
+            v_err = np.sqrt(v1_err**2 + v2_err**2)
+            plt.subplot(len(all_kw),len(source),1+(col-1)*len(source)+row,sharey=ax)
+            plt.tick_params(labelbottom=False,labelleft=False,right=True,top=True,direction='inout')
+
+            plt.errorbar(v2, v1, xerr=v2_err, yerr=v_err, alpha=alpha_data, capsize=0, ls='',marker='o', markersize=3, color='C0')
+            if np.sum(~np.isnan(v1+v2))!=0:
+                plt.plot([mini,maxi],[mini,maxi],ls='-',color='k',lw=1)
+            plt.xlim(mini,maxi) ; plt.ylim(mini,maxi)
+            if col==1:
+                author = s.split('+')[0]
+                fontsize=10
+                if len(author)>9:
+                    author = author[0:7]+'...'
+                    fontsize=10
+                if len(s.split('+'))>1:
+                    year = s.split('+')[1]
+                    year = '20'+year
+                else:
+                    year = ''
+                title = author+'\n'+year+'\n(N=%.0f)'%(N)
+                plt.title(title,fontsize=fontsize)
+            
+        plt.savefig(output_db_analysis+'/analysis_meta_%s.png'%(reference),dpi=200)
+            
+
+
+def analyse_snaky_results(ref_table, output_dir, csv_file, reference, flag_outliers=True, trim_outliers=True, residual=True):
+
+    output_db_analysis = output_dir+'/DB_ANALYSIS/'+csv_file.split('/')[-1].replace('.csv','')
+
+    os.makedirs(output_db_analysis, exist_ok=True)
+
+    paths = output_dir+'/SNAKY_DB_SPECTRA/*/data/s1d/ALLINS_MERGED/Atmos_all_parameters.csv'
+    all_files = glob.glob(paths)
+    mask_file = np.in1d([f.split('/data')[0].split('/')[-1] for f in all_files],ref_table['starname'].values)
+    all_files = np.array(all_files)[mask_file]
+
+    db = []
+    for f in tqdm(all_files):
+        starname = f.split(str(output_dir))[1].split('/data')[0].split('/')[-1]
+        file = pd.read_csv(f,index_col=0)
+        file.index = [starname]*len(file)
+        file['starname'] = starname
+        db.append(file)
+    db = pd.concat(db,axis=0)
+
+    paths_lit = output_dir+'/SNAKY_DB_SPECTRA/*/data/s1d/ALLINS_MERGED/Atmos_literature.csv'
+    all_files_lit = glob.glob(paths_lit)
+    mask_file = np.in1d([f.split('/data')[0].split('/')[-1] for f in all_files_lit],ref_table['starname'].values)
+    all_files_lit = np.array(all_files_lit)[mask_file]
+
+    db_lit = []
+    for f in tqdm(all_files_lit):
+        starname = f.split(str(output_dir))[1].split('/data')[0].split('/')[-1]
+        file = pd.read_csv(f,index_col=0)
+        file.index = [starname]*len(file)
+        file['starname'] = starname
+        db_lit.append(file)
+    db_lit = pd.concat(db_lit,axis=0)
+
+    ref_source = reference.upper()
+    db_lit = db_lit[db.keys()]
+    db = pd.concat([db,db_lit.loc[db_lit['ins']==ref_source]],axis=0)
+
+    ref_table['REF_ID'] = ref_table.index
+
+    zero_value = {
+        'teff':5775,
+        'feh':0.0,
+        'logg':4.44,
+        'ms':1.0,
+        'rs':1.0,
+        'vsini':0.0,
+        'prot':0.0,
+        'mhk':0.0,
+        'rhk':-4.7,
+        'age':0.0}
+
+    missing_values = {
+        'teff_std>':300,
+        'feh_std>':0.20,
+        'feh=':0.0,
+        'logg_std>':0.15,
+        'logg=':4.0,
+        'rs_std>':1.0,
+        'rs>':2.0,
+        'vsini>':25,
+        'vsini_std>':7,
+        'rhk>':0,
+        'rhk_std>':1.0,
+        'mhk_std>':100,
+        'ms>':1.5,
+        'ms_std>':1.0}
+
+    for kw in missing_values:
+        k = kw[0:-1]
+        condition = kw[-1]
+        if condition=='=':
+            db.loc[db[k]==missing_values[kw],k] = np.nan
+        elif condition=='>':
+            db.loc[db[k]>missing_values[kw],k] = np.nan
+        elif condition=='<':
+            db.loc[db[k]<missing_values[kw],k] = np.nan
+
+    source = np.unique(db['ins'])
+    db2 = {}
+    for s in source:
+        df_small = db.loc[db['ins']==s]
+        df_small = df_small.reindex(ref_table["starname"])
+        db2[s] = df_small
+        db2[s]['ins'] = s
+
+    ref = db2[ref_source]
+    source = np.array(list(db2.keys())) ; source = source[source!=ref_source]
+
+    plt.figure('fig_all',figsize=(16,8))
+
+    if residual:
+        ext = '_residual'
+    else:
+        ext = ''
+
+    mini = {}
+    maxi = {}
+
+    all_kw = ['teff','logg','feh','ms','rs','vsini','rhk','age']
+    for counter_params, kw in enumerate(all_kw):
+        print('\n[INFO] Analysis of the parameter: %s'%(kw.upper()))
+
+        yref = db2[ref_source][kw].copy() ; yref_err = db2[ref_source][kw+'_std'].copy()
+        y1 = db2['ALLINS_MIXTURE'][kw].copy() ; y1_err = db2['ALLINS_MIXTURE'][kw+'_std'].copy()
+        y2 = db2['ALLINS_BAYESIAN'][kw].copy() ; y2_err = db2['ALLINS_BAYESIAN'][kw+'_std'].copy()
+
+        yref_err[yref_err!=yref_err] = 0
+
+        delta = y1 - yref
+        delta_err = np.sqrt(y1_err**2 + yref_err**2)
+        delta_err[delta_err!=delta_err] = y1_err[delta_err!=delta_err]
+        index = np.arange(len(db2[ref_source]))
+
+        plt.figure(figsize=(16,8))
+        plt.axes([0.06,0.10,0.9,0.2]) ; ax = plt.gca()
+        plt.errorbar(index, -delta, yerr=delta_err, fmt='o',label='ALLINS_BAYESIAN')
+        plt.axhline(y=0,ls='-',color='k',alpha=0.3,lw=1,zorder=100)
+        plt.xlabel('Stars index')
+        plt.grid(alpha=0.40,axis='x')
+        plt.tick_params(top=True,direction='inout')
+
+        mini_val = np.nanmin(yref) ; maxi_val = np.nanmax(yref)
+        if mini_val!=mini_val:
+            mini_val = np.nanmin(y2) ; maxi_val = np.nanmax(y2)
+        span = maxi_val-mini_val
+        mini[kw] = np.round(mini_val-0.1*span,2)
+        maxi[kw] = np.round(maxi_val+0.1*span,2)
+
+        diff_mad = myf.mad(delta)
+        diff_med = np.nanmedian(delta)
+
+        plt.ylabel(r'$\Delta$ %s'%(kw.upper()))
+        plt.axhline(y=diff_med,ls='--',color='r',alpha=0.5,lw=1,zorder=100,label=r'$\delta$ = %.2f | $\Delta$ = %.2f'%(diff_med,diff_mad))
+        plt.legend()
+
+        plt.axes([0.06,0.3,0.9,0.68],sharex=ax)
+
+        plottype='bar'
+        if plottype=='errorbar':
+            plt.errorbar(index,yref,yerr=yref_err,fmt='o',label='%s'%(ref_source),color='C0',capsize=2)
+            plt.errorbar(index,y1,yerr=y1_err,fmt='o',label='ALLINS_MIXTURE',color='k',capsize=0)
+            plt.errorbar(index,y2,yerr=y2_err,fmt='o',label='ALLINS_BAYESIAN',color='C1',capsize=2)
+        else:
+            baseline = zero_value[kw]
+            bars = plt.bar(np.arange(len(y1))-0.15,y1-baseline,yerr=y1_err,bottom=baseline,label='ALLINS_MIXTURE',error_kw={'ecolor': '#5a9bd4'},width=0.6)
+            plt.bar(np.arange(len(y1))+0.15,yref-baseline, yerr=yref_err, bottom=baseline,alpha=0.7,label='%s'%(ref_source),error_kw={'ecolor': '#b85600'},width=0.6)
+            # Add labels at the outermost of the two bars
+
+            if len(ref)<120:
+                mask = np.arange(len(y1))
+            else:
+                outliers = abs(delta).sort_values().dropna()[-10:].keys()
+                mask = np.where(np.in1d(np.array(delta.keys()),outliers))[0]
+
+            for i, v1, v1_err, vref, vref_err, name in zip(mask, y1[mask], y1_err[mask], yref[mask],  yref_err[mask], ref['starname'].values[mask]):
+
+                # Outer edges of the two error bars, measured relative to baseline
+                y1_edge = v1 + v1_err if v1 >= baseline else v1 - v1_err
+                vref_edge = vref + vref_err if vref >= baseline else vref - vref_err
+                if vref_edge!=vref_edge:
+                    vref_edge = y1_edge
+
+                # Pick whichever value/error bar extends furthest from baseline
+                if abs(y1_edge - baseline) >= abs(vref_edge - baseline):
+                    ypos = y1_edge
+                else:
+                    ypos = vref_edge
+
+                offset = 3 if ypos >= baseline else -3
+                va = 'bottom' if ypos >= baseline else 'top'
+
+                plt.annotate(
+                    name,
+                    xy=(i, ypos),
+                    xytext=(0, offset),
+                    textcoords='offset points',
+                    ha='center',
+                    va=va,
+                    rotation=90,
+                    fontsize=8
+                )
+
+        plt.legend()
+        med = np.nanmedian(y1)
+
+        if plottype=='errorbar':
+            diff_mad = np.nanpercentile(delta,95)-np.nanpercentile(delta,5)
+            sup3 = np.nanmedian(y2)+5*diff_mad
+            inf3 = np.nanmedian(y2)-5*diff_mad
+            delta = abs(delta)
+            discrepant = delta.dropna().sort_values(ascending=False)[0:int(0.05*len(delta))]
+            
+            if mini[kw]==mini[kw]:
+                plt.ylim(mini[kw],maxi[kw])
+
+            ax = plt.gca()
+            for counter,starname in enumerate(db2[ref_source].index):
+                r = np.nanmean(db2['ALLINS_MIXTURE'].loc[starname,kw])
+                dr = np.nanmean(db2['ALLINS_MIXTURE'].loc[starname,kw+'_std'])
+                if r<med:
+                    value = r-0.25*span-dr
+                    if starname in discrepant.index:
+                        plt.annotate(starname, xy=(counter, r - dr - span*0.02), xytext=(counter, mini[kw]), fontsize=6, ha='center', va='bottom', rotation=90, arrowprops=dict(arrowstyle='-', color='k', lw=1, alpha=0.35),)
+                else:
+                    value = r+0.25*span+dr
+                    if starname in discrepant.index:
+                        plt.annotate(starname, xy=(counter, r + dr + span*0.02),  xytext=(counter, maxi[kw]), fontsize=6, ha='center', va='top', rotation=90, arrowprops=dict(arrowstyle='-', color='k', lw=1, alpha=0.35),)
+        plt.ylabel(kw.upper())
+        plt.tick_params(top=True,direction='inout',labelbottom=False)
+        plt.xlim(-1,len(ref)+1)
+        ax_figure = plt.gca()
+        ylim_plot = ax_figure.get_ylim()
+        ysup_new = 0.5*(ylim_plot[1]+ylim_plot[0])+1.2*0.5*(ylim_plot[1]-ylim_plot[0])
+        yinf_new = 0.5*(ylim_plot[1]+ylim_plot[0])-1.2*0.5*(ylim_plot[1]-ylim_plot[0])
+        plt.ylim(yinf_new,ysup_new)
+        plt.grid(alpha=0.40,axis='x')
+        plt.savefig(output_db_analysis+'/comp_%s.png'%(kw.upper()),dpi=200)
+        
+        fig = plt.figure(kw,figsize=(15,8))
+
+        max_disp = 0
+        axes = {}
+        for n, s in enumerate(source):
+            for figure in ['fig_all',kw]:
+                if figure=='fig_all':
+                    plt.figure('fig_all')
+                    grid_loc = counter_params
+                    n_rows=2
+                    n_cols=4
+                    s_title = ''
+
+                else:
+                    plt.figure(kw)
+                    grid_loc = n
+                    n_rows = 2
+                    n_cols = max(1, int(np.ceil(len(source)/2)))
+                    s_title = s
+
+                if (figure=='fig_all')&(s!='ALLINS_MIXTURE'):
+                    continue
+
+                if figure not in axes:
+                    plt.subplot(n_rows, n_cols, grid_loc+1) ; ax = plt.gca()
+                    axes[figure] = ax
+                else:
+                    plt.subplot(n_rows, n_cols, grid_loc+1, sharex=axes[figure],sharey=axes[figure])
+
+                if (figure=='fig_all')&(s!='ALLINS_MIXTURE'):
+                    plt.xlim(mini[kw],maxi[kw])
+                    plt.ylim(mini[kw],maxi[kw])
+
+                if n>=len(source)//2-1:
+                    if residual:
+                        if figure!='fig_all':
+                            plt.ylabel('SNAKY - %s'%(ref_source))
+                    else:
+                        plt.xlabel('SNAKY') ; lim = plt.xlim()            
+
+                if figure=='fig_all':
+                    plt.xlabel('%s %s'%(ref_source, kw.upper()))
+                    if residual:
+                        plt.ylabel('SNAKY - %s'%(ref_source))
+                    else:
+                        plt.ylabel('SNAKY')
+
+                plt.title(
+                    r'%s'%(s_title),
+                    fontsize=10
+                )
+
+                if n%(len(source)//2)==0:
+                    if figure!='fig_all':
+                        plt.ylabel('%s %s'%(ref_source, kw.upper()))
+                else:
+                    if figure!='fig_all':
+                        plt.tick_params(labelleft=False)
+
+                if residual:
+                    if figure=='fig_all':
+                        plt.axhline(y=0,ls='-',color='k',alpha=0.3,lw=1)    
+                    else:
+                        plt.axvline(x=0,ls='-',color='k',alpha=0.3,lw=1)
+                else:
+                    plt.plot([mini[kw],maxi[kw]],[mini[kw],maxi[kw]],ls='-',color='k',alpha=0.3,lw=1)
+
+                plt.tick_params(top=True,right=True,direction='inout',which='both')
+
+                ref.loc[ref[kw+'_std']!=ref[kw+'_std'],kw+'_std'] = 0.0
+
+                df = db2[s]
+                ref_vector = ref[kw]
+                if len(ref_vector.dropna())==0:
+                    continue
+
+                diff = df[kw]-ref_vector
+                disp = myf.mad(diff)
+                max_disp = np.max([disp,max_disp])
+                diff_std = np.sqrt(df[kw+'_std']**2+ref[kw+'_std']**2)
+                diff_std[diff_std==0] = myf.mad(ref_vector)*0.05
+                med_err = np.nanmedian(diff_std)
+
+                if med_err<disp:
+                    extra_jitter = np.sqrt(disp**2-med_err**2)
+                else:
+                    extra_jitter = np.sqrt(med_err**2-disp**2)
+
+                n_sigma = diff/diff_std
+                abs_sigma = np.abs(n_sigma)
+                percentage_20 = (1-5/len(abs_sigma))*100
+                outliers = abs_sigma>np.nanpercentile(abs_sigma, percentage_20)
+                if not flag_outliers:
+                    outliers = np.zeros(len(diff)).astype('bool')
+
+                if (trim_outliers)&(residual==True):
+                    diff[outliers] = 3*disp*np.sign(diff[outliers])
+
+                x = diff+ref_vector*(1-int(residual))
+                y = ref_vector
+                xerr = diff_std
+                yerr = ref[kw+'_std']
+
+                stat = pd.DataFrame(np.array([x,y,xerr,outliers]).T,columns=['diff','ref','diff_std','outliers'])
+                stat = stat.dropna()
+
+                if len(stat)>0:
+                    stat = stat[stat['outliers']==0]
+
+                if len(stat)>7:
+                    weights = 1.0 / stat['diff_std'].values**2
+                    coeff = np.polyfit(stat['ref'],stat['diff'],2,w=weights)
+                    trend = np.polyval(coeff,stat['ref'])
+                    #print('[INFO] Fit coefficients on %s:'%(kw.upper()),coeff)
+                    if figure=='fig_all':
+                        plt.scatter(stat['ref'],trend,alpha=1.0,color='k',zorder=100,label='S=%.3f | I=%.3f'%(coeff[0],coeff[1]))
+                    else:
+                        plt.scatter(trend, stat['ref'],alpha=1.0,color='k',marker='.',lw=1,zorder=100,label='S=%.3f | I=%.3f'%(coeff[0],coeff[1]))
+                    if not residual:
+                        plt.legend(fontsize=8,loc='upper left',framealpha=0.5)
+                else:
+                    coeff = [1,0]
+
+                trend = np.polyval(coeff,x)
+                res = y - trend
+                disp2 = myf.mad(res)
+                
+                if figure=='fig_all':
+                    x,y,xerr,yerr = y,x,yerr,xerr
+
+                alpha_data = [0.5,0.2][len(x)>150]
+
+                plt.errorbar(x[~outliers],y[~outliers],xerr=xerr[~outliers],yerr=yerr[~outliers],fmt='o',alpha=alpha_data)
+
+                if np.sum(outliers):
+                    plt.errorbar(x[outliers],y[outliers],xerr=xerr[outliers],yerr=yerr[outliers],alpha=1,color='r',fmt='x')
+
+                plt.title(
+                    (
+                        r'%s' '\n'
+                        r'$\delta$ = %.2f' '\n'
+                        r'$\Delta_{0}$ = %.2f | '
+                        r'$\Delta_{1}$ = %.2f | '
+                        r'$\sigma_{+}$ = %.2f'
+                    ) % (s_title, np.nanmedian(diff), disp, disp2, extra_jitter),
+                    fontsize=10
+                )
+                
+            if (max_disp==max_disp)&(residual):
+                plt.xlim(-max_disp*5,max_disp*5)
+            else:
+                plt.xlim(mini[kw],maxi[kw])
+                plt.ylim(mini[kw],maxi[kw])
+            plt.subplots_adjust(wspace=0.15,hspace=0.50,left=0.06,right=0.98)
+            plt.savefig(output_db_analysis+'/param_%s_with_%s%s.png'%(kw.upper(),ref_source,ext),dpi=200)
+
+    plt.figure('fig_all')
+    for counter_params, kw in enumerate(all_kw):
+        plt.subplot(2,4,counter_params+1)
+
+        plt.xlim(mini[kw],maxi[kw])
+        if not residual:
+            plt.ylim(mini[kw],maxi[kw])
+
+    plt.subplots_adjust(wspace=0.30,hspace=0.30,left=0.06,right=0.98,top=0.95,bottom=0.10)
+    plt.savefig(output_db_analysis+'/ALL_param_with_%s%s.png'%(ref_source,ext),dpi=200)
+
+    for kw in db2.keys():
+        db2[kw]['starname'] = db2[kw].index
+        db2[kw]['index_num'] = np.arange(len(db2[kw]))
+
+    db_stacked = pd.concat([db2[kw] for kw in db2.keys()],axis=0)
+    db_stacked.index = np.arange(len(db_stacked))
+    db_stacked = pd.merge(db_stacked,ref_table[['starname','REF_ID']],on='starname',how='left') 
+
+    export_table = db_stacked.loc[db_stacked['ins']=='ALLINS_MIXTURE']
+    export_table.index = np.array(export_table['REF_ID'])
+    export_table.to_csv(output_db_analysis+'/SNAKY_final_atmos_parameters.csv')
+
+    return db_stacked
+
 
 def compare_snaky_atmos(output_dir, stars=['*']):
     all_files = []

@@ -17,10 +17,13 @@ from pyvo.dal.adhoc import DatalinkResults
 import gzip, shutil
 import time
 from pathlib import Path
+from pyvo.dal.exceptions import DALFormatError, DALServiceError, DALQueryError
+#from pykoa.koa import Koa
+#from wasmtime import Table #download from KOA HIRES archive
 
 from . import snaky_functions as myf
 
-instruments_excluded = ['','CRIRES','EFOSC','SOFI','PIONIER','MUSE','XSHOOTER','VIRCAM','GRAVITY','ALMA','SPHERE','NIRPS','OMEGACAM','GIRAFFE','HAWKI','KMOS','FORS2']
+instruments_excluded = ['','CRIRES','EFOSC','SOFI','PIONIER','MUSE','XSHOOTER','VIRCAM','GRAVITY','ALMA','SPHERE','NIRPS','OMEGACAM','GIRAFFE','HAWKI','KMOS','FORS2','VIMOS']
 
 def build_session():
     s = requests.Session()
@@ -93,10 +96,14 @@ def query_sophie(
     else:
         r2 = sophie_rectangle(ra, dec, fov/60)
         url_link = f"http://atlas.obs-hp.fr/sophie/sophie.cgi?n=sophies&c=o&of=1,leda,simbad&r={r2}&sql=view_head%20IS%20NOT%20NULL&a=t&z=d|wg|e&ob=ra,seq&d=[%27wget%20%22http%3A//atlas%2Eobs-hp%2Efr/sophie/sophie.cgi?c=i%26a=mime%3Aapplication/fits%26o=sophie%3A[s1d,%27||seq||%27]%22%20-O%20%27||seq||%27_s1d%2Efits%27]&nra=l,simbad,d"
-    
-    r = requests.get(url_link, allow_redirects=True)
 
-    text = r.text
+    try:
+        r = requests.get(url_link, allow_redirects=True)
+        r.raise_for_status()
+        text = r.text
+    except Exception as e:
+        print(f"[ERROR] Failed to query SOPHIE: {e}")
+        return
 
     commands = [
         line.strip()
@@ -127,6 +134,51 @@ def query_sophie(
             output_name = sophie_dir / filename
             with open(output_name, "wb") as f:
                 f.write(r.content)
+
+def query_hires(
+        starname: str,
+        output_dir: Path = Path('/Users/cretignier/Desktop/test/').expanduser().resolve(),
+        ra: Optional[float] = None,
+        dec: Optional[float] = None,
+        fov: float = 2, 
+        N_spectra: int = 5,
+        selection: str = 'random',
+        download: bool = True
+        ):    
+
+    koa = pyvo.dal.TAPService("https://koa.ipac.caltech.edu/TAP")
+
+    query = f"""
+    SELECT koaid, filehand, targname
+    FROM koa_hires
+    WHERE CONTAINS(
+        POINT('ICRS', ra, dec),
+        CIRCLE('ICRS', {ra}, {dec}, {fov/60.})
+    ) = 1
+    """
+
+    (output_dir / starname / 'HIRES').mkdir(parents=True, exist_ok=True)
+
+    try:
+        result = koa.run_sync(query)
+        df = result.to_table().to_pandas()
+        if len(df) > N_spectra:
+            df = df.sample(N_spectra)
+
+        df["instrume"] = "HIRES"
+        Table.from_pandas(df).write("hires_query.tbl", format="ascii.ipac",overwrite=True)
+
+        if download:
+            Koa.download(
+                "hires_query.tbl",
+                "ipac",
+                str(output_dir / starname / 'HIRES'),
+                lev1file=1
+            )
+
+    except:
+        print(' [INFO] Download crashed...')
+        results_df = []
 
 def query_iac(
         starname: str,
@@ -178,13 +230,16 @@ def query_iac(
         print(' [INFO] Download crashed...')
         results_df = []
 
+    for ins in ['HERMES','FIES']:
+        (output_dir / starname / ins).mkdir(parents=True, exist_ok=True)
+
     if len(results_df)!=0:
         results_df.loc[results_df['instrument_name']=='MERCATOR','instrument_name'] = 'HERMES'
         results_df.loc[results_df['instrument_name']=='NOT','instrument_name'] = 'FIES'
         instruments_found = results_df['instrument_name'].value_counts()
         print('\n',starname,instruments_found)
         if download:
-            for ins in instruments_found:
+            for ins in instruments_found.keys():
 
                 ins_dir = output_dir / starname / ins
                 ins_dir.mkdir(parents=True, exist_ok=True)
@@ -244,10 +299,16 @@ def query_eso(
         WHERE CONTAINS(POINT('ICRS', s_ra, s_dec),CIRCLE('ICRS', {ra}, {dec}, {fov}/3600.)) = 1
         """
 
-    results = tap.search(query)
+    try:
+        results = tap.search(query)
+
+    except (DALFormatError,DALServiceError,DALQueryError) as e:
+        print(f"ESO TAP query failed: {e}")
+        return
+
     results_df = pd.DataFrame(results)
 
-    (output_dir / f'{starname}').mkdir(parents=True, exist_ok=True)
+    (output_dir / f'{starname}' / "HARPS").mkdir(parents=True, exist_ok=True)
 
     if len(results_df)!=0:
 
@@ -270,7 +331,6 @@ def query_eso(
 
         mask = np.in1d(results_df['instrument_name'],instruments_excluded)
         results_df = results_df[~mask]
-
 
     #print(results_df[['instrument_name','diff','dra','ddec','dyear','target_name']])
     #import matplotlib.pyplot as plt
@@ -384,12 +444,18 @@ def query_tng(
         AND harpn.FILE_TYPE_REDUCED = 's1d_fluxcal'
         AND harpn.FILE_TYPE = 'reduced'
                 """
-    
-    job = tap.submit_job(query)
-    job.run()
-    job.wait(timeout=60)
-    results = job.fetch_result()
 
+
+    try:
+        job = tap.submit_job(query)
+        job.run()
+        job.wait(timeout=60)
+    
+    except (DALFormatError, DALServiceError) as e:
+        print(f"TNG TAP query failed: {e}")
+        return 1
+    
+    results = job.fetch_result()
     results_df = pd.DataFrame(results)
 
     print('Fov query [arcsec]:', fov_query)
@@ -450,4 +516,6 @@ def query_tng(
                 except Exception as e:
                     print(f"[skip] failed download for {row}: {e}")
                     continue
+
+    return 0
 

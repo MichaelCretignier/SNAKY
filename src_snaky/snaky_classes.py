@@ -1130,6 +1130,13 @@ class tableXY(object):
                             amp_err = 100*(ccf_profile.params['amp'].stderr/ccf_profile.params['offset'].value)
 
                         plt.axvline(x=ccf_profile.params['cen'].value,color='r',alpha=0.3)
+                        #fwhm = ccf_profile.params['wid'].value
+                        #coeff = (2 * np.log(2))**(1/self.params_beta - 1/2)
+                        #fwhm *= coeff
+                        #plt.axvline(x=ccf_profile.params['cen'].value+fwhm,color='k',alpha=0.3,ls='--')
+                        #plt.axvline(x=ccf_profile.params['cen'].value-fwhm,color='k',alpha=0.3,ls='--')
+                        #plt.axvline(x=ccf_profile.params['cen'].value+fwhm*2,color='k',alpha=0.15,ls='--')
+                        #plt.axvline(x=ccf_profile.params['cen'].value-fwhm*2,color='k',alpha=0.15,ls='--')
                         plt.title('R = %.2f | Beta = %.2f \n C = %.2f +/- %.2f [%%] \n FWHM = %.2f +/- %.2f [km/s] \n RV = %.2f +/- %.2f [m/s]'%(
                             Rcorr,
                             self.params_beta,

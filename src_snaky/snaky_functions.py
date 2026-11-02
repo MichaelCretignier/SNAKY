@@ -122,21 +122,35 @@ def find_turbulence(teff, logg):
 
     return vmic,vmac
 
-def find_stellar_mass_radius_MS(Teff, logg, samples=99999, dTeff=75, dlogg=0.07):
+def find_stellar_mass_radius_MS(Teff, logg, samples=99999, dTeff=75, dlogg=0.07, postcorrection=True):
     samples_T = np.random.randn(samples)*dTeff+Teff
     samples_g = np.random.randn(samples)*dlogg+logg
 
     samples_m = (samples_T/5772)**(4/3)*(10**(samples_g-4.437))**(-1/3)
-    mass = np.median(samples_m)
-    mass_std = mad(samples_m)
 
     samples_m = samples_m[samples_m>0]
+    if len(samples_m)<samples:
+        samples_m = np.hstack([samples_m, np.random.choice(samples_m, size=samples-len(samples_m), replace=True)])
+
+    if postcorrection:
+        #Paper correction calibration iteration0
+        SM = 0.316 ; ZM = 0.852 ; IM = -SM*ZM
+        samples_m = samples_m*(1-SM)-IM
+ 
+    mass = np.nanmedian(samples_m)
+    mass_std = mad(samples_m)
 
     samples_R = 0.5*(4.437+np.log10(samples_m)-samples_g) #Smette 2005
-    radius = np.median(10**samples_R)
-    radius_std = mad(10**samples_R)
+    samples_R = 10**samples_R
 
-    return mass, mass_std, radius, radius_std, samples_m, 10**samples_R
+    if postcorrection:
+        #Paper correction calibration iteration1 (after mass correction)
+        samples_R = samples_R - 0.06
+
+    radius = np.nanmedian(samples_R)
+    radius_std = mad(samples_R)
+
+    return mass, mass_std, radius, radius_std, samples_m, samples_R
 
 def find_stellar_mass_radius(Teff, sp_type='G2V'):
     """Habets 1981 calibration curve"""
@@ -776,6 +790,9 @@ def GND(x,cen,amp,offset,wid,beta):
     """Based on Heitzmann+21"""
     return amp*np.exp(-0.5*np.abs((x-cen)/wid)**(beta))+offset
 
+def level_beta(level,beta):
+    return 2*(-2*np.log(level))**(1/beta)
+
 def gaussian(x, cen, amp, offset, wid):
     """width the classical sigma (FWHM=2.355*sigma)"""
     return amp * np.exp(-(x-cen)**2 / (2*wid**2))+offset    
@@ -1166,7 +1183,7 @@ def gray_rotation(vl=1,epsilon=0.6,color='k', Plot=False, vgrid=None):
 
     return (profile1+profile2)/norm
 
-def lithium_age(teff, ew, nsamples=5000): # https://doi.org/10.1093/mnras/stad1293 (Jeffries + 23, The Gaia-ESO Survey: empirical estimates of stellar ages from lithium equivalent widths (eagles))
+def lithium_age(teff, ew, nsamples=5000, params_std=True): # https://doi.org/10.1093/mnras/stad1293 (Jeffries + 23, The Gaia-ESO Survey: empirical estimates of stellar ages from lithium equivalent widths (eagles))
 
     pars = {
         "tc":  (3.524, 0.001),
@@ -1180,7 +1197,7 @@ def lithium_age(teff, ew, nsamples=5000): # https://doi.org/10.1093/mnras/stad12
     }
 
     warning = 0
-    if np.nanmean(ew)<15:
+    if np.nanmean(ew)<1:
         warning = 1
 
     if nsamples!=len(teff):
@@ -1196,6 +1213,16 @@ def lithium_age(teff, ew, nsamples=5000): # https://doi.org/10.1093/mnras/stad12
     cc  = rng.normal(*pars["cc"],  nsamples)
     ct0 = rng.normal(*pars["ct0"], nsamples)
     ct1 = rng.normal(*pars["ct1"], nsamples)
+
+    if params_std is False:
+        tc = np.mean(tc)*np.ones(len(tc))
+        ac = np.mean(ac)*np.ones(len(ac))
+        at = np.mean(at)*np.ones(len(at))
+        bc = np.mean(bc)*np.ones(len(bc))
+        bt = np.mean(bt)*np.ones(len(bt))
+        cc = np.mean(cc)*np.ones(len(cc))
+        ct0 = np.mean(ct0)*np.ones(len(ct0))
+        ct1 = np.mean(ct1)*np.ones(len(ct1))
 
     logT = np.log10(teff)
 
@@ -1214,6 +1241,20 @@ def lithium_age(teff, ew, nsamples=5000): # https://doi.org/10.1093/mnras/stad12
             cc + ct1 * (logT - tc),
         )
 
+    mask = (A==A)&(B==B)&(C==C)
+    if np.sum(mask)==0:
+        return np.random.uniform(0, 13, len(A)), 1
+    
+    A = A[mask]
+    B = B[mask]
+    C = C[mask]
+
+    if nsamples!=len(A):
+        A = np.random.choice(A,nsamples,replace=True)
+        B = np.random.choice(B,nsamples,replace=True)
+        C = np.random.choice(C,nsamples,replace=True)
+
+    ew = ew[ew==ew]
     if nsamples!=len(ew):
         ew = np.random.choice(ew,nsamples,replace=True)
 
@@ -1230,12 +1271,15 @@ def lithium_age(teff, ew, nsamples=5000): # https://doi.org/10.1093/mnras/stad12
         age = 10**logAge / 1e9
 
         index = np.digitize(ew_curve,np.arange(0,1000,5))
-        lower = np.array([np.percentile(age[index==i],5) for i in np.unique(index)])
-        bins = np.array([np.percentile(ew_curve[index==i],50) for i in np.unique(index)])
+        lower = np.array([np.nanpercentile(age[index==i],5) for i in np.unique(index)])
+        bins = np.array([np.nanpercentile(ew_curve[index==i],50) for i in np.unique(index)])
 
         order = np.argsort(bins)
         bins = bins[order]
         lower = lower[order]
+
+        bins = np.array([0]+list(bins))
+        lower = np.array([10]+list(lower))
 
         age = interp1d(
             bins,
@@ -1245,10 +1289,17 @@ def lithium_age(teff, ew, nsamples=5000): # https://doi.org/10.1093/mnras/stad12
             fill_value="extrapolate",
         )(ew)
 
-        age = np.random.uniform(np.percentile(age,5), 13, nsamples)
+        age_min = np.nanpercentile(age,5)
+        if age_min!=age_min:
+            age_min = 2
+
+        age = np.random.uniform(age_min, 13, nsamples)
 
     age[age>13] = 13
     age[age<0.001] = 0
+    
+    age[teff<3000] = np.random.uniform(0, 13, sum(teff<3000))
+    age[teff>6500] = np.random.uniform(0, 13, sum(teff>6500))
 
     if np.nanmedian(age)==0:
         warning = 2

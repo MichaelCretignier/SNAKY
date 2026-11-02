@@ -37,13 +37,21 @@ class SnakyError(Exception):
     pass
 
 class start():
-    def __init__(self, job_id=0, verbose=True, debug=False):
+    def __init__(self, job_id=None, verbose=True, debug=False):
         self.sy_output_dir = myv.WORKSPACE+'/'
+        if job_id is None:
+            job_id = str(np.random.choice(np.arange(1000000),1)[0]).zfill(6)
+        else:
+            job_id = str(job_id).zfill(6)
         self.sy_job_id = job_id
+        self.sy_snaky_version = __version__
         self.warning_printed = 0
         self.prd_ext = ''
         self.debug = debug
-        self.sy_user_object = {'Name':None, 'Ra':None, 'Dec':None, 'Rv_sys':None, 'Prot':None, 'Rs':None, 'Ms':None, 'Teff':None, 'Log_g':None, 'FeH':None, 'RHK':None, 'Vsini':None, 'Age':None, 'stellar_template':None, 'reference':None}
+        self.sy_transformation = {'vrot':0}
+
+        self.sy_user_object = myv.user_object.copy()
+        
         self.missing_file = False
         if not verbose:
             myv.VERBOSE = False
@@ -63,7 +71,7 @@ class start():
         starname = self.sy_starname
         ins = self.sy_instrument
         source = self.sy_source_files
-        if (starname.split('_')[0]!='Sun')|(source[0]=='YARARA'):
+        if not ((starname.split('_')[0]=='Sun')&(source[0]=='YARARA')):
             myv.vprint(' [INFO] Formatting SNAKY with basic minimal information...')
             dace_table = mym.import_dace_table(dir_root)
             files = np.array(dace_table['fileroot'])
@@ -74,6 +82,9 @@ class start():
             pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(starname),'wb'))
             query['ins'] = ins
             dace_table = pd.concat([dace_table,query],axis=1)
+            dace_table = dace_table.sort_values(by='rjd').reset_index(drop=True)
+            if self.sy_rassine_db:
+                dace_table['rassine_fileroot'] = np.array(dace_table['fileroot'])
             dace_table.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
 
     def set_starinfo(self):
@@ -103,31 +114,100 @@ class start():
         else:
             print(Fore.YELLOW+' [ERROR] The atmospheric databases is not yet existing.'+Fore.RESET)
 
-    def set_star(self, ra=None, dec=None, rv_sys=None, prot=None, rs=None, ms=None, teff=None, logg=None, feh=None, rhk=None, vsini=None, age=None, reference='user', stellar_template=None):
+    def set_star(self, starname=None, ra=None, dec=None, rv_sys=None, prot=None, rs=None, ms=None, teff=None, logg=None, feh=None, rhk=None, vsini=None, age=None, reference='MISSING', use_reference=True):
+
+        reference = reference.upper()
+
+        if starname is None:
+            starname = self.sy_starname
+
+        params = [prot, rs, ms, teff, logg, feh, rhk, vsini, age]
+        params_formatted = [myu.format_user_object(p) for p in params]
+        prot, rs, ms, teff, logg, feh, rhk, vsini, age = params_formatted
+
+        self.sy_user_object = myv.user_object.copy()
+
         sy_user_object = {
-            'Name'  : self.sy_starname,
+            'Name'  : starname,
             'Ra'    : ra,
             'Dec'   : dec,
             'Rv_sys': rv_sys,
-            'Prot'  : prot,
-            'Rs'    : rs,
-            'Ms'    : ms,
-            'Teff'  : teff,
-            'Log_g'  : logg,
-            'FeH'   : feh,
-            'RHK'   : rhk,
-            'Vsini' : vsini,
-            'Age'   : age,
+            'Prot'  : prot[0],
+            'Rs'    : rs[0],
+            'Ms'    : ms[0],
+            'Teff'  : teff[0],
+            'Log_g'  : logg[0],
+            'FeH'   : feh[0],
+            'RHK'   : rhk[0],
+            'Vsini' : vsini[0],
+            'Age'   : age[0],
             'stellar_template' : None,
             'reference': reference
         }
-        
+
+        sy_user_object_std = {
+            'Prot'  : prot[1],
+            'Rs'    : rs[1],
+            'Ms'    : ms[1],
+            'Teff'  : teff[1],
+            'Log_g'  : logg[1],
+            'FeH'   : feh[1],
+            'RHK'   : rhk[1],
+            'Vsini' : vsini[1],
+            'Age'   : age[1],
+        }
+
+        parent_dir =  self.sy_output_dir+f'/{starname}/data/s1d/ALLINS_MERGED'
+        if not os.path.exists(parent_dir):
+            os.makedirs(parent_dir,exist_ok=True)
+
+        table_params = myu.get_atmos_table(parent_dir)
+        empty = {kw: np.nan for kw in table_params.keys()}
+        empty['ins'] = reference
+
         for kw in sy_user_object:
-            if sy_user_object[kw] is not None:
-                if sy_user_object[kw]==sy_user_object[kw]:
+            kw2 = kw.lower().replace('_','')
+            if (sy_user_object[kw] is not None)&(sy_user_object[kw]==sy_user_object[kw]):
+
+                if kw in sy_user_object_std.keys():
+                    uncertainty = sy_user_object_std[kw]
+                else:
+                    uncertainty = None
+
+                if (use_reference)|(kw=='Ra')|(kw=='Dec')|(kw=='Name'):
                     self.sy_user_object[kw] = sy_user_object[kw]
-                    myv.vprint(' [INFO] Stellar parameters updated: %s = %s'%(kw,str(sy_user_object[kw])))
-        
+
+                    if uncertainty is None:
+                        myv.vprint(' [INFO] Stellar parameters updated: %s = %s'%(kw,str(sy_user_object[kw])))
+                    else:
+                        myv.vprint(' [INFO] Stellar parameters updated: %s = %s +/- %s'%(kw,str(sy_user_object[kw]),str(np.round(uncertainty,3))))
+
+                if kw2 in empty.keys():
+                    empty[kw2] = sy_user_object[kw]
+
+                if uncertainty is None:
+                    uncertainty = np.nan
+
+                if kw2+'_std' in empty.keys():
+                    empty[kw2+'_std'] = uncertainty
+
+        new_row = pd.DataFrame(empty,index=[0])
+        table_params = pd.concat([table_params,new_row],ignore_index=True)
+        table_params.drop_duplicates(subset=['ins'], keep='last', inplace=True)
+        table_params.dropna(subset=['ins'], inplace=True)
+        table_params.reset_index(drop=True, inplace=True)
+        if np.sum(np.unique(table_params['ins'])!='MISSING')!=0:
+            table_params = table_params.loc[table_params['ins']!='MISSING']
+            table_params.reset_index(drop=True, inplace=True)
+
+        table_params['logg_std'] = np.round(table_params['logg_std'],2)
+        table_params['ms_std'] = np.round(table_params['ms_std'],2)
+        table_params['rs_std'] = np.round(table_params['rs_std'],2)
+        table_params['teff_std'] = np.round(table_params['teff_std'],0)
+        table_params['feh_std'] = np.round(table_params['feh_std'],2)
+                                            
+        table_params.to_csv(parent_dir+'/Atmos_literature.csv')
+
     def estimate_computation_time(self):
         N = len(self.sy_files)
 
@@ -169,14 +249,14 @@ class start():
         self.sy_instrument = ins
         self.sy_dir_root = self.sy_output_dir+starname+'/data/s1d/'+ins+'/'
         dir_root = self.sy_dir_root
-       
-        self.set_star()
 
         print(Fore.CYAN+" [INFO] (root directory) dir_root = '"+dir_root+"' \n"+Fore.RESET)
         if sub_dico=='matching_mad':
             print(Fore.CYAN+" [INFO] Processing YV1 dataset! \n"+Fore.RESET)        
         elif sub_dico=='matching_instrument':
             print(Fore.CYAN+" [INFO] Processing YVA dataset! \n"+Fore.RESET)        
+
+        files = mym.uncompress_rassine(files)
 
         self.sy_files = files
         self.sy_sub_dico = sub_dico
@@ -237,9 +317,11 @@ class start():
         else:
             if self.sy_rassine_db:
                 self.sy_files = list(np.sort(glob.glob(dir_root+'WORKSPACE/RASSINE*.p')))
+                self.sy_rassine_files = self.sy_files
 
         if not self.sy_yarara_db:
             table = pd.DataFrame(self.sy_files,columns=['fileroot'])
+            #table = table.sort_values(by='rjd').reset_index(drop=True)
             table.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
             self.format(ra=ra, dec=dec)
 
@@ -318,11 +400,12 @@ class start():
             ra = sinfo['Ra']['DRS']
             dec = sinfo['Dec']['DRS']
         else:
-            ra = mym.ra_to_deg(sinfo['Ra']['fixed'].replace(' ',''))
-            dec = mym.dec_to_deg(sinfo['Dec']['fixed'].replace(' ',''))
+            ra = myu.ra_to_deg(sinfo['Ra']['fixed'].replace(' ',''))
+            dec = myu.dec_to_deg(sinfo['Dec']['fixed'].replace(' ',''))
         dace_summary = pd.read_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv',index_col=0)
         dace_summary['RA'] = np.round(ra,6)
         dace_summary['DEC'] = np.round(dec,6)
+        dace_summary = dace_summary.sort_values(by='rjd').reset_index(drop=True)
         dace_summary.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
 
         for kw in myv.star_info:
@@ -353,46 +436,58 @@ class start():
             file_opened = []
 
             for f,source,rv in zip(files,sources,rv_shift):
-                if ins[0:6]=='SOPHIE':
-                    qc = mym.read_sophie(f,dir_root,force=True)
-                elif (ins=='HARPS_3.5')|(ins=='HARPS03_3.5')|(ins=='HARPS15_3.5'):
-                    qc = mym.read_sophie(f,dir_root,force=True)
-                elif source=='YARARA':
-                    qc = mym.read_yarara(f,dir_root,force=True)
-                elif (ins.split('_')[0][0:5]=='HARPS')|(ins.split('_')[0]=='HARPN')|(ins.split('_')[0]=='ESPRESSO'):
-                    if source=='ESO':
-                        qc = mym.read_eso(f,dir_root,ins.split('_')[0],force=True)
-                    elif source=='IA2':
-                        qc = mym.read_ia2(f,dir_root,force=True)
-                    else:   
-                        qc = mym.read_espresso(f,dir_root,force=True)
-                elif ins[0:5]=='PEPSI':
-                    qc = mym.read_pepsi(f,dir_root,force=True)
-                elif ins[0:5]=='EXPRE':
-                    qc = mym.read_expres(f,dir_root,force=True)
-                elif ins[0:4]=='HERM':
-                    qc = mym.read_hermes(f,dir_root,force=True)
-                elif ins[0:4]=='NEID':
-                    qc = mym.read_neid(f,dir_root,force=True)
-                elif source=='GR8':
-                    qc = mym.read_gr8(f, dir_root, ins.split('_')[0],force=True)
-                elif source=='ESO':
-                    qc = mym.read_eso(f, dir_root, ins.split('_')[0], rv_shift=rv, force=True)
-                else:
-                    qc = 0
-                    pass
+                if self.debug:
+                    print(f"Processing file: {f}, source: {source}, rv: {rv}")
+                try:
+                    if source=='GR8':
+                        output = mym.read_gr8(f, dir_root, ins.split('_')[0], force=True)
+                    elif ins[0:6]=='SOPHIE':
+                        output = mym.read_sophie(f, dir_root, ins, force=True)
+                    elif (ins=='HARPS_3.5')|(ins=='HARPS03_3.5')|(ins=='HARPS15_3.5'):
+                        output = mym.read_sophie(f, dir_root, ins, force=True)
+                    elif source=='YARARA':
+                        output = mym.read_yarara(f, dir_root, ins, force=True)
+                    elif (ins.split('_')[0][0:5]=='HARPS')|(ins.split('_')[0]=='HARPN')|(ins.split('_')[0]=='ESPRESSO'):
+                        if source=='ESO':
+                            output = mym.read_eso(f, dir_root, ins.split('_')[0],force=True)
+                        elif source=='IA2':
+                            output = mym.read_ia2(f, dir_root, ins, force=True)
+                        else:   
+                            output = mym.read_espresso(f, dir_root, ins, force=True)
+                    elif ins[0:5]=='PEPSI':
+                        output = mym.read_pepsi(f, dir_root, ins, force=True)
+                    elif ins[0:5]=='EXPRE':
+                        output = mym.read_expres(f, dir_root, ins, force=True)
+                    elif ins[0:4]=='HERM':
+                        output = mym.read_hermes(f, dir_root, ins, force=True)
+                    elif ins[0:4]=='NEID':
+                        output = mym.read_neid(f, dir_root, ins, force=True)
+                    elif source=='ESO':
+                        output = mym.read_eso(f, dir_root, ins.split('_')[0], rv_shift=rv, force=True)
+                    else:
+                        output = mym.read_static(f, dir_root, ins, force=True)
+                except:
+                    output =  [0,'ABORTED']
                     #mym.read_static(f,dir_root,w0,dw,force=True)
 
-                file_opened.append(qc)
-            file_opened = np.array(file_opened).astype('bool')
-            nb_crash = len(file_opened)-np.sum(file_opened)
-            if len(file_opened)!=np.sum(file_opened):
+                file_opened.append(output)
+            file_opened = np.array(file_opened)
+            file_opened = pd.DataFrame(file_opened,columns=['qc','rassine_fileroot'])
+            file_opened['qc'] = file_opened['qc'].astype('int')
+            file_opened.loc[file_opened['qc']==0, 'rassine_fileroot'] = 'ABORTED'
+            dace_table['rassine_fileroot'] = file_opened['rassine_fileroot']
+
+            print(' [INFO] Number of files opened correctly: ', np.sum(file_opened['qc']))
+            nb_crash = len(file_opened)-np.sum(file_opened['qc'])
+            if len(file_opened)!=np.sum(file_opened['qc']):
                 print(Fore.YELLOW+'\n [WARNING] %.0f files have not been opened correctly and will be removed from the processing...'%(nb_crash)+Fore.RESET)
-                print(' ',file_opened.astype('int'))
-                self.sy_files = list(np.array(self.sy_files)[file_opened])
-                self.sy_source_files = list(np.array(self.sy_source_files)[file_opened])
-                dace_table = dace_table.loc[file_opened].reset_index(drop=True)
-                dace_table.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
+                print(' ',list(file_opened.loc[file_opened['qc']==0,'rassine_fileroot'].values))
+                mask_open = file_opened['qc'].astype('bool')
+                self.sy_files = list(np.array(self.sy_files)[mask_open])
+                self.sy_source_files = list(np.array(self.sy_source_files)[mask_open])
+                dace_table = dace_table.loc[mask_open].reset_index(drop=True)
+                #dace_table = dace_table.sort_values(by='rjd').reset_index(drop=True)
+            dace_table.to_csv(dir_root+'DACE_TABLE/Dace_extracted_table.csv')
 
             self.sy_rassine_files = np.sort(glob.glob(dir_root+'WORKSPACE/RASSINE*.p'))
             myv.vprint(' [INFO] Venting DACE table in RASSINE files...')
@@ -433,6 +528,7 @@ class start():
                 sub_dico = self.sy_sub_dico, 
                 material = material,
                 rv_sys = rv_sys,
+                vrot = self.sy_transformation['vrot'],
                 )
         except FileNotFoundError:
             self.missing_file = True
@@ -613,6 +709,11 @@ class start():
         fwhm = sinfo['FWHM']['fixed']
         rv_sys = sinfo['Rv_sys']['SNAKY']
         beta_gnd = sinfo['CCF_beta']['SNAKY']
+
+        coeff = myf.level_beta(0.01,beta_gnd)/myf.level_beta(0.01,2.0)
+        print(' [INFO] Beta GND factor on RV range = %.2f'%(coeff))
+        fwhm = fwhm*coeff
+
         if sum(kept)!=0:
             mask = kept.astype('bool')
             sub = summary.loc[mask]
@@ -697,7 +798,7 @@ class start():
         pickle.dump(material,open(dir_root+'WORKSPACE/Analyse_material.p','wb'))
         #sinfo = yarara_check_rv_sys_wrapper(dir_root,master,0) #check if on 0
 
-    def compute_atmos(self):
+    def compute_atmos(self, model_version='_2.0.0'): # model_version = '' or '_1.8.0' or '_1.9.0' or '_2.0.0'
         dir_root = self.sy_dir_root
         star = self.sy_starname
         sinfo = mym.import_star_info(dir_root)
@@ -706,7 +807,12 @@ class start():
             fwhm = sinfo['FWHM']['G2']
         except:
             fwhm = sinfo['FWHM']['fixed']
-        
+        beta_gnd = sinfo['CCF_beta']['SNAKY']
+
+        coeff = myf.level_beta(0.01,beta_gnd)/myf.level_beta(0.01,2.0)
+        print(' [INFO] Beta GND factor on RV range = %.2f'%(coeff))
+        fwhm = fwhm*coeff
+
         try:
             ccf_output = mym.import_ccf(dir_root,'G2')
             rv = ccf_output['rv'].y
@@ -717,14 +823,21 @@ class start():
         
         rv_sys = sinfo['Rv_sys']['SNAKY'] - rv_sys_correction
 
-        CT,EW,FLAG,MISSING = mym.yarara_iron_lines(dir_root, master, fwhm, rv_sys=rv_sys)
+        if 'Contrast_err' not in sinfo:
+            sinfo['Contrast_err'] = {}
+
+        if 'EW_err' not in sinfo:
+            sinfo['EW_err'] = {}
+
+        CT,CT_err,EW,FLAG,MISSING = mym.yarara_iron_lines(dir_root, master, fwhm, rv_sys=rv_sys)
         for kw in CT.keys():
             sinfo['Contrast'][kw] = CT[kw]
+            sinfo['Contrast_err'][kw] = CT_err[kw]
         for kw in EW.keys():
             sinfo['EW'][kw] = EW[kw]
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
-        atmos = mym.yarara_atmos_xgb_spectroscopy(dir_root, sinfo, resolution=80000, phot=True, flag=(FLAG!=0), missing_fraction=MISSING)
+        atmos = mym.yarara_atmos_xgb_spectroscopy(dir_root, sinfo, resolution=80000, phot=True, flag=(FLAG!=0), model_version=model_version)
         teff,feh,logg,M,R,BV,vmicro,vmacro = atmos
 
         suffixe = 'ATLAS_T%.0f_g%.1f'%(np.round(teff,-2),np.round(logg,1))
@@ -743,9 +856,14 @@ class start():
         teff = self.sy_user_object['Teff']
 
         if (FLAG==0)&(EW['LiI']==EW['LiI']):
-            age = mym.yarara_lithium_age(dir_root, teff=teff, ref_age=self.sy_user_object['Age'])
+            age, li_ew, li_ew_err = mym.yarara_lithium_age(dir_root, fwhm=fwhm, teff=teff, ref_age=self.sy_user_object['Age'])
+
+            sinfo = myf.update_info_lvl2(sinfo,'EW','Li6708',np.round(li_ew,2))
+            sinfo = myf.update_info_lvl2(sinfo,'EW_err','Li6708',np.round(li_ew_err,2))
             if age is not None:
                 sinfo = myf.update_info_lvl2(sinfo,'Age','Jeffr+23',np.round(age,3))
+            age = mym.yarara_age_xgb_spectroscopy(dir_root, sinfo, model_version='2.0.0')
+            sinfo = myf.update_info_lvl2(sinfo,'Age','SNAKY',np.round(age,3))
 
         pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
 
@@ -766,38 +884,42 @@ class start():
             mask = np.ones(len(summary)).astype('bool')
         berv = np.array(summary.loc[mask,'berv'])
 
-        #pickle.dump({
-        #    'dir_root':dir_root,
-        #    'selfsy_sts_wave':self.sy_sts_wave,
-        #    'selfsy_sts_flux':self.sy_sts_flux,
-        #    'files':files,
-        #    'mask':mask,
-        #    'berv':berv
-        #    },open('/Users/cretignier/Desktop/Snaky/TEST/compute_resolution/export.p','wb'))
-
         try:
-            if self.sy_source_files[0]!='YARARA':
+            if (self.sy_source_files[0]!='YARARA'):
                 fwhm_ins, berv_output = mym.yarara_instrumental_resolution(dir_root, (self.sy_sts_wave,self.sy_sts_flux[mask],files[mask]), np.zeros(len(berv)), berv.copy())
             else:
                 fwhm_ins = np.nan*berv
                 berv_output = berv
+            fwhm_ins[np.array(self.sy_source_files)[mask]=='GR8'] = np.nan 
 
             summary = mym.import_summary(dir_root) # to reload updated table
             if np.sum(berv!=berv_output)!=0:
                 summary.loc[mask,'berv_computed'] = berv_output
             output = np.array([files[mask],fwhm_ins]).T
-            if ins[0:6]=='SOPHIE':
-                newins = np.array([[ins.replace('-HE',''),ins.replace('-HE','').replace('_','-HE_')][int(i>5)] for i in fwhm_ins])
-                output[:,-1] = newins
+
+            if ins.split('_')[0]=='SOPHIE':
+                mask_sophie_he = (fwhm_ins > 5.5)
+                newins = ins.replace('_','-HE_')
+                output[:,-1] = ins
+                output[mask_sophie_he,-1] = newins
                 loc = [np.where(summary['filename']==f)[0][0] for f in output[:,0]]
-                summary.loc[loc,'ins'] = output[:,-1]
+                if np.sum(mask_sophie_he)>0:
+                    summary.loc[loc,'ins'] = output[:,-1]
+                    summary.to_csv(dir_root+'WORKSPACE/Analyse_summary.csv')
+                    print(Fore.YELLOW+' [WARNING] SOPHIE resolution anomalous. (mode SOPHIE-HE?).'+Fore.RESET)
+
             if ins[0:4]=='NEID':
-                newins = np.array([[ins.replace('-HE',''),ins.replace('-HE','').replace('_','-HE_')][int(i>4)] for i in fwhm_ins])
-                output[:,-1] = newins
+                mask_neid_he = (fwhm_ins > 4.0)
+                newins = ins.replace('_','-HE_')
+                output[:,-1] = ins
+                output[mask_neid_he,-1] = newins
                 loc = [np.where(summary['filename']==f)[0][0] for f in output[:,0]]
-                summary.loc[loc,'ins'] = output[:,-1]
+                if np.sum(mask_neid_he)>0:
+                    summary.loc[loc,'ins'] = output[:,-1]
+                    print(Fore.YELLOW+' [WARNING] NEID resolution anomalous. (mode NEID-HE?).'+Fore.RESET)
+
             ins_res = np.round(np.nanmedian(fwhm_ins),2)
-        except AttributeError:
+        except (AttributeError,ValueError):
             ins_res = np.nan
 
         sinfo = myf.update_info_lvl2(sinfo,'FWHM','O2',ins_res)
@@ -808,21 +930,63 @@ class start():
         dir_root = self.sy_dir_root
         star = self.sy_starname
         sub_dico = self.sy_sub_dico
-        ins = self.sy_instrument.split('_')[0]
-        ref_value = self.sy_user_object['Vsini']
 
         sinfo = mym.import_star_info(dir_root)
+        ref_value = self.sy_user_object['Vsini']
+
+        summary = mym.import_summary(dir_root)
+        ins_resolution = summary[['filename','ins']].copy()
+        ins_resolution['ins'] = [i.split('_')[0] for i in np.array(summary['ins'])]        
         try:
             ins_res = sinfo['FWHM']['O2']
-        except: 
+        except:
             ins_res = np.nan
+
+        ref_resolution = []
+        for i in ins_resolution['ins']:
+            if i in myv.instrument_res_kms.keys():
+                ref_resolution.append(myv.instrument_res_kms[i])
+            else:
+                ref_resolution.append(ins_res)
+        
+        ref_resolution = np.array(ref_resolution)
+        diff = ref_resolution - ins_res
+
+        myv.vprint(' [INFO] Reference instrument resolution = %.2f km/s'%(np.nanmedian(ref_resolution)))
+        myv.vprint(' [INFO] Telluric measured one = %.2f km/s (Delta = %.2f)'%(ins_res,np.nanmedian(diff)))
+
+        ins_resolution['resolution'] = ref_resolution
+
+        ins_calib = []
+        for i,r in ins_resolution[['ins','resolution']].values:
+            if i in myv.instrument_res_kms.keys():
+                ins_calib.append(i)
+            else:
+                loc = myf.find_nearest(list(myv.instrument_res_kms.values()),r)[0][0]
+                ins_calib.append(list(myv.instrument_res_kms.keys())[loc])
+                print(Fore.YELLOW+' [WARNING] Instrument not existing. Closest instrument found based on resolution: %s'%(ins_calib[-1])+Fore.RESET)
+
+        ins_resolution['ins_calib'] = ins_calib
+
+        ins_resolution.loc[ins_resolution['ins_calib']=='NEID-HE','ins_calib'] = 'SOPHIE'
+        ins_resolution.loc[ins_resolution['ins_calib']=='PEPSI','ins_calib'] = 'ESPRESSO'
+        ins_resolution.loc[ins_resolution['ins_calib']=='EXPRES','ins_calib'] = 'ESPRESSO'
+        ins_resolution.loc[ins_resolution['ins_calib']=='HARPS','ins_calib'] = 'HARPS03'
+        ins_resolution.loc[ins_resolution['ins_calib']=='FIES','ins_calib'] = 'CORALIE14'
 
         if 'G2' in sinfo['FWHM'].keys():
             fwhm = sinfo['FWHM']['G2']
+            vsini = np.nan
 
             if fwhm>30:
+                beta_gnd = sinfo['CCF_beta']['SNAKY']
+
+                coeff = myf.level_beta(0.01,beta_gnd)/myf.level_beta(0.01,2.0)
+                print(' [INFO] Beta GND factor on RV range = %.2f'%(coeff))
+                fwhm = fwhm*coeff
+
                 rv_sys = sinfo['Rv_sys']['SNAKY']
-                atmos = mym.yarara_atmos_fast_rotator(dir_root, rv_sys, fwhm*0.75, model='SNAKY')
+                atmos = mym.yarara_atmos_fast_rotator(dir_root, rv_sys, fwhm, model='SNAKY')
                 teff,feh,logg,M,R,BV,vmicro,vmacro,vsini = atmos
                 suffixe = 'ATLAS_T%.0f_g%.1f'%(np.round(teff,-2),np.round(logg,1))
                 myv.vprint(' [INFO] Atmospheric model set to : %s'%(suffixe))
@@ -835,21 +999,19 @@ class start():
                 sinfo = myf.update_info_lvl2(sinfo,'Vmicro','SNAKY',vmicro)
                 sinfo = myf.update_info_lvl2(sinfo,'Vmacro','SNAKY',vmacro)
                 sinfo = myf.update_info_lvl2(sinfo,'stellar_template','SNAKY',suffixe)
-                age = mym.yarara_lithium_age(dir_root,ref_age=self.sy_user_object['Age']) #recompute the age for fast rotators, as the previous one might be wrong due to the bad EW measurement
+                age = mym.yarara_lithium_age(dir_root,fwhm=fwhm,ref_age=self.sy_user_object['Age']) #recompute the age for fast rotators, as the previous one might be wrong due to the bad EW measurement
                 if age is not None:
                     sinfo = myf.update_info_lvl2(sinfo,'Age','Jeffr+23',np.round(age,3))
-
+                age = mym.yarara_age_xgb_spectroscopy(dir_root, sinfo, model_version='2.0.0')
+                sinfo = myf.update_info_lvl2(sinfo,'Age','SNAKY',np.round(age,3))
                 mym.yarara_vsini(dir_root, Prot=Prot, Rs=Rs)
             else:
-                if (ins_res==ins_res)|(ins in myv.instrument_res_kms.keys()):
-                    try:
-                        vsini = mym.yarara_vcat(dir_root, sub_dico=sub_dico, debug=self.debug, std_bias_kms=0.1, ref_value=ref_value) 
-                    except FileNotFoundError:
-                        pass
-                    vsini = np.round(np.nanmean(vsini),2)
-                    mym.yarara_vsini(dir_root, Prot=Prot, Rs=Rs)
-                else:
-                    vsini = np.nan
+                try:
+                    vsini = mym.yarara_vcat(dir_root, ins_resolution, sub_dico=sub_dico, debug=self.debug, std_bias_kms=0.1, ref_value=ref_value) 
+                except FileNotFoundError:
+                    pass
+                vsini = np.round(np.nanmean(vsini),2)
+                mym.yarara_vsini(dir_root, Prot=Prot, Rs=Rs)                    
 
             sinfo = myf.update_info_lvl2(sinfo,'Vsini','SNAKY',vsini)
             pickle.dump(sinfo,open(dir_root+'STAR_INFO/Stellar_info_%s.p'%(star),'wb'))
@@ -1033,8 +1195,13 @@ class start():
                 extracted = sinfo[kw]
                 del extracted['fixed']
                 spectroscopy[kw] = extracted
-        pickle.dump(spectroscopy,open(dir_root+'WORKSPACE/Analyse_spectroscopy.p','wb'))
 
+        spectroscopy['wave'] = (spectroscopy['wave']*100).astype('int')
+        spectroscopy['flux'] = (spectroscopy['flux']*10000).astype('uint16')
+        spectroscopy['flux_corrected'] = (spectroscopy['flux_corrected']*10000).astype('uint16')
+
+        np.savez_compressed(dir_root+'WORKSPACE/Analyse_spectroscopy.npz',**spectroscopy)
+        
     def compute_mag_cycle(self, rm_source=['DACE','Yu+23']):
         dir_root = self.sy_dir_root
         star = self.sy_starname
@@ -1065,35 +1232,57 @@ class start():
         stellar_atmos_user = self.sy_user_object
         
         reference = {'ins':stellar_atmos_user['reference']}
-        for kw1,kw2 in zip(['ms','rs','teff','logg','feh','rhk','vsini','age'],['Ms','Rs','Teff','Log_g','FeH','RHK','Vsini','Age']):
+        for kw1,kw2 in zip(['ms','rs','teff','logg','feh','rhk','vsini','age','prot'],['Ms','Rs','Teff','Log_g','FeH','RHK','Vsini','Age','Prot']):
             if kw2 in stellar_atmos_user.keys():
                 if stellar_atmos_user[kw2] is not None:
                     reference[kw1] = stellar_atmos_user[kw2]
         
         parent_dir = '/'.join(dir_root.split('/')[:-2])
-        files = glob.glob(parent_dir+'/*/WORKSPACE/Analyse_samples*')
+        files = np.array(glob.glob(parent_dir+'/*/WORKSPACE/Analyse_samples*'))
 
-        table, extract, lims = myu.boxplot_comparison(files, reference=reference)
+        table, extract, lims, variables, kept = myu.boxplot_comparison(files, reference=reference)
         plt.savefig(parent_dir+'/ALLINS_MERGED/Atmos_all_instrument.png')
 
-        myu.pdf_comparison(files, xlims=lims,reference=reference)
+        pdf, extract2 = myu.pdf_comparison(files[kept], xlims=lims,reference=reference)
         plt.savefig(parent_dir+'/ALLINS_MERGED/Atmos_all_instrument_pdf.png')
 
-        borders = {'ms':[0,3,3],'rs':[0,3,3],'teff':[3000,8000,0],'logg':[3.5,5.0,3],'feh':[-1.5,0.5,3],'vsini':[0,10,3],'mhk':[-50,200,2],'rhk':[-6,-4,3],'prot':[0,100,1],'sini':[0,1,3],'age':[0,13,2]} #min max and digits
+        extract2 = extract2.loc[extract2['ins']!='REFERENCE']
+        extract2['prot'] = np.nan ; extract2['prot_std'] = np.nan
+        extract2['sini'] = np.nan ; extract2['sini_std'] = np.nan
+        extract2.to_csv(parent_dir+'/ALLINS_MERGED/Atmos_all_parameters.csv')
 
-        extract = pd.DataFrame(extract,columns=['ins']+list(table.columns))
+        pdf['reference'] = reference
+        pdf['starname'] = self.sy_starname
+        pickle.dump(pdf, open(parent_dir+'/ALLINS_MERGED/Atmos_pdf.p','wb'))
+
+        borders = {'ms':[0,3,3],
+                   'rs':[0,3,3],
+                   'teff':[3000,8000,0],
+                   'logg':[3.5,5.0,3],
+                   'feh':[-1.5,0.5,3],
+                   'vsini':[0,10,3],
+                   'mhk':[-50,200,2],
+                   'rhk':[-6,-4,3],
+                   'prot':[0,100,1],
+                   'sini':[0,1,3],
+                   'age':[0,13,2]} #min max and digits
+
+        extract = pd.DataFrame(extract,columns=['ins']+variables+['%s_std'%kw for kw in variables])
+
         med_values = extract.drop(columns='ins').median(numeric_only=True)
         mean_row = pd.DataFrame([['ALLINS_MERGED'] + med_values.tolist()],columns=extract.columns)
-        extract = pd.concat([extract, mean_row], ignore_index=True)
+        extract = pd.concat([extract, mean_row,], ignore_index=True)
         for kw in list(table.columns):
             if kw in borders.keys():
                 extract[kw] = np.round(np.array(extract[kw]),borders[kw][-1]) 
+                extract[kw+'_std'] = np.round(np.array(extract[kw+'_std']),borders[kw][-1])
 
         for k in extract.keys():
             if k not in reference.keys():
                 reference[k] = np.nan
 
-        extract = pd.concat([extract, pd.DataFrame([reference])], ignore_index=True)
+        #extract = pd.concat([extract, pd.DataFrame([reference])], ignore_index=True)
+
         extract.to_csv(parent_dir+'/ALLINS_MERGED/Atmos_all_instruments.csv')
 
     def cleaning(self):
@@ -1201,7 +1390,7 @@ class start():
             RAM_max1 = np.max(np.array(table_time['RAM_peak_gb']))
             RAM_max2 = np.max(np.array(table_time['RAM_all_gb']))
             Ntot = len(self.sy_files)
-            plt.title('Total time = %s minutes | RAM maximum = %.1f Gb | N files = %.0f'%(tag_duration, RAM_max, Ntot))
+            plt.title('SNAKY v.%s | Total time = %s minutes | RAM maximum = %.1f Gb | N files = %.0f'%(self.sy_snaky_version,tag_duration, RAM_max, Ntot))
 
             plt.subplot(2,1,2) ; plt.ylabel('RAM [GB]')
             plt.plot(np.arange(len(table_time)),table_time['RAM_peak_gb'].values,marker='o',color='k')
@@ -1241,11 +1430,11 @@ class start():
         5.  compute_master
             Build the master spectrum from individual exposures.
 
-        6.  compute_resolution
-            Estimate the instrumental resolution (using step 02 calibration).
-
-        7.  compute_atmos
+        6.  compute_atmos
             Derive stellar atmospheric parameters (Teff, logg, [Fe/H]).
+
+        7.  compute_resolution
+        Estimate the instrumental resolution (using step 02 calibration).
 
         8.  compute_vsini
             Estimate the projected rotational velocity (v sin i).
@@ -1281,13 +1470,14 @@ class start():
         self.sy_rv_mode = rv_mode
 
         debug = self.debug
+        job_id = self.sy_job_id
 
         if (begin==1)&(automatic_db==False):
             self.warning_printed=1
             self.reset()
 
         timestamp_reduction = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
-        filename_time = dir_root + 'REDUCTION_INFO/Time_info_reduction_snaky_%s_B%sE%s_%s.csv'%(__version__,str(begin).zfill(2),str(end).zfill(2),timestamp_reduction)
+        filename_time = dir_root + 'REDUCTION_INFO/Time_info_reduction_ID%s_snaky_V%s_B%sE%s_%s.csv'%(job_id,__version__,str(begin).zfill(2),str(end).zfill(2),timestamp_reduction)
 
         steps = np.arange(begin,end+1,1).astype('int')
 
@@ -1301,7 +1491,8 @@ class start():
 
         myf.print_box('\n---- Launching reduction %s with instrument %s  ----\n'%(star,ins))
         time_start = time.time()
-        
+
+        force_reset = bool(np.sum(steps==0))
         force_pre = bool(np.sum(steps==1))
         force_summary = bool(np.sum(steps==2))
         force_rvsys = bool(np.sum(steps==3))
@@ -1347,6 +1538,10 @@ class start():
         Rs = self.sy_user_object['Rs']
 
         self.write_progress(0, 'begin', savefile=filename_time)
+
+        if force_reset:
+            self.warning_printed=1
+            self.reset(suppression='all')
         
         if force_pre: #1
             self.init_workspace(ra=ra, dec=dec, copy_rassine_files=copy_rassine_files, rv_mode=rv_mode)
@@ -1367,8 +1562,8 @@ class start():
         except:
             pass
 
-
-        self.load_data()
+        if end>2:
+            self.load_data()
 
         if force_summary: #2
             self.check_spectra()
@@ -1436,7 +1631,13 @@ class start():
                 self.write_progress(9, 'abs_continuum', savefile=filename_time)
         qc9 = mym.check_force_abs_continuum(dir_root,step_nb='(9)')
 
-        self.load_data(use_material=True)
+        if end>3:
+            self.load_data(use_material=True)
+
+        if force_mhk:
+            material = mym.import_material(self.sy_dir_root)
+            if 'activity_proxies' not in material.keys():
+                force_activity = True
 
         if force_activity: #10
             self.compute_activity()
@@ -1473,6 +1674,47 @@ class start():
 
         if force_cleaning: #14
             self.cleaning()
+
+    def test_file_version(self):
+
+        import itertools
+
+        test_file = self.sy_files[0]
+
+        source = [None,'ESO','GR8','YARARA']
+        ins = ['HARPS','ESPRESSO','SOPHIE','PEPSI','EXPRES','HERMES','NEID']
+
+        combination = list(itertools.product(source,ins))
+
+        valid_extract = []
+        for s,i in combination:
+            try:
+                query = mym.extract_header([test_file], i, debug=False, dec=None, ra=None, sources=[s])
+                valid_extract.append([s,i])
+            except:
+                pass
+        print(valid_extract)
+
+        valid_extract2 = []
+        for i in ins:
+            for read_function in (
+                mym.read_sophie, 
+                mym.read_pepsi, 
+                mym.read_expres, 
+                mym.read_neid, 
+                mym.read_espresso, 
+                mym.read_yarara, 
+                mym.read_eso,
+                mym.read_ia2, 
+                mym.read_gr8, 
+                ):
+                try:
+                    print('Testing combination: '+read_function.__name__)
+                    ping = read_function(test_file, self.sy_dir_root, i, dec=0, ra=0, ping=True)
+                    valid_extract2.append([i, read_function.__name__])
+                except:
+                    pass
+        print(valid_extract2) 
 
 
 def benchmark1(output_dir=None, starname='BENCHMARK1'):

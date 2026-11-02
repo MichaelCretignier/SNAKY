@@ -275,6 +275,7 @@ star_info = {
     'SB1':{'fixed':0.0},
     'SB2':{'fixed':0.0},
     'EW':{'fixed':0.0},
+    'EW_err':{'fixed':0.0},
     'Mstar':{'fixed':1.0},
     'Rstar':{'fixed':1.0},
     'Teff':{'fixed':5775},
