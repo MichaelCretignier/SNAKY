@@ -6,6 +6,7 @@ this_file = Path(__file__).resolve()
 snaky_root = this_file.parent.parent
 
 zip_path = snaky_root / "Material_snaky.zip"
+update_dir = snaky_root / "Material_update"
 material_dir = snaky_root / "Material_snaky"
 
 print("\n[INFO] Downloading Material_snaky from the Zenodo repository... Wait...\n")
@@ -34,3 +35,23 @@ if material_dir.exists():
     print(f"\n[INFO] Material_snaky successfully installed in:\n       {material_dir}")
 else:
     print("\n[ERROR] Material_snaky was not found after extraction.")
+
+
+#Move new material into the material directory
+if update_dir.exists():
+    for file in update_dir.iterdir():
+        destination = material_dir / file.name
+
+        # Replace existing files or directories
+        if destination.exists():
+            if destination.is_dir():
+                shutil.rmtree(destination)
+            else:
+                destination.unlink()
+
+        shutil.move(str(file), str(destination))
+
+    # Remove the empty Material_update directory
+    update_dir.rmdir()
+
+    print("[INFO] Material_update successfully merged into Material_snaky.")
